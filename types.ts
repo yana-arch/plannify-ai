@@ -43,6 +43,8 @@ export interface Milestone {
   name: string;
   description: string;
   tasks: string[];
+  estimatedStartDate: string;
+  estimatedDurationWeeks: number;
 }
 
 export interface ProjectPlan {
@@ -76,6 +78,11 @@ export interface ReportTemplate {
 
 export type Screen = 'wizard' | 'templates' | 'plan' | 'projects' | 'dashboard';
 
+export interface PlanHistoryEntry {
+  plan: ProjectPlan;
+  savedAt: string;
+}
+
 export interface SavedProject {
   id: string;
   projectName: string;
@@ -83,4 +90,5 @@ export interface SavedProject {
   createdAt: string;
   inputData: ProjectInputData;
   projectPlan: ProjectPlan;
+  history: PlanHistoryEntry[];
 }

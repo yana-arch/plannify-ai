@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { ProjectPlan, FeatureSpecification, ReportTemplate, ReportType, ProjectInputData } from '../types';
+import type { ProjectPlan, FeatureSpecification, ReportTemplate, ReportType, ProjectInputData, PlanHistoryEntry } from '../types';
 import { Card, Button } from './ui';
-import { DownloadIcon, WandSparklesIcon, TerminalSquareIcon, LightbulbIcon, BriefcaseIcon } from './icons';
+import { DownloadIcon, WandSparklesIcon, TerminalSquareIcon, LightbulbIcon, BriefcaseIcon, HistoryIcon } from './icons';
 import { enhanceFeatureSpecification, generateReport, regenerateProjectPlan } from '../services/geminiService';
 
 // --- Utility function to format plan for export ---
@@ -75,7 +75,7 @@ const downloadAsMarkdown = (content: string, filename: string) => {
 
 
 const PlanSubNav: React.FC<{ activeTab: string; setActiveTab: (tab: string) => void; }> = ({ activeTab, setActiveTab }) => {
-    const navItems = ['Overview', 'Features', 'Development', 'Architecture', 'Workflow', 'Reports'];
+    const navItems = ['Overview', 'Features', 'Development', 'Architecture', 'Workflow', 'Reports', 'History'];
     return (
         <aside className="w-56 flex-shrink-0 p-4 border-r border-brand-border">
             <nav className="space-y-1">
@@ -301,23 +301,95 @@ const FeaturesTab: React.FC<{
     </div>
 );
 
-const DevelopmentTab: React.FC<{ plan: ProjectPlan }> = ({ plan }) => (
+const DevelopmentTab: React.FC<{ plan: ProjectPlan }> = ({ plan }) => {
+  const milestones = plan.developmentPlan.milestones || [];
+
+  const parseWeek = (weekStr: string): number => {
+    if (!weekStr) return 1;
+    const match = weekStr.match(/(\d+)/);
+    return match ? parseInt(match[0], 10) : 1;
+  };
+
+  const totalWeeks = milestones.reduce((max, milestone) => {
+    if (!milestone.estimatedStartDate || !milestone.estimatedDurationWeeks) return max;
+    const start = parseWeek(milestone.estimatedStartDate);
+    const end = start + milestone.estimatedDurationWeeks;
+    return Math.max(max, end);
+  }, 1);
+
+  const colors = [
+    '#2F81F7', '#3FB950', '#A371F7', '#DB61A2', '#F7B955', '#58A6FF'
+  ];
+
+  return (
     <div className="space-y-6">
-        <h3 className="text-xl font-bold">Development Plan</h3>
-        {plan.developmentPlan.milestones.map((milestone, i) => (
-            <Card key={i}>
-                <h4 className="text-md font-semibold text-brand-primary-hover mb-2">{i+1}. {milestone.name}</h4>
-                <p className="text-sm text-brand-text-secondary mb-4">{milestone.description}</p>
-                <div>
-                    <h5 className="font-semibold text-brand-text-primary mb-1 text-sm">Key Tasks</h5>
-                    <ul className="list-disc list-inside text-sm text-brand-text-secondary">
-                        {milestone.tasks.map((task, ti) => <li key={ti}>{task}</li>)}
-                    </ul>
+      <h3 className="text-xl font-bold">Development Timeline</h3>
+      <p className="text-brand-text-secondary">
+        An AI-generated Gantt chart visualizing the project milestones over an estimated {totalWeeks - 1}-week timeline.
+      </p>
+      
+      {milestones.length > 0 ? (
+        <div className="w-full overflow-x-auto bg-brand-bg p-4 rounded-lg border border-brand-border">
+          <div className="relative" style={{ minWidth: `${totalWeeks * 60}px` }}>
+            {/* Week Headers */}
+            <div className="grid sticky top-0 bg-brand-bg z-10" style={{ gridTemplateColumns: `repeat(${totalWeeks - 1}, minmax(60px, 1fr))` }}>
+              {Array.from({ length: totalWeeks -1 }, (_, i) => (
+                <div key={i} className="text-center text-xs font-semibold text-brand-text-secondary py-2 border-b border-r border-brand-border/30">
+                  Week {i + 1}
                 </div>
-            </Card>
-        ))}
+              ))}
+            </div>
+
+            {/* Grid Lines */}
+             <div className="absolute inset-0 grid pointer-events-none" style={{ gridTemplateColumns: `repeat(${totalWeeks - 1}, minmax(60px, 1fr))` }}>
+              {Array.from({ length: totalWeeks - 1 }, (_, i) => (
+                <div key={i} className={`h-full border-r border-brand-border/30`}></div>
+              ))}
+            </div>
+
+            {/* Milestone Bars */}
+            <div className="mt-4 space-y-8 relative">
+              {milestones.map((milestone, index) => {
+                if (!milestone.estimatedStartDate || !milestone.estimatedDurationWeeks) return null;
+                const startWeek = parseWeek(milestone.estimatedStartDate);
+                const duration = milestone.estimatedDurationWeeks;
+                const endWeek = startWeek + duration;
+
+                return (
+                  <div key={index}>
+                    <div className="grid w-full relative" style={{ gridTemplateColumns: `repeat(${totalWeeks - 1}, minmax(60px, 1fr))` }}>
+                         <div
+                          className="h-10 rounded-md flex items-center justify-start px-3 text-white text-sm font-medium shadow-lg hover:opacity-90 transition-opacity duration-200"
+                          style={{
+                            gridColumn: `${startWeek} / ${endWeek}`,
+                            backgroundColor: colors[index % colors.length],
+                          }}
+                          title={`${milestone.name} | Starts: Week ${startWeek}, Duration: ${duration} weeks`}
+                        >
+                          <p className="truncate">{milestone.name}</p>
+                        </div>
+                    </div>
+                     <div className="mt-3 ml-2 text-xs text-brand-text-secondary border-l-2 pl-3" style={{borderColor: colors[index % colors.length]}}>
+                        <p className="font-semibold text-sm text-brand-text-primary">{milestone.name}</p>
+                        <p className="mt-1">{milestone.description}</p>
+                        <ul className="list-disc list-inside mt-2 space-y-1">
+                           {milestone.tasks.map((task, i) => <li key={i}>{task}</li>)}
+                        </ul>
+                     </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <Card>
+          <p className="text-brand-text-secondary">No development milestones available to display.</p>
+        </Card>
+      )}
     </div>
-);
+  );
+};
 
 const ArchitectureTab: React.FC<{ plan: ProjectPlan }> = ({ plan }) => {
   const mermaidRef = useRef<HTMLDivElement>(null);
@@ -475,15 +547,74 @@ const ReportsTab: React.FC<{ plan: ProjectPlan; projectName: string }> = ({ plan
   );
 };
 
+const HistoryTab: React.FC<{
+    history: PlanHistoryEntry[];
+    onRestore: (entry: PlanHistoryEntry) => void;
+}> = ({ history, onRestore }) => {
+
+    if (history.length === 0) {
+        return (
+             <div className="space-y-6">
+                <h3 className="text-xl font-bold">Plan History</h3>
+                 <Card>
+                    <p className="text-brand-text-secondary">No previous versions have been saved. As you evolve the plan using the features in the 'Overview' or 'Features' tabs, older versions will appear here.</p>
+                </Card>
+            </div>
+        );
+    }
+
+    const sortedHistory = [...history].sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
+
+    return (
+        <div className="space-y-6">
+            <h3 className="text-xl font-bold">Plan Version History</h3>
+            <p className="text-brand-text-secondary">
+                You can restore any previous version of your project plan. Restoring a version will save the current plan to history.
+            </p>
+            <div className="space-y-4">
+                <Card className="flex justify-between items-center border-brand-primary/50">
+                    <div>
+                        <p className="font-semibold text-brand-text-primary">Current Active Plan</p>
+                        <p className="text-xs text-brand-text-secondary">This is the version you are currently viewing.</p>
+                    </div>
+                     <span className="text-xs font-medium bg-brand-primary/20 text-brand-primary-hover px-3 py-1 rounded-full">Active</span>
+                </Card>
+                
+                {sortedHistory.map((entry) => (
+                    <Card key={entry.savedAt} className="flex justify-between items-center">
+                        <div>
+                            <p className="font-semibold text-brand-text-primary">Version saved on</p>
+                            <p className="text-sm text-brand-text-secondary">
+                                {new Date(entry.savedAt).toLocaleString()}
+                            </p>
+                        </div>
+                        <Button variant="secondary" onClick={() => onRestore(entry)}>
+                            <HistoryIcon className="h-4 w-4 mr-2" />
+                            Restore this version
+                        </Button>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 
 export const ProjectPlanView: React.FC<{
   plan: ProjectPlan,
   projectName: string,
   projectInput: ProjectInputData;
+  projectHistory: PlanHistoryEntry[];
   onFeatureUpdate: (featureIndex: number, updatedFeature: FeatureSpecification) => void;
   onPlanUpdate: (newPlan: ProjectPlan) => void;
-}> = ({ plan, projectName, projectInput, onFeatureUpdate, onPlanUpdate }) => {
+  onRestoreVersion: (entry: PlanHistoryEntry) => void;
+}> = ({ plan, projectName, projectInput, projectHistory, onFeatureUpdate, onPlanUpdate, onRestoreVersion }) => {
     const [activeTab, setActiveTab] = useState('Overview');
+
+    useEffect(() => {
+        // When a new plan is loaded, switch to the overview tab.
+        setActiveTab('Overview');
+    }, [plan]);
 
     const handleExport = () => {
       const markdownContent = formatPlanToMarkdown(plan, projectName);
@@ -505,6 +636,8 @@ export const ProjectPlanView: React.FC<{
                 return <WorkflowTab plan={plan} />;
             case 'Reports':
                 return <ReportsTab plan={plan} projectName={projectName} />;
+            case 'History':
+                return <HistoryTab history={projectHistory} onRestore={onRestoreVersion} />;
             default:
                 return <OverviewTab plan={plan} projectInput={projectInput} onPlanUpdate={onPlanUpdate} />;
         }

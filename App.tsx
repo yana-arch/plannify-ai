@@ -6,7 +6,7 @@ import { TemplatesView } from './components/TemplatesView';
 import { MyProjectsView } from './components/MyProjectsView';
 import { DashboardView } from './components/DashboardView';
 import { generateProjectPlan } from './services/geminiService';
-import type { ProjectPlan, ProjectInputData, FeatureSpecification, Screen, TemplateData, SavedProject } from './types';
+import type { ProjectPlan, ProjectInputData, FeatureSpecification, Screen, TemplateData, SavedProject, PlanHistoryEntry } from './types';
 import { WandSparklesIcon } from './components/icons';
 
 const App: React.FC = () => {
@@ -55,6 +55,7 @@ const App: React.FC = () => {
         createdAt: new Date().toISOString(),
         inputData: data,
         projectPlan: plan,
+        history: [], // Initialize with an empty history
       };
       const updatedProjects = [...savedProjects, newProject];
       setSavedProjects(updatedProjects);
@@ -69,35 +70,81 @@ const App: React.FC = () => {
   };
 
   const handlePlanUpdate = (newPlan: ProjectPlan) => {
-    if (!projectPlan || !projectInput || !currentProjectId) return;
-
+    if (!projectPlan || !currentProjectId) return;
     setProjectPlan(newPlan);
 
-    // Update the saved project as well
-    const updatedProjects = savedProjects.map(p =>
-      p.id === currentProjectId ? { ...p, projectPlan: newPlan } : p
-    );
+    const updatedProjects = savedProjects.map(p => {
+        if (p.id === currentProjectId) {
+            const newHistoryEntry: PlanHistoryEntry = {
+                plan: p.projectPlan, // The plan before update
+                savedAt: new Date().toISOString(),
+            };
+            return { 
+                ...p, 
+                projectPlan: newPlan, 
+                history: [...(p.history || []), newHistoryEntry] 
+            };
+        }
+        return p;
+    });
     setSavedProjects(updatedProjects);
     saveProjectsToStorage(updatedProjects);
   };
 
   const handleFeatureUpdate = (featureIndex: number, updatedFeature: FeatureSpecification) => {
-    if (!projectPlan || !projectInput || !currentProjectId) return;
+    if (!projectPlan || !currentProjectId) return;
 
     const newFeatures = [...projectPlan.detailedFeatures];
     newFeatures[featureIndex] = updatedFeature;
     const newPlan = { ...projectPlan, detailedFeatures: newFeatures };
     setProjectPlan(newPlan);
-
-    // Update the saved project as well
+    
     const projectToUpdate = savedProjects.find(p => p.id === currentProjectId);
     if (projectToUpdate) {
-        const updatedProject = { ...projectToUpdate, projectPlan: newPlan };
+        const newHistoryEntry: PlanHistoryEntry = {
+            plan: projectToUpdate.projectPlan,
+            savedAt: new Date().toISOString(),
+        };
+        const updatedProject = { 
+            ...projectToUpdate, 
+            projectPlan: newPlan,
+            history: [...(projectToUpdate.history || []), newHistoryEntry],
+        };
         const updatedProjects = savedProjects.map(p => p.id === updatedProject.id ? updatedProject : p);
         setSavedProjects(updatedProjects);
         saveProjectsToStorage(updatedProjects);
     }
   };
+
+  const handleRestoreVersion = (historyEntry: PlanHistoryEntry) => {
+    if (!projectPlan || !currentProjectId) return;
+
+    const updatedProjects = savedProjects.map(p => {
+      if (p.id === currentProjectId) {
+        const currentPlanHistoryEntry: PlanHistoryEntry = {
+          plan: p.projectPlan, // The current active plan
+          savedAt: new Date().toISOString(),
+        };
+        
+        const newHistory = [
+          ...(p.history || []).filter(h => h.savedAt !== historyEntry.savedAt),
+          currentPlanHistoryEntry
+        ];
+
+        return {
+          ...p,
+          projectPlan: historyEntry.plan, // Restore old plan as active
+          history: newHistory,
+        };
+      }
+      return p;
+    });
+
+    setSavedProjects(updatedProjects);
+    saveProjectsToStorage(updatedProjects);
+    setProjectPlan(historyEntry.plan);
+  };
+
 
   const handleScreenChange = (newScreen: Screen) => {
     if (newScreen === 'wizard') {
@@ -153,6 +200,7 @@ const App: React.FC = () => {
     }
 
     if (screen === 'plan' && projectPlan && projectInput) {
+      const currentProject = savedProjects.find(p => p.id === currentProjectId);
       return (
          <>
             <div className="w-full max-w-7xl">
@@ -160,8 +208,10 @@ const App: React.FC = () => {
                 plan={projectPlan}
                 projectName={projectInput.projectName}
                 projectInput={projectInput}
+                projectHistory={currentProject?.history || []}
                 onFeatureUpdate={handleFeatureUpdate}
                 onPlanUpdate={handlePlanUpdate}
+                onRestoreVersion={handleRestoreVersion}
               />
                <div className="text-center mt-4">
                  <button onClick={startNewProject} className="text-sm text-brand-text-secondary hover:text-brand-primary transition-colors flex items-center gap-2 mx-auto">

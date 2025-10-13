@@ -58,13 +58,21 @@ const planSchema = {
             properties: {
               name: { type: Type.STRING },
               description: { type: Type.STRING },
-              tasks: { type: Type.ARRAY, items: { type: Type.STRING } }
+              tasks: { type: Type.ARRAY, items: { type: Type.STRING } },
+              estimatedStartDate: { 
+                type: Type.STRING, 
+                description: 'The estimated start week for the milestone, formatted as "Week X". For example: "Week 1".' 
+              },
+              estimatedDurationWeeks: { 
+                type: Type.NUMBER, 
+                description: 'The estimated duration of the milestone in number of weeks.' 
+              }
             },
-            required: ['name', 'description', 'tasks']
+            required: ['name', 'description', 'tasks', 'estimatedStartDate', 'estimatedDurationWeeks']
           }
         }
       },
-      description: 'A high-level development plan with milestones and associated tasks.'
+      description: 'A high-level development plan with milestones and associated tasks, including start dates and durations for a Gantt chart.'
     },
     systemArchitectureMermaid: {
         type: Type.STRING,
@@ -103,6 +111,7 @@ const buildPrompt = (data: ProjectInputData): string => {
     - Known Competitors: ${data.competitors.join(', ') || 'Not provided.'}
 
     Please generate a project plan based on this information. The plan should be detailed, realistic, and provide actionable insights. Use the market and competitor information to inform the 'Potential Challenges' and 'Potential Opportunities' sections.
+    For the development plan, provide estimated start weeks and durations for each milestone so they can be displayed in a Gantt chart.
     
     First, generate a system architecture diagram using Mermaid.js syntax (using 'graph TD;'). This diagram should visualize how the key components (like Frontend, Backend, Database, external services) interact with each other.
 
