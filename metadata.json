@@ -1,0 +1,5 @@
+{
+  "name": "PlannifyAI: Intelligent Project Planning",
+  "description": "An AI-powered web platform that transforms project ideas into comprehensive, actionable plans. Users input project details through a guided wizard, and Gemini AI generates a detailed blueprint including summaries, feature specifications, technology stack recommendations, and development milestones.",
+  "requestFramePermissions": []
+}
