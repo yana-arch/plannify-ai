@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { ProjectPlan, FeatureSpecification, ReportTemplate, ReportType, ProjectInputData, PlanHistoryEntry } from '../types';
+import type { ProjectPlan, FeatureSpecification, ReportTemplate, ReportType, ProjectInputData, PlanHistoryEntry, Milestone } from '../types';
 import { Card, Button } from './ui';
 import { DownloadIcon, WandSparklesIcon, TerminalSquareIcon, LightbulbIcon, BriefcaseIcon, HistoryIcon } from './icons';
-import { enhanceFeatureSpecification, generateReport, regenerateProjectPlan } from '../services/geminiService';
+import { enhanceFeatureSpecification, generateReport, regenerateProjectPlan, optimizeDevelopmentPlan } from '../services/geminiService';
 
 // --- Utility function to format plan for export ---
 const formatPlanToMarkdown = (plan: ProjectPlan, projectName: string): string => {
@@ -301,8 +301,38 @@ const FeaturesTab: React.FC<{
     </div>
 );
 
-const DevelopmentTab: React.FC<{ plan: ProjectPlan }> = ({ plan }) => {
+const DevelopmentTab: React.FC<{
+  plan: ProjectPlan;
+  projectContext: { name: string; description: string };
+  onDevPlanUpdate: (newMilestones: Milestone[]) => void;
+}> = ({ plan, projectContext, onDevPlanUpdate }) => {
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [optimizePrompt, setOptimizePrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const milestones = plan.developmentPlan.milestones || [];
+
+  const handleOptimizeToggle = () => setIsOptimizing(!isOptimizing);
+
+  const handleGenerate = async () => {
+    if (!optimizePrompt.trim()) {
+      setError("Please enter a prompt to optimize the schedule.");
+      return;
+    }
+    setIsGenerating(true);
+    setError(null);
+    try {
+      const newMilestones = await optimizeDevelopmentPlan(milestones, optimizePrompt, projectContext);
+      onDevPlanUpdate(newMilestones);
+      setIsOptimizing(false);
+      setOptimizePrompt('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const parseWeek = (weekStr: string): number => {
     if (!weekStr) return 1;
@@ -323,10 +353,41 @@ const DevelopmentTab: React.FC<{ plan: ProjectPlan }> = ({ plan }) => {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-xl font-bold">Development Timeline</h3>
-      <p className="text-brand-text-secondary">
-        An AI-generated Gantt chart visualizing the project milestones over an estimated {totalWeeks - 1}-week timeline.
-      </p>
+      <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-xl font-bold">Development Timeline</h3>
+            <p className="text-brand-text-secondary mt-1">
+              An AI-generated Gantt chart visualizing the project milestones over an estimated {totalWeeks - 1}-week timeline.
+            </p>
+          </div>
+          <Button variant="secondary" className="!px-2 !py-1 text-xs flex-shrink-0" onClick={handleOptimizeToggle}>
+            <WandSparklesIcon className="h-4 w-4 mr-1.5" />
+            Optimize with AI
+          </Button>
+      </div>
+
+      {isOptimizing && (
+        <Card>
+          <div className="space-y-3">
+              <label htmlFor="optimize-prompt" className="block text-sm font-medium text-brand-text-secondary">How should the AI optimize this timeline?</label>
+              <input
+                id="optimize-prompt"
+                type="text"
+                value={optimizePrompt}
+                onChange={(e) => setOptimizePrompt(e.target.value)}
+                placeholder="e.g., Make the timeline more aggressive"
+                className="w-full bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-sm text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
+              />
+              {error && <p className="text-sm text-red-400 mt-1">{error}</p>}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="secondary" onClick={handleOptimizeToggle}>Cancel</Button>
+                <Button onClick={handleGenerate} isLoading={isGenerating}>
+                  {isGenerating ? "Optimizing..." : "Generate New Timeline"}
+                </Button>
+              </div>
+          </div>
+        </Card>
+      )}
       
       {milestones.length > 0 ? (
         <div className="w-full overflow-x-auto bg-brand-bg p-4 rounded-lg border border-brand-border">
@@ -607,8 +668,9 @@ export const ProjectPlanView: React.FC<{
   projectHistory: PlanHistoryEntry[];
   onFeatureUpdate: (featureIndex: number, updatedFeature: FeatureSpecification) => void;
   onPlanUpdate: (newPlan: ProjectPlan) => void;
+  onDevPlanUpdate: (newMilestones: Milestone[]) => void;
   onRestoreVersion: (entry: PlanHistoryEntry) => void;
-}> = ({ plan, projectName, projectInput, projectHistory, onFeatureUpdate, onPlanUpdate, onRestoreVersion }) => {
+}> = ({ plan, projectName, projectInput, projectHistory, onFeatureUpdate, onPlanUpdate, onDevPlanUpdate, onRestoreVersion }) => {
     const [activeTab, setActiveTab] = useState('Overview');
 
     useEffect(() => {
@@ -629,7 +691,7 @@ export const ProjectPlanView: React.FC<{
             case 'Features':
                 return <FeaturesTab plan={plan} projectContext={projectContext} onFeatureUpdate={onFeatureUpdate} />;
             case 'Development':
-                return <DevelopmentTab plan={plan} />;
+                return <DevelopmentTab plan={plan} projectContext={projectContext} onDevPlanUpdate={onDevPlanUpdate} />;
             case 'Architecture':
                 return <ArchitectureTab plan={plan} />;
             case 'Workflow':

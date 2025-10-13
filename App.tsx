@@ -6,7 +6,7 @@ import { TemplatesView } from './components/TemplatesView';
 import { MyProjectsView } from './components/MyProjectsView';
 import { DashboardView } from './components/DashboardView';
 import { generateProjectPlan } from './services/geminiService';
-import type { ProjectPlan, ProjectInputData, FeatureSpecification, Screen, TemplateData, SavedProject, PlanHistoryEntry } from './types';
+import type { ProjectPlan, ProjectInputData, FeatureSpecification, Screen, TemplateData, SavedProject, PlanHistoryEntry, Milestone } from './types';
 import { WandSparklesIcon } from './components/icons';
 
 const App: React.FC = () => {
@@ -116,6 +116,34 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDevPlanUpdate = (newMilestones: Milestone[]) => {
+    if (!projectPlan || !currentProjectId) return;
+    
+    const newPlan: ProjectPlan = {
+      ...projectPlan,
+      developmentPlan: { milestones: newMilestones },
+    };
+    setProjectPlan(newPlan);
+
+    const updatedProjects = savedProjects.map(p => {
+        if (p.id === currentProjectId) {
+            const newHistoryEntry: PlanHistoryEntry = {
+                plan: p.projectPlan, // The plan before update
+                savedAt: new Date().toISOString(),
+            };
+            return { 
+                ...p, 
+                projectPlan: newPlan, 
+                history: [...(p.history || []), newHistoryEntry] 
+            };
+        }
+        return p;
+    });
+    setSavedProjects(updatedProjects);
+    saveProjectsToStorage(updatedProjects);
+  };
+
+
   const handleRestoreVersion = (historyEntry: PlanHistoryEntry) => {
     if (!projectPlan || !currentProjectId) return;
 
@@ -211,6 +239,7 @@ const App: React.FC = () => {
                 projectHistory={currentProject?.history || []}
                 onFeatureUpdate={handleFeatureUpdate}
                 onPlanUpdate={handlePlanUpdate}
+                onDevPlanUpdate={handleDevPlanUpdate}
                 onRestoreVersion={handleRestoreVersion}
               />
                <div className="text-center mt-4">

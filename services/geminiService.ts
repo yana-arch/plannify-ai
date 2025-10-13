@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import type { ProjectInputData, ProjectPlan, FeatureSpecification, ReportType } from '../types';
+import type { ProjectInputData, ProjectPlan, FeatureSpecification, ReportType, Milestone } from '../types';
 
 const featureSpecificationSchema = {
     type: Type.OBJECT,
@@ -12,6 +12,35 @@ const featureSpecificationSchema = {
         preConditions: { type: Type.ARRAY, items: { type: Type.STRING } }
     },
     required: ['name', 'description', 'targetUsers', 'mainFunctions', 'subFeatures', 'preConditions']
+};
+
+const milestoneSchema = {
+    type: Type.OBJECT,
+    properties: {
+        name: { type: Type.STRING },
+        description: { type: Type.STRING },
+        tasks: { type: Type.ARRAY, items: { type: Type.STRING } },
+        estimatedStartDate: {
+            type: Type.STRING,
+            description: 'The estimated start week for the milestone, formatted as "Week X". For example: "Week 1".'
+        },
+        estimatedDurationWeeks: {
+            type: Type.NUMBER,
+            description: 'The estimated duration of the milestone in number of weeks.'
+        }
+    },
+    required: ['name', 'description', 'tasks', 'estimatedStartDate', 'estimatedDurationWeeks']
+};
+
+const developmentPlanSchema = {
+    type: Type.OBJECT,
+    properties: {
+        milestones: {
+          type: Type.ARRAY,
+          items: milestoneSchema
+        }
+    },
+    description: 'A high-level development plan with milestones and associated tasks, including start dates and durations for a Gantt chart.'
 };
 
 const planSchema = {
@@ -48,32 +77,7 @@ const planSchema = {
       items: featureSpecificationSchema,
       description: 'A detailed breakdown of each core requirement into a feature specification.'
     },
-    developmentPlan: {
-      type: Type.OBJECT,
-      properties: {
-        milestones: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              name: { type: Type.STRING },
-              description: { type: Type.STRING },
-              tasks: { type: Type.ARRAY, items: { type: Type.STRING } },
-              estimatedStartDate: { 
-                type: Type.STRING, 
-                description: 'The estimated start week for the milestone, formatted as "Week X". For example: "Week 1".' 
-              },
-              estimatedDurationWeeks: { 
-                type: Type.NUMBER, 
-                description: 'The estimated duration of the milestone in number of weeks.' 
-              }
-            },
-            required: ['name', 'description', 'tasks', 'estimatedStartDate', 'estimatedDurationWeeks']
-          }
-        }
-      },
-      description: 'A high-level development plan with milestones and associated tasks, including start dates and durations for a Gantt chart.'
-    },
+    developmentPlan: developmentPlanSchema,
     systemArchitectureMermaid: {
         type: Type.STRING,
         description: 'A Mermaid.js syntax string for a top-down (graph TD) system architecture diagram. It should visualize the key components and their interactions.'
@@ -274,6 +278,72 @@ export const enhanceFeatureSpecification = async (
     throw new Error("Failed to enhance feature with AI.");
   }
 };
+
+const buildOptimizeDevPlanPrompt = (
+  milestones: Milestone[],
+  userPrompt: string,
+  projectContext: { name: string; description: string }
+): string => {
+  return `
+    You are an expert Project Manager AI. Your task is to optimize a project's development plan based on a user's request.
+
+    Project Context:
+    - Project Name: ${projectContext.name}
+    - Project Summary: ${projectContext.description}
+
+    Current Development Plan Milestones:
+    ${JSON.stringify(milestones, null, 2)}
+
+    User's Optimization Request: "${userPrompt}"
+
+    Please generate an updated and improved list of milestones that completely replaces the old one, based on the user's request.
+    For example, if the user asks to "make the timeline more aggressive", you should shorten the durations or overlap milestones where possible. 
+    If they ask to "add more detail to a specific milestone", you should break down its tasks more granularly.
+    If they ask to "delay the start by 2 weeks", you must adjust all \`estimatedStartDate\` values accordingly.
+    
+    Ensure the entire output is a single, valid JSON object that adheres to the provided schema, which should be an object with a single key "milestones" containing an array of milestone objects.
+  `;
+};
+
+export const optimizeDevelopmentPlan = async (
+  milestones: Milestone[],
+  userPrompt: string,
+  projectContext: { name: string; description: string }
+): Promise<Milestone[]> => {
+  if (!process.env.API_KEY) {
+    throw new Error("API_KEY environment variable not set");
+  }
+
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const prompt = buildOptimizeDevPlanPrompt(milestones, userPrompt, projectContext);
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+                milestones: {
+                  type: Type.ARRAY,
+                  items: milestoneSchema
+                }
+            }
+        },
+      },
+    });
+
+    const jsonText = response.text.trim();
+    const result: { milestones: Milestone[] } = JSON.parse(jsonText);
+    return result.milestones;
+  } catch (error) {
+    console.error("Error optimizing development plan:", error);
+    throw new Error("Failed to optimize development plan with AI.");
+  }
+};
+
 
 const buildReportPrompt = (
   plan: ProjectPlan,
