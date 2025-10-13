@@ -530,3 +530,67 @@ export const generateReport = async (
     throw new Error(`Failed to generate ${reportType} report with AI.`);
   }
 };
+
+const buildFixMermaidPrompt = (
+  faultyCode: string,
+  diagramType: string,
+  projectContext: { name: string; description: string }
+): string => {
+  return `
+    You are an expert in Mermaid.js syntax. The following Mermaid code, which is intended to be a ${diagramType} diagram for the project "${projectContext.name}", has a syntax error.
+
+    Project Description: ${projectContext.description}
+
+    Faulty Mermaid Code:
+    ---
+    ${faultyCode}
+    ---
+
+    Your task is to correct the syntax errors and return a valid Mermaid.js string.
+    The entire diagram MUST be a single line of code starting with 'graph TD' for architecture or 'flowchart LR' for user flow, with statements separated by semicolons.
+
+    **CRITICAL MISTAKES TO AVOID:**
+    - **INCORRECT (Unterminated Node):** \`A --> B[\`
+      (The definition for node B is incomplete. It's missing text and a closing bracket.)
+    - **CORRECT:** \`A --> B[Node B Text]\`
+    - **INCORRECT (Undefined Node in Link):** \`A --> B\`
+      (The link points to a node 'B' that has no text definition. All nodes in a link must be fully defined with text.)
+    - **CORRECT:** \`A[Client] --> B[Backend API]\`
+    - **INCORRECT (Invalid Label Character):** \`A -->|HTTP/S Request| B\`
+      (The '/' character can break the parser.)
+    - **CORRECT:** \`A -->|HTTPS Request| B\`
+    - **INCORRECT (Stray Identifier):** \`A[Client] --> B(Backend); B\`
+      (The 'B' at the end is a stray identifier. It must be part of a new, complete link, like \`B --> C\`.)
+    - **CORRECT:** \`A[Client] --> B(Backend); B --> C{Database}\`
+    - **INCORRECT (Invalid Cover Sytax):** \`A -->B[API (Weather)]\`
+    - **CORRECT:** \`A -->B[API - Weather]\` or \`A -->B[API & Weather Provider]\`
+
+    Return ONLY the corrected, valid Mermaid.js code as a plain text string. Do not include any explanations, markdown code fences, or any other text.
+  `;
+};
+
+export const fixMermaidCode = async (
+  faultyCode: string,
+  diagramType: 'system architecture' | 'user flow',
+  projectContext: { name: string; description: string }
+): Promise<string> => {
+  if (!process.env.API_KEY) {
+    throw new Error("API_KEY environment variable not set");
+  }
+
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const prompt = buildFixMermaidPrompt(faultyCode, diagramType, projectContext);
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+    
+    // Clean up potential markdown fences if the model adds them despite instructions
+    return response.text.trim().replace(/```mermaid/g, '').replace(/```/g, '').trim();
+  } catch (error) {
+    console.error("Error fixing Mermaid code:", error);
+    throw new Error("Failed to fix diagram with AI.");
+  }
+};

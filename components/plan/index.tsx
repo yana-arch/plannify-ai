@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { ProjectPlan, FeatureSpecification, ReportTemplate, ReportType, ProjectInputData, PlanHistoryEntry, Milestone, SavedProject } from '../../types';
 import { Card, Button, Modal } from '../ui';
 import { DownloadIcon, WandSparklesIcon, TerminalSquareIcon, LightbulbIcon, BriefcaseIcon, HistoryIcon } from '../icons';
-import { enhanceFeatureSpecification, generateReport, regenerateProjectPlan, optimizeDevelopmentPlan } from '../../services/geminiService';
+import { enhanceFeatureSpecification, generateReport, regenerateProjectPlan, optimizeDevelopmentPlan, fixMermaidCode } from '../../services/geminiService';
 import { exportPlanAsDocx, exportReportAsDocx } from '../../services/docxService';
 import { useProjects } from '../../contexts/ProjectContext';
 
@@ -491,81 +491,162 @@ const DevelopmentTab: React.FC<{
   );
 };
 
-const ArchitectureTab: React.FC<{ plan: ProjectPlan }> = ({ plan }) => {
-  const mermaidRef = useRef<HTMLDivElement>(null);
+interface EditableMermaidDiagramProps {
+    plan: ProjectPlan;
+    diagramType: 'systemArchitectureMermaid' | 'userFlowMermaid';
+    title: string;
+    description?: string;
+    projectContext: { name: string; description: string };
+}
 
-  useEffect(() => {
-    const initializeMermaid = async () => {
-      // @ts-ignore - mermaid is global from CDN
-      const mermaid = window.mermaid;
-      if (mermaidRef.current && plan.systemArchitectureMermaid) {
-        try {
-          mermaid.initialize({ startOnLoad: false, theme: 'dark' });
-          const { svg } = await mermaid.render('mermaid-graph', plan.systemArchitectureMermaid);
-          if (mermaidRef.current) {
-            mermaidRef.current.innerHTML = svg;
-          }
-        } catch (error) {
-          console.error('Mermaid rendering error:', error);
-          if (mermaidRef.current) {
-             mermaidRef.current.innerText = 'Error rendering diagram. Check console for details.';
-          }
+const EditableMermaidDiagram: React.FC<EditableMermaidDiagramProps> = ({ plan, diagramType, title, description, projectContext }) => {
+    const mermaidCode = plan[diagramType];
+    const { updateCurrentProjectPlan } = useProjects();
+    
+    const mermaidRef = useRef<HTMLDivElement>(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedCode, setEditedCode] = useState(mermaidCode);
+    const [renderError, setRenderError] = useState<string | null>(null);
+    const [isFixing, setIsFixing] = useState(false);
+    const [fixError, setFixError] = useState<string | null>(null);
+
+    useEffect(() => {
+        setEditedCode(mermaidCode); // Sync with prop changes
+        setRenderError(null); // Clear previous errors
+        
+        const initializeMermaid = async () => {
+            // @ts-ignore - mermaid is global
+            const mermaid = window.mermaid;
+            if (mermaidRef.current && mermaidCode) {
+                try {
+                    mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+                    // Use a unique ID for each render to avoid conflicts
+                    const renderId = `mermaid-${diagramType}-${Date.now()}`;
+                    const { svg } = await mermaid.render(renderId, mermaidCode);
+                    if (mermaidRef.current) {
+                        mermaidRef.current.innerHTML = svg;
+                    }
+                } catch (error: any) {
+                    console.error('Mermaid rendering error:', error.str || error.message);
+                    setRenderError(error.str || error.message || 'Failed to render diagram.');
+                    if (mermaidRef.current) {
+                        mermaidRef.current.innerHTML = '';
+                    }
+                }
+            }
+        };
+        if (!isEditing) {
+            initializeMermaid();
         }
-      }
+    }, [mermaidCode, isEditing, diagramType]);
+    
+    const handleSave = () => {
+        const newPlan = { ...plan, [diagramType]: editedCode };
+        updateCurrentProjectPlan(newPlan);
+        setIsEditing(false);
+        setRenderError(null);
     };
-    initializeMermaid();
-  }, [plan.systemArchitectureMermaid]);
 
+    const handleCancel = () => {
+        setEditedCode(mermaidCode);
+        setIsEditing(false);
+        setFixError(null);
+    };
+
+    const handleFixWithAI = async () => {
+        setIsFixing(true);
+        setFixError(null);
+        try {
+            const contextType = diagramType === 'systemArchitectureMermaid' ? 'system architecture' : 'user flow';
+            const fixedCode = await fixMermaidCode(editedCode, contextType, projectContext);
+            setEditedCode(fixedCode);
+        } catch (err) {
+            setFixError(err instanceof Error ? err.message : 'An unknown AI error occurred.');
+        } finally {
+            setIsFixing(false);
+        }
+    };
+    
+    return (
+        <div className="space-y-6">
+            <h3 className="text-xl font-bold">{title}</h3>
+            {description && <p className="text-brand-text-secondary">{description}</p>}
+            <Card className="bg-brand-bg min-h-[300px]">
+                {isEditing ? (
+                    <div className="space-y-4">
+                        <textarea
+                            value={editedCode}
+                            onChange={(e) => setEditedCode(e.target.value)}
+                            className="w-full h-64 bg-brand-bg border border-brand-border rounded-md p-3 font-mono text-sm text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                            placeholder="Enter Mermaid.js code here..."
+                        />
+                        {fixError && <p className="text-sm text-red-400">{fixError}</p>}
+                        <div className="flex justify-between items-center">
+                             <Button onClick={handleFixWithAI} isLoading={isFixing} variant="secondary">
+                                <WandSparklesIcon className="h-4 w-4 mr-2" />
+                                Fix with AI
+                            </Button>
+                            <div className="flex gap-2">
+                                <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
+                                <Button onClick={handleSave}>Save Changes</Button>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div>
+                        <div className="flex justify-center items-center p-8" ref={mermaidRef} key={mermaidCode}>
+                            {/* Mermaid will render here */}
+                        </div>
+                        {(renderError || !mermaidCode) && (
+                             <div className="text-center text-brand-text-secondary p-4">
+                                {renderError ? (
+                                    <>
+                                        <p className="font-semibold text-red-400">Diagram Rendering Failed</p>
+                                        <pre className="mt-2 text-xs text-left bg-brand-surface p-3 rounded-md overflow-x-auto">{renderError}</pre>
+                                    </>
+                                ) : (
+                                    <p>No diagram code provided.</p>
+                                )}
+                                <Button variant="secondary" onClick={() => setIsEditing(true)} className="mt-4">
+                                    Edit Diagram
+                                </Button>
+                             </div>
+                        )}
+                         {!renderError && mermaidCode && (
+                            <div className="text-right px-4 pb-4">
+                                <Button variant="secondary" onClick={() => setIsEditing(true)} className="!py-1 !px-2 text-xs">
+                                    Edit
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </Card>
+        </div>
+    );
+};
+
+const ArchitectureTab: React.FC<{ plan: ProjectPlan; projectContext: { name: string; description: string } }> = ({ plan, projectContext }) => {
   return (
-    <div className="space-y-6">
-      <h3 className="text-xl font-bold">System Architecture Diagram</h3>
-      <Card className="flex justify-center items-center p-8 bg-brand-bg min-h-[300px]">
-         <div ref={mermaidRef} key={plan.systemArchitectureMermaid} className="mermaid-container">
-            {/* Mermaid will render here */}
-         </div>
-      </Card>
-    </div>
+    <EditableMermaidDiagram
+        plan={plan}
+        diagramType="systemArchitectureMermaid"
+        title="System Architecture Diagram"
+        projectContext={projectContext}
+    />
   );
 };
 
-const WorkflowTab: React.FC<{ plan: ProjectPlan }> = ({ plan }) => {
-  const mermaidRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const initializeMermaid = async () => {
-      // @ts-ignore - mermaid is global from CDN
-      const mermaid = window.mermaid;
-      if (mermaidRef.current && plan.userFlowMermaid) {
-        try {
-          mermaid.initialize({ startOnLoad: false, theme: 'dark' });
-          const { svg } = await mermaid.render('mermaid-graph-flow', plan.userFlowMermaid);
-          if (mermaidRef.current) {
-            mermaidRef.current.innerHTML = svg;
-          }
-        } catch (error) {
-          console.error('Mermaid rendering error:', error);
-          if (mermaidRef.current) {
-             mermaidRef.current.innerText = 'Error rendering diagram. Check console for details.';
-          }
-        }
-      }
-    };
-    initializeMermaid();
-  }, [plan.userFlowMermaid]);
-
-  return (
-    <div className="space-y-6">
-      <h3 className="text-xl font-bold">Primary User Flow Diagram</h3>
-       <p className="text-brand-text-secondary">
-        This diagram illustrates a key user journey or process within the application, providing insight into the user experience from a high level.
-      </p>
-      <Card className="flex justify-center items-center p-8 bg-brand-bg min-h-[300px]">
-         <div ref={mermaidRef} key={plan.userFlowMermaid} className="mermaid-container">
-            {/* Mermaid will render here */}
-         </div>
-      </Card>
-    </div>
-  );
+const WorkflowTab: React.FC<{ plan: ProjectPlan; projectContext: { name: string; description: string } }> = ({ plan, projectContext }) => {
+    return (
+        <EditableMermaidDiagram
+            plan={plan}
+            diagramType="userFlowMermaid"
+            title="Primary User Flow Diagram"
+            description="This diagram illustrates a key user journey or process within the application, providing insight into the user experience from a high level."
+            projectContext={projectContext}
+        />
+    );
 };
 
 const reportTemplates: ReportTemplate[] = [
@@ -738,9 +819,9 @@ export const ProjectPlanView: React.FC<{ project: SavedProject }> = ({ project }
             case 'Development':
                 return <DevelopmentTab plan={projectPlan} projectContext={projectContext} />;
             case 'Architecture':
-                return <ArchitectureTab plan={projectPlan} />;
+                return <ArchitectureTab plan={projectPlan} projectContext={projectContext} />;
             case 'Workflow':
-                return <WorkflowTab plan={projectPlan} />;
+                return <WorkflowTab plan={projectPlan} projectContext={projectContext} />;
             case 'Reports':
                 return <ReportsTab plan={projectPlan} projectName={projectName} />;
             case 'History':
