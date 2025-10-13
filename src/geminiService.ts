@@ -1,5 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import type { ProjectInputData, ProjectPlan, FeatureSpecification, ReportType, Milestone, Priority, CoreRequirement } from '../types';
+import type { ProjectInputData, ProjectPlan, FeatureSpecification, ReportType, Milestone, Priority, CoreRequirement } from './types';
+import { cacheService } from './services/cacheService';
+import { retryService } from './services/retryService';
 
 const featureSpecificationSchema = {
     type: Type.OBJECT,
@@ -160,21 +162,36 @@ export const generateProjectPlan = async (data: ProjectInputData): Promise<Proje
     throw new Error("API_KEY environment variable not set");
   }
 
+  // Check cache first
+  const cacheKey = cacheService.generateProjectPlanKey(data);
+  const cachedResult = cacheService.get<ProjectPlan>(cacheKey);
+  if (cachedResult) {
+    console.log("Returning cached project plan");
+    return cachedResult;
+  }
+
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = buildPrompt(data);
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: planSchema,
-      },
+    const response = await retryService.executeApiCall(async () => {
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: planSchema,
+        },
+      });
+      return result;
     });
 
     const jsonText = response.text.trim();
     const plan: ProjectPlan = JSON.parse(jsonText);
+
+    // Cache the result
+    cacheService.set(cacheKey, plan);
+
     return plan;
   } catch (error) {
     console.error("Error generating project plan:", error);
@@ -234,21 +251,36 @@ export const generateCoreRequirements = async (data: Partial<ProjectInputData>):
     throw new Error("API_KEY environment variable not set");
   }
 
+  // Check cache first
+  const cacheKey = cacheService.generateRequirementsKey(data);
+  const cachedResult = cacheService.get<Omit<CoreRequirement, 'id'>[]>(cacheKey);
+  if (cachedResult) {
+    console.log("Returning cached requirements");
+    return cachedResult;
+  }
+
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = buildGenerateRequirementsPrompt(data);
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: coreRequirementSchema,
-      },
+    const response = await retryService.executeApiCall(async () => {
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: coreRequirementSchema,
+        },
+      });
+      return result;
     });
 
     const jsonText = response.text.trim();
     const result: { requirements: Omit<CoreRequirement, 'id'>[] } = JSON.parse(jsonText);
+
+    // Cache the result
+    cacheService.set(cacheKey, result.requirements);
+
     return result.requirements;
   } catch (error) {
     console.error("Error generating core requirements:", error);

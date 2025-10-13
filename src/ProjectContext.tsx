@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode, useMemo, useCallback } from 'react';
-import type { SavedProject, ProjectInputData, ProjectPlan, PlanHistoryEntry, FeatureSpecification, Milestone, ProjectsContextType } from '../types';
-import { generateProjectPlan } from '../services/geminiService';
+import type { SavedProject, ProjectInputData, ProjectPlan, PlanHistoryEntry, FeatureSpecification, Milestone, ProjectsContextType } from './types';
+import { generateProjectPlan } from './geminiService';
 
 const ProjectsContext = createContext<ProjectsContextType | undefined>(undefined);
 

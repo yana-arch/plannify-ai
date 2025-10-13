@@ -1,6 +1,8 @@
 import React, { useState, Suspense, lazy } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
-import { useProjects } from './contexts/ProjectContext';
+import { useProjects } from './ProjectContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import LoadingSpinner from './components/LoadingSpinner';
 import type { Screen, TemplateData, ProjectInputData, SavedProject } from './types';
 import { WandSparklesIcon } from './components/icons';
 
@@ -100,18 +102,22 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex font-sans bg-brand-bg bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]">
-      <Sidebar activeScreen={screen} onScreenChange={handleScreenChange} />
-      <div className="flex-grow p-8 flex flex-col items-center justify-center">
-        <Suspense fallback={
-          <div className="flex items-center justify-center p-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
-          </div>
-        }>
-          {renderContent()}
-        </Suspense>
+    <ErrorBoundary>
+      <div className="min-h-screen flex font-sans bg-brand-bg bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]">
+        <Sidebar activeScreen={screen} onScreenChange={handleScreenChange} />
+        <div className="flex-grow p-8 flex flex-col items-center justify-center">
+          <Suspense fallback={
+            <LoadingSpinner
+              size="lg"
+              message="Loading component..."
+              className="p-8"
+            />
+          }>
+            {renderContent()}
+          </Suspense>
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 };
 
