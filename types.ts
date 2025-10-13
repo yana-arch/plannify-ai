@@ -18,6 +18,7 @@ export interface ProjectInputData {
   estimatedScale: string;
   timeline: string;
   coreRequirements: CoreRequirement[];
+  userFeatureRequests?: string;
   techStack: {
     frontend: string[];
     backend: string[];
@@ -91,4 +92,19 @@ export interface SavedProject {
   inputData: ProjectInputData;
   projectPlan: ProjectPlan;
   history: PlanHistoryEntry[];
+}
+
+export interface ProjectsContextType {
+  projects: SavedProject[];
+  currentProject: SavedProject | null;
+  isLoading: boolean;
+  error: string | null;
+  createNewProject: (data: ProjectInputData) => Promise<string | null>;
+  loadProject: (projectId: string) => void;
+  deleteProject: (projectId: string) => void;
+  updateCurrentProjectPlan: (newPlan: ProjectPlan) => void;
+  updateCurrentProjectFeatures: (featureIndex: number, updatedFeature: FeatureSpecification) => void;
+  updateCurrentProjectDevPlan: (newMilestones: Milestone[]) => void;
+  restoreProjectVersion: (entry: PlanHistoryEntry) => void;
+  clearCurrentProject: () => void;
 }

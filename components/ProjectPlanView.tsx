@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { ProjectPlan, FeatureSpecification, ReportTemplate, ReportType, ProjectInputData, PlanHistoryEntry, Milestone } from '../types';
+import type { ProjectPlan, FeatureSpecification, ReportTemplate, ReportType, ProjectInputData, PlanHistoryEntry, Milestone, SavedProject } from '../types';
 import { Card, Button } from './ui';
 import { DownloadIcon, WandSparklesIcon, TerminalSquareIcon, LightbulbIcon, BriefcaseIcon, HistoryIcon } from './icons';
 import { enhanceFeatureSpecification, generateReport, regenerateProjectPlan, optimizeDevelopmentPlan } from '../services/geminiService';
+import { useProjects } from '../contexts/ProjectContext';
 
 // --- Utility function to format plan for export ---
 const formatPlanToMarkdown = (plan: ProjectPlan, projectName: string): string => {
@@ -100,12 +101,12 @@ const PlanSubNav: React.FC<{ activeTab: string; setActiveTab: (tab: string) => v
 const OverviewTab: React.FC<{ 
     plan: ProjectPlan;
     projectInput: ProjectInputData;
-    onPlanUpdate: (newPlan: ProjectPlan) => void;
-}> = ({ plan, projectInput, onPlanUpdate }) => {
+}> = ({ plan, projectInput }) => {
     const [isEvolving, setIsEvolving] = useState(false);
     const [evolvePrompt, setEvolvePrompt] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { updateCurrentProjectPlan } = useProjects();
 
     const handleEvolveToggle = () => setIsEvolving(!isEvolving);
 
@@ -118,7 +119,7 @@ const OverviewTab: React.FC<{
         setError(null);
         try {
             const newPlan = await regenerateProjectPlan(plan, projectInput, evolvePrompt);
-            onPlanUpdate(newPlan);
+            updateCurrentProjectPlan(newPlan);
             setIsEvolving(false);
             setEvolvePrompt('');
         } catch (err) {
@@ -198,13 +199,14 @@ const OverviewTab: React.FC<{
 
 const FeatureCard: React.FC<{
   feature: FeatureSpecification;
+  featureIndex: number;
   projectContext: { name: string; description: string };
-  onUpdate: (updatedFeature: FeatureSpecification) => void;
-}> = ({ feature, projectContext, onUpdate }) => {
+}> = ({ feature, featureIndex, projectContext }) => {
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { updateCurrentProjectFeatures } = useProjects();
 
   const handleEnhanceToggle = () => {
     setIsEnhancing(!isEnhancing);
@@ -221,7 +223,7 @@ const FeatureCard: React.FC<{
     setError(null);
     try {
       const updatedFeature = await enhanceFeatureSpecification(feature, prompt, projectContext);
-      onUpdate(updatedFeature);
+      updateCurrentProjectFeatures(featureIndex, updatedFeature);
       setIsEnhancing(false);
       setPrompt('');
     } catch (err) {
@@ -286,16 +288,15 @@ const FeatureCard: React.FC<{
 const FeaturesTab: React.FC<{
   plan: ProjectPlan;
   projectContext: { name: string; description: string };
-  onFeatureUpdate: (featureIndex: number, updatedFeature: FeatureSpecification) => void;
-}> = ({ plan, projectContext, onFeatureUpdate }) => (
+}> = ({ plan, projectContext }) => (
     <div className="space-y-6">
         <h3 className="text-xl font-bold">Project Features & Specifications</h3>
         {plan.detailedFeatures.map((feature, i) => (
           <FeatureCard 
             key={`${i}-${feature.name}`} 
-            feature={feature} 
+            feature={feature}
+            featureIndex={i}
             projectContext={projectContext}
-            onUpdate={(updatedFeature) => onFeatureUpdate(i, updatedFeature)}
           />
         ))}
     </div>
@@ -304,12 +305,12 @@ const FeaturesTab: React.FC<{
 const DevelopmentTab: React.FC<{
   plan: ProjectPlan;
   projectContext: { name: string; description: string };
-  onDevPlanUpdate: (newMilestones: Milestone[]) => void;
-}> = ({ plan, projectContext, onDevPlanUpdate }) => {
+}> = ({ plan, projectContext }) => {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizePrompt, setOptimizePrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { updateCurrentProjectDevPlan } = useProjects();
 
   const milestones = plan.developmentPlan.milestones || [];
 
@@ -324,7 +325,7 @@ const DevelopmentTab: React.FC<{
     setError(null);
     try {
       const newMilestones = await optimizeDevelopmentPlan(milestones, optimizePrompt, projectContext);
-      onDevPlanUpdate(newMilestones);
+      updateCurrentProjectDevPlan(newMilestones);
       setIsOptimizing(false);
       setOptimizePrompt('');
     } catch (err) {
@@ -610,9 +611,9 @@ const ReportsTab: React.FC<{ plan: ProjectPlan; projectName: string }> = ({ plan
 
 const HistoryTab: React.FC<{
     history: PlanHistoryEntry[];
-    onRestore: (entry: PlanHistoryEntry) => void;
-}> = ({ history, onRestore }) => {
-
+}> = ({ history }) => {
+    const { restoreProjectVersion } = useProjects();
+    
     if (history.length === 0) {
         return (
              <div className="space-y-6">
@@ -649,7 +650,7 @@ const HistoryTab: React.FC<{
                                 {new Date(entry.savedAt).toLocaleString()}
                             </p>
                         </div>
-                        <Button variant="secondary" onClick={() => onRestore(entry)}>
+                        <Button variant="secondary" onClick={() => restoreProjectVersion(entry)}>
                             <HistoryIcon className="h-4 w-4 mr-2" />
                             Restore this version
                         </Button>
@@ -661,47 +662,39 @@ const HistoryTab: React.FC<{
 };
 
 
-export const ProjectPlanView: React.FC<{
-  plan: ProjectPlan,
-  projectName: string,
-  projectInput: ProjectInputData;
-  projectHistory: PlanHistoryEntry[];
-  onFeatureUpdate: (featureIndex: number, updatedFeature: FeatureSpecification) => void;
-  onPlanUpdate: (newPlan: ProjectPlan) => void;
-  onDevPlanUpdate: (newMilestones: Milestone[]) => void;
-  onRestoreVersion: (entry: PlanHistoryEntry) => void;
-}> = ({ plan, projectName, projectInput, projectHistory, onFeatureUpdate, onPlanUpdate, onDevPlanUpdate, onRestoreVersion }) => {
+export const ProjectPlanView: React.FC<{ project: SavedProject }> = ({ project }) => {
     const [activeTab, setActiveTab] = useState('Overview');
+    const { projectPlan, projectName, inputData, history } = project;
 
     useEffect(() => {
-        // When a new plan is loaded, switch to the overview tab.
+        // When a new project is loaded, switch to the overview tab.
         setActiveTab('Overview');
-    }, [plan]);
+    }, [project.id]);
 
     const handleExport = () => {
-      const markdownContent = formatPlanToMarkdown(plan, projectName);
+      const markdownContent = formatPlanToMarkdown(projectPlan, projectName);
       downloadAsMarkdown(markdownContent, `${projectName.replace(/\s+/g, '_')}_Plan.md`);
     };
 
     const renderContent = () => {
-        const projectContext = { name: projectName, description: plan.summary };
+        const projectContext = { name: projectName, description: projectPlan.summary };
         switch (activeTab) {
             case 'Overview':
-                return <OverviewTab plan={plan} projectInput={projectInput} onPlanUpdate={onPlanUpdate} />;
+                return <OverviewTab plan={projectPlan} projectInput={inputData} />;
             case 'Features':
-                return <FeaturesTab plan={plan} projectContext={projectContext} onFeatureUpdate={onFeatureUpdate} />;
+                return <FeaturesTab plan={projectPlan} projectContext={projectContext} />;
             case 'Development':
-                return <DevelopmentTab plan={plan} projectContext={projectContext} onDevPlanUpdate={onDevPlanUpdate} />;
+                return <DevelopmentTab plan={projectPlan} projectContext={projectContext} />;
             case 'Architecture':
-                return <ArchitectureTab plan={plan} />;
+                return <ArchitectureTab plan={projectPlan} />;
             case 'Workflow':
-                return <WorkflowTab plan={plan} />;
+                return <WorkflowTab plan={projectPlan} />;
             case 'Reports':
-                return <ReportsTab plan={plan} projectName={projectName} />;
+                return <ReportsTab plan={projectPlan} projectName={projectName} />;
             case 'History':
-                return <HistoryTab history={projectHistory} onRestore={onRestoreVersion} />;
+                return <HistoryTab history={history || []} />;
             default:
-                return <OverviewTab plan={plan} projectInput={projectInput} onPlanUpdate={onPlanUpdate} />;
+                return <OverviewTab plan={projectPlan} projectInput={inputData} />;
         }
     };
 

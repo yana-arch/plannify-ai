@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import type { ProjectInputData, ProjectPlan, FeatureSpecification, ReportType, Milestone } from '../types';
+import type { ProjectInputData, ProjectPlan, FeatureSpecification, ReportType, Milestone, Priority, CoreRequirement } from '../types';
 
 const featureSpecificationSchema = {
     type: Type.OBJECT,
@@ -179,6 +179,80 @@ export const generateProjectPlan = async (data: ProjectInputData): Promise<Proje
   } catch (error) {
     console.error("Error generating project plan:", error);
     throw new Error("Failed to generate project plan from AI.");
+  }
+};
+
+const coreRequirementSchema = {
+    type: Type.OBJECT,
+    properties: {
+        requirements: {
+            type: Type.ARRAY,
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    description: { type: Type.STRING },
+                    priority: { type: Type.STRING, enum: ['High', 'Medium', 'Low'] }
+                },
+                required: ['description', 'priority']
+            }
+        }
+    },
+    required: ['requirements']
+};
+
+const buildGenerateRequirementsPrompt = (data: Partial<ProjectInputData>): string => {
+  const userRequestsSection = data.userFeatureRequests ? `
+    Additionally, the user has provided the following specific feature requests. Please incorporate these ideas into the generated requirements list, refining them as needed to fit the project's scope and priority.
+    User's Feature Requests:
+    ---
+    ${data.userFeatureRequests}
+    ---
+  ` : '';
+
+  return `
+    You are an expert Software Product Manager. Your task is to analyze the following project idea and generate a list of core functional requirements.
+
+    Project Idea:
+    - Project Name: ${data.projectName}
+    - Short Description: ${data.shortDescription}
+    - Business Goals: ${data.businessGoals}
+    - Target Users: ${data.targetUsers?.join(', ')}
+    - Desired Number of Features: ${data.numberOfFeatures}
+    ${userRequestsSection}
+    Based on all this information, please generate a list of approximately ${data.numberOfFeatures} core requirements. 
+    Each requirement should have a clear description and a priority level (High, Medium, or Low).
+    A 'High' priority requirement is essential for the product's first launch (MVP).
+    A 'Medium' priority requirement is important but could be launched in a second phase.
+    A 'Low' priority requirement is a "nice-to-have" feature.
+
+    Ensure the entire output is a single, valid JSON object that adheres to the provided schema, with a single key "requirements" containing the array of requirement objects.
+  `;
+};
+
+export const generateCoreRequirements = async (data: Partial<ProjectInputData>): Promise<Omit<CoreRequirement, 'id'>[]> => {
+  if (!process.env.API_KEY) {
+    throw new Error("API_KEY environment variable not set");
+  }
+
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const prompt = buildGenerateRequirementsPrompt(data);
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: coreRequirementSchema,
+      },
+    });
+
+    const jsonText = response.text.trim();
+    const result: { requirements: Omit<CoreRequirement, 'id'>[] } = JSON.parse(jsonText);
+    return result.requirements;
+  } catch (error) {
+    console.error("Error generating core requirements:", error);
+    throw new Error("Failed to generate core requirements with AI.");
   }
 };
 

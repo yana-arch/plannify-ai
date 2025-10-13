@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { ProjectInputData, CoreRequirement, Priority, TemplateData } from '../types';
-import { Button, Input, Textarea, Tag } from './ui';
+import { Button, Input, Textarea, Tag, Card } from './ui';
 import { PlusCircleIcon, XIcon, WandSparklesIcon } from './icons';
+import { generateCoreRequirements } from '../services/geminiService';
 
 const defaultFormData: ProjectInputData = {
   projectName: "",
@@ -13,6 +14,7 @@ const defaultFormData: ProjectInputData = {
   estimatedScale: "",
   timeline: "",
   coreRequirements: [],
+  userFeatureRequests: "",
   techStack: {
     frontend: [],
     backend: [],
@@ -74,8 +76,8 @@ const Step1BasicInfo: React.FC<{ data: ProjectInputData; update: (field: string,
                 <TagInput values={data.targetUsers} onValuesChange={v => update('targetUsers', v)} placeholder="Type and press Enter..." />
             </div>
             <div>
-                <label htmlFor="numFeatures" className="block text-sm font-medium text-brand-text-secondary mb-1">Number of Features: {data.numberOfFeatures}</label>
-                <input type="range" id="numFeatures" min="1" max="50" value={data.numberOfFeatures} onChange={e => update('numberOfFeatures', parseInt(e.target.value))} className="w-full h-2 bg-brand-border rounded-lg appearance-none cursor-pointer" />
+                <label htmlFor="numFeatures" className="block text-sm font-medium text-brand-text-secondary mb-1">Approximate Number of Core Features: {data.numberOfFeatures}</label>
+                <input type="range" id="numFeatures" min="3" max="20" value={data.numberOfFeatures} onChange={e => update('numberOfFeatures', parseInt(e.target.value))} className="w-full h-2 bg-brand-border rounded-lg appearance-none cursor-pointer" />
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <Input label="Estimated Budget" id="estimatedScale" value={data.estimatedScale} onChange={e => update('estimatedScale', e.target.value)} />
@@ -89,6 +91,34 @@ const Step1BasicInfo: React.FC<{ data: ProjectInputData; update: (field: string,
 const Step2CoreRequirements: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
     const [newReq, setNewReq] = useState('');
     const [newReqPriority, setNewReqPriority] = useState<Priority>('Medium');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [generationError, setGenerationError] = useState<string | null>(null);
+
+    const handleGenerateRequirements = async () => {
+        setIsGenerating(true);
+        setGenerationError(null);
+        try {
+            const projectInfo: Partial<ProjectInputData> = {
+                projectName: data.projectName,
+                shortDescription: data.shortDescription,
+                businessGoals: data.businessGoals,
+                targetUsers: data.targetUsers,
+                numberOfFeatures: data.numberOfFeatures,
+                userFeatureRequests: data.userFeatureRequests,
+            };
+            const generatedReqs = await generateCoreRequirements(projectInfo);
+            const newCoreRequirements: CoreRequirement[] = generatedReqs.map(req => ({
+                id: `${Date.now()}-${Math.random()}`,
+                description: req.description,
+                priority: req.priority,
+            }));
+            update('coreRequirements', newCoreRequirements);
+        } catch (err) {
+            setGenerationError(err instanceof Error ? err.message : 'An unknown error occurred.');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
     const addRequirement = () => {
         if (!newReq.trim()) return;
@@ -103,6 +133,36 @@ const Step2CoreRequirements: React.FC<{ data: ProjectInputData; update: (field: 
 
     return (
         <div className="space-y-4">
+            <Card className="bg-brand-bg/50">
+                <div>
+                    <h4 className="font-semibold text-brand-text-primary">Generate Requirements with AI</h4>
+                    <p className="text-sm text-brand-text-secondary mt-1">Let AI suggest core requirements based on your project details. You can also provide your own ideas below to guide the generation.</p>
+                </div>
+
+                <div className="mt-4">
+                    <Textarea
+                        label="Your feature ideas (optional, one per line)"
+                        id="userFeatureRequests"
+                        placeholder={"e.g., A real-time chat feature for users\nA dark mode option in the settings"}
+                        value={data.userFeatureRequests || ''}
+                        onChange={e => update('userFeatureRequests', e.target.value)}
+                        rows={3}
+                    />
+                </div>
+                
+                <div className="mt-4 flex items-center justify-between">
+                    {generationError ? (
+                        <p className="text-sm text-red-400 flex-grow pr-4">{generationError}</p>
+                    ) : (
+                        <div/> /* Spacer */
+                    )}
+                    <Button onClick={handleGenerateRequirements} isLoading={isGenerating} className="flex-shrink-0">
+                        <WandSparklesIcon className="h-4 w-4 mr-2" />
+                        Generate with AI
+                    </Button>
+                </div>
+            </Card>
+
             {data.coreRequirements.map((req, index) => (
                 <div key={req.id} className="flex items-center gap-2 p-2 bg-brand-bg rounded-md border border-brand-border">
                     <span className="text-sm text-brand-text-secondary">{index + 1}.</span>
@@ -115,7 +175,8 @@ const Step2CoreRequirements: React.FC<{ data: ProjectInputData; update: (field: 
                     <button onClick={() => removeRequirement(req.id)}><XIcon className="h-4 w-4 text-brand-text-secondary hover:text-red-500" /></button>
                 </div>
             ))}
-            <div className="flex items-center gap-2 pt-4">
+             <p className="text-center text-xs text-brand-text-secondary pt-2">or add a requirement manually:</p>
+            <div className="flex items-center gap-2">
                 <Input label="" id="newReq" placeholder="Add new requirement..." value={newReq} onChange={e => setNewReq(e.target.value)} className="flex-grow" />
                  <select value={newReqPriority} onChange={e => setNewReqPriority(e.target.value as Priority)} className="bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary">
                     <option>High</option>

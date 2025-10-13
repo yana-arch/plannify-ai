@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { SavedProject, Screen } from '../types';
 import { Card, Button } from './ui';
 import { WandSparklesIcon, FolderKanbanIcon, CopyIcon, LightbulbIcon } from './icons';
+import { useProjects } from '../contexts/ProjectContext';
 
 interface DashboardViewProps {
-  projects: SavedProject[];
   onViewProject: (project: SavedProject) => void;
   onNewProject: () => void;
   onScreenChange: (screen: Screen) => void;
@@ -23,7 +23,21 @@ const ProjectCard: React.FC<{ project: SavedProject; onView: () => void; }> = ({
   </Card>
 );
 
-export const DashboardView: React.FC<DashboardViewProps> = ({ projects, onViewProject, onNewProject, onScreenChange }) => {
+const insights = [
+    "For projects with many features, try asking the AI to 'Evolve' the plan and suggest a phased rollout in the milestones.",
+    "Use the 'Enhance' feature on a specific requirement to generate detailed user stories or technical acceptance criteria.",
+    "The 'Reports' feature can generate a 'Technical Spec' to provide your engineering team with a detailed starting point.",
+    "Don't forget to check the 'History' tab. You can revert to any previous version of your plan if an 'Evolve' action doesn't fit your vision."
+];
+
+export const DashboardView: React.FC<DashboardViewProps> = ({ onViewProject, onNewProject, onScreenChange }) => {
+  const { projects } = useProjects();
+  const [insight, setInsight] = useState('');
+
+  useEffect(() => {
+    setInsight(insights[Math.floor(Math.random() * insights.length)]);
+  }, []);
+
   const recentProjects = projects
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 3);
@@ -46,7 +60,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ projects, onViewPr
                 <p className="text-brand-text-secondary mt-2 mb-6 max-w-md">
                     Let's begin by providing the AI with your project's core details through our guided wizard.
                 </p>
-                {/* FIX: Removed unsupported 'size' prop from Button component. Sizing is handled by className. */}
                 <Button onClick={onNewProject} className="px-8 py-3 text-lg">
                     Create Project Plan
                 </Button>
@@ -86,7 +99,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ projects, onViewPr
                     <div>
                         <h3 className="font-semibold text-brand-text-primary">AI Insight</h3>
                         <p className="text-sm text-brand-text-secondary mt-1">
-                            For projects with many features, try asking the AI to "Evolve" the plan and suggest a phased rollout in the milestones.
+                            {insight}
                         </p>
                     </div>
                 </div>

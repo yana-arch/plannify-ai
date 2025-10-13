@@ -2,15 +2,15 @@ import React from 'react';
 import type { SavedProject } from '../types';
 import { Card, Button } from './ui';
 import { Trash2Icon, WandSparklesIcon } from './icons';
+import { useProjects } from '../contexts/ProjectContext';
 
 interface MyProjectsViewProps {
-  projects: SavedProject[];
   onViewProject: (project: SavedProject) => void;
-  onDeleteProject: (projectId: string) => void;
   onNewProject: () => void;
 }
 
-export const MyProjectsView: React.FC<MyProjectsViewProps> = ({ projects, onViewProject, onDeleteProject, onNewProject }) => {
+export const MyProjectsView: React.FC<MyProjectsViewProps> = ({ onViewProject, onNewProject }) => {
+  const { projects, deleteProject } = useProjects();
   return (
     <div className="w-full max-w-5xl mx-auto">
       <header className="mb-8 flex justify-between items-center">
@@ -39,7 +39,7 @@ export const MyProjectsView: React.FC<MyProjectsViewProps> = ({ projects, onView
                   <Button variant="primary" onClick={() => onViewProject(project)} className="w-full mr-2">
                     View Plan
                   </Button>
-                  <Button variant="secondary" onClick={() => onDeleteProject(project.id)} className="!p-2 group hover:border-red-500/50">
+                  <Button variant="secondary" onClick={() => deleteProject(project.id)} className="!p-2 group hover:border-red-500/50">
                     <Trash2Icon className="h-4 w-4 text-brand-text-secondary group-hover:text-red-400 transition-colors" />
                   </Button>
                 </div>
