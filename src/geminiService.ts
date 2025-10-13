@@ -234,6 +234,14 @@ export const generateProjectPlan = async (data: ProjectInputData): Promise<Proje
     const jsonText = response.text.trim();
     const plan: ProjectPlan = JSON.parse(jsonText);
 
+    // Post-process Mermaid diagrams to ensure correct formatting
+    if (plan.systemArchitectureMermaid) {
+      plan.systemArchitectureMermaid = postProcessMermaidCode(plan.systemArchitectureMermaid);
+    }
+    if (plan.userFlowMermaid) {
+      plan.userFlowMermaid = postProcessMermaidCode(plan.userFlowMermaid);
+    }
+
     // Cache the result
     cacheService.set(cacheKey, plan);
 
@@ -660,24 +668,74 @@ const buildFixMermaidPrompt = (
     Your task is to correct the syntax errors and return a valid Mermaid.js string.
     The entire diagram MUST be a single line of code starting with 'graph TD' for architecture or 'flowchart LR' for user flow, with statements separated by semicolons.
 
-    **CRITICAL MISTAKES TO AVOID:**
-    - **INCORRECT (Unterminated Node):** \`A --> B[\`
-      (The definition for node B is incomplete. It's missing text and a closing bracket.)
-    - **CORRECT:** \`A --> B[Node B Text]\`
-    - **INCORRECT (Undefined Node in Link):** \`A --> B\`
-      (The link points to a node 'B' that has no text definition. All nodes in a link must be fully defined with text.)
-    - **CORRECT:** \`A[Client] --> B[Backend API]\`
-    - **INCORRECT (Invalid Label Character):** \`A -->|HTTP/S Request| B\`
-      (The '/' character can break the parser.)
-    - **CORRECT:** \`A -->|HTTPS Request| B\`
-    - **INCORRECT (Stray Identifier):** \`A[Client] --> B(Backend); B\`
-      (The 'B' at the end is a stray identifier. It must be part of a new, complete link, like \`B --> C\`.)
-    - **CORRECT:** \`A[Client] --> B(Backend); B --> C{Database}\`
-    - **INCORRECT (Invalid Cover Sytax):** \`A -->B[API (Weather)]\`
-    - **CORRECT:** \`A -->B[API - Weather]\` or \`A -->B[API & Weather Provider]\`
+    **IMPORTANT FORMATTING RULES:**
+
+    1. **Node Format Correction:**
+       - **INCORRECT:** \`A --> B[Content (Desc)]\`
+       - **CORRECT:** \`A --> B[Content - Desc]\`
+
+       - **INCORRECT:** \`A --> B[API (Service Provider)]\`
+       - **CORRECT:** \`A --> B[API - Service Provider]\`
+
+    2. **Keep Special Node Types Unchanged:**
+       - **KEEP AS IS:** \`B[(Database)]\` (cylindrical database)
+       - **KEEP AS IS:** \`B[(SQL Database)]\` (cylindrical database)
+       - **KEEP AS IS:** \`B{C[Decision Point]}\` (diamond decision)
+       - **KEEP AS IS:** \`B>[Flag]\` (flag shape)
+       - **KEEP AS IS:** \`B{{Hexagon}}\` (hexagonal shape)
+
+    3. **General Syntax Rules:**
+       - **INCORRECT (Unterminated Node):** \`A --> B[\`
+       - **CORRECT:** \`A --> B[Node B Text]\`
+
+       - **INCORRECT (Undefined Node in Link):** \`A --> B\`
+       - **CORRECT:** \`A[Client] --> B[Backend API]\`
+
+       - **INCORRECT (Invalid Label Character):** \`A -->|HTTP/S Request| B\`
+       - **CORRECT:** \`A -->|HTTPS Request| B\`
+
+       - **INCORRECT (Stray Identifier):** \`A[Client] --> B(Backend); B\`
+       - **CORRECT:** \`A[Client] --> B(Backend); B --> C{Database}\`
+
+    **SPECIFIC VIETNAMESE PROJECT REQUIREMENTS:**
+    - Ensure all Vietnamese text in node labels is properly formatted
+    - Replace parentheses with dashes in Vietnamese node labels
+    - Keep technical terms in English even when mixed with Vietnamese
 
     Return ONLY the corrected, valid Mermaid.js code as a plain text string. Do not include any explanations, markdown code fences, or any other text.
   `;
+};
+
+// Helper function to post-process Mermaid code and fix common formatting issues
+const postProcessMermaidCode = (code: string): string => {
+  if (!code) return code;
+
+  let processedCode = code;
+
+  // Fix 1: Replace (Desc) pattern with - Desc pattern for regular nodes
+  // Pattern: B[Content (Desc)] -> B[Content - Desc]
+  processedCode = processedCode.replace(
+    /([A-Z][\w]*)\[([^\(\)]+)\s*\(([^\)]+)\)\]/g,
+    '$1[$2 - $3]'
+  );
+
+  // Fix 2: Handle multiple parentheses in node labels
+  // Pattern: B[API (Service Provider)] -> B[API - Service Provider]
+  processedCode = processedCode.replace(
+    /([A-Z][\w]*)\[([^\[\]]+)\s*\(([^\)]+)\)\s*([^\[\]]*)?\]/g,
+    (match, nodeId, beforeText, parenText, afterText) => {
+      const cleanText = [beforeText, parenText, afterText].filter(Boolean).join(' - ');
+      return `${nodeId}[${cleanText}]`;
+    }
+  );
+
+  // Fix 3: Clean up multiple spaces and normalize
+  processedCode = processedCode.replace(/\s+/g, ' ');
+
+  // Fix 4: Ensure proper semicolon separation
+  processedCode = processedCode.replace(/;\s*;/g, ';');
+
+  return processedCode.trim();
 };
 
 export const fixMermaidCode = async (
@@ -697,9 +755,14 @@ export const fixMermaidCode = async (
       model: "gemini-2.5-flash",
       contents: prompt,
     });
-    
+
     // Clean up potential markdown fences if the model adds them despite instructions
-    return response.text.trim().replace(/```mermaid/g, '').replace(/```/g, '').trim();
+    let cleanedCode = response.text.trim().replace(/```mermaid/g, '').replace(/```/g, '').trim();
+
+    // Apply post-processing to fix common formatting issues
+    cleanedCode = postProcessMermaidCode(cleanedCode);
+
+    return cleanedCode;
   } catch (error) {
     console.error("Error fixing Mermaid code:", error);
     throw new Error("Failed to fix diagram with AI.");
