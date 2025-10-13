@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { ProjectPlan, FeatureSpecification, ReportTemplate, ReportType, ProjectInputData, PlanHistoryEntry, Milestone, SavedProject } from '../types';
 import { Card, Button, Modal } from './ui';
 import { DownloadIcon, WandSparklesIcon, TerminalSquareIcon, LightbulbIcon, BriefcaseIcon, HistoryIcon } from './icons';
-import { enhanceFeatureSpecification, generateReport, regenerateProjectPlan, optimizeDevelopmentPlan } from '../geminiService';
+import { enhanceFeatureSpecification, generateReport, regenerateProjectPlan, optimizeDevelopmentPlan, fixMermaidCode } from '../geminiService';
+import { exportPlanAsDocx, exportReportAsDocx } from '../docxService';
 import { useProjects } from '../ProjectContext';
 
 // --- Utility function to format plan for export ---

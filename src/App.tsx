@@ -7,11 +7,11 @@ import type { Screen, TemplateData, ProjectInputData, SavedProject } from './typ
 import { WandSparklesIcon } from './components/icons';
 
 // Lazy load components for code splitting
-const NewProjectWizard = lazy(() => import('./components/wizard').then(module => ({ default: module.NewProjectWizard })));
-const ProjectPlanView = lazy(() => import('./components/plan').then(module => ({ default: module.ProjectPlanView })));
-const TemplatesView = lazy(() => import('./components/templates').then(module => ({ default: module.TemplatesView })));
-const MyProjectsView = lazy(() => import('./components/projects').then(module => ({ default: module.MyProjectsView })));
-const DashboardView = lazy(() => import('./components/dashboard').then(module => ({ default: module.DashboardView })));
+const NewProjectWizard = lazy(() => import('./components/NewProjectWizard').then(module => ({ default: module.NewProjectWizard })));
+const ProjectPlanView = lazy(() => import('./components/ProjectPlanView').then(module => ({ default: module.ProjectPlanView })));
+const TemplatesView = lazy(() => import('./components/TemplatesView').then(module => ({ default: module.TemplatesView })));
+const MyProjectsView = lazy(() => import('./components/MyProjectsView').then(module => ({ default: module.MyProjectsView })));
+const DashboardView = lazy(() => import('./components/DashboardView').then(module => ({ default: module.DashboardView })));
 
 const App: React.FC = () => {
   const [screen, setScreen] = useState<Screen>('dashboard');
