@@ -117,7 +117,35 @@ const buildPrompt = (data: ProjectInputData): string => {
     Please generate a project plan based on this information. The plan should be detailed, realistic, and provide actionable insights. Use the market and competitor information to inform the 'Potential Challenges' and 'Potential Opportunities' sections.
     For the development plan, provide estimated start weeks and durations for each milestone so they can be displayed in a Gantt chart.
     
-    When generating Mermaid.js diagrams, ensure the syntax is valid. Each link or node definition must be a complete, valid statement. Do not add stray characters or node identifiers after a statement is terminated with a semicolon on the same line. For example, 'A --> B; B --> C' is valid, but 'A --> B; B' is invalid.
+    When generating Mermaid.js diagrams, ensure the syntax is strictly valid. The entire diagram MUST be a single line of code starting with 'graph TD' or 'flowchart LR', with statements separated by semicolons.
+
+    **CRITICAL MISTAKES TO AVOID:**
+    - **INCORRECT (Unterminated Node):** \`A --> B[\`
+      (The definition for node B is incomplete. It's missing text and a closing bracket.)
+    - **CORRECT:** \`A --> B[Node B Text]\`
+    
+    - **INCORRECT (Undefined Node in Link):** \`A --> B\`
+      (The link points to a node 'B' that has no text definition. All nodes in a link must be fully defined with text.)
+    - **CORRECT:** \`A[Client] --> B[Backend API]\`
+    
+    - **INCORRECT (Invalid Label Character):** \`A -->|HTTP/S Request| B\`
+      (The '/' character can break the parser.)
+    - **CORRECT:** \`A -->|HTTPS Request| B\`
+
+    - **INCORRECT (Stray Identifier):** \`A[Client] --> B(Backend); B\`
+      (The 'B' at the end is a stray identifier. It must be part of a new, complete link, like \`B --> C\`.)
+    - **CORRECT:** \`A[Client] --> B(Backend); B --> C{Database}\`
+
+    - **INCORRECT (Stray Identifier):** \`A[Node 1 Text]; B\`
+      (This is also a stray identifier. After a node definition, the next statement must be a complete link.)
+    - **CORRECT:** \`A[Node 1 Text]; A --> B[Node 2 Text]\`
+
+    - **INCORRECT (Incomplete Link):** \`A -->|API Request|\`
+      (This link is missing a destination node.)
+    - **CORRECT:** \`A -->|API Request| B[API Endpoint]\`
+
+    - **INCORRECT (Invalid Cover Sytax):** \`A -->B[API (Weather)]\`
+    - **CORRECT:** \`A -->B[API - Weather]\` or \`A -->B[API & Weather Provider]\`
 
     First, generate a system architecture diagram using Mermaid.js syntax (starting with 'graph TD'). This diagram should visualize how the key components (like Frontend, Backend, Database, external services) interact with each other.
 
