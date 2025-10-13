@@ -2,7 +2,7 @@ import React from 'react';
 import type { SavedProject } from '../../types';
 import { Card, Button } from '../ui';
 import { Trash2Icon, WandSparklesIcon } from '../icons';
-import { useProjects } from '../../contexts/ProjectContext';
+import { useProjects } from '../../ProjectContext';
 
 interface MyProjectsViewProps {
   onViewProject: (project: SavedProject) => void;

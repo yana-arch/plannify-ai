@@ -1,4 +1,4 @@
-import type { ProjectPlan } from '../types';
+import type { ProjectPlan } from './types';
 import * as docx from 'docx';
 import MarkdownIt from 'markdown-it';
 

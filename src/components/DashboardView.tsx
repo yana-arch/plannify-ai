@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { SavedProject, Screen } from '../types';
 import { Card, Button } from './ui';
 import { WandSparklesIcon, FolderKanbanIcon, CopyIcon, LightbulbIcon } from './icons';
-import { useProjects } from '../contexts/ProjectContext';
+import { useProjects } from '../ProjectContext';
 
 interface DashboardViewProps {
   onViewProject: (project: SavedProject) => void;

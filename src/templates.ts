@@ -1,4 +1,4 @@
-import type { TemplateData } from '../types';
+import type { TemplateData } from './types';
 
 export const projectTemplates: TemplateData[] = [
   {

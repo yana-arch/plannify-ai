@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { ProjectPlan, FeatureSpecification, ReportTemplate, ReportType, ProjectInputData, PlanHistoryEntry, Milestone, SavedProject } from '../../types';
 import { Card, Button, Modal } from '../ui';
 import { DownloadIcon, WandSparklesIcon, TerminalSquareIcon, LightbulbIcon, BriefcaseIcon, HistoryIcon } from '../icons';
-import { enhanceFeatureSpecification, generateReport, regenerateProjectPlan, optimizeDevelopmentPlan, fixMermaidCode } from '../../services/geminiService';
-import { exportPlanAsDocx, exportReportAsDocx } from '../../services/docxService';
-import { useProjects } from '../../contexts/ProjectContext';
+import { enhanceFeatureSpecification, generateReport, regenerateProjectPlan, optimizeDevelopmentPlan, fixMermaidCode } from '../../geminiService';
+import { exportPlanAsDocx, exportReportAsDocx } from '../../docxService';
+import { useProjects } from '../../ProjectContext';
 
 // --- Utility function to format plan for export ---
 const formatPlanToMarkdown = (plan: ProjectPlan, projectName: string): string => {

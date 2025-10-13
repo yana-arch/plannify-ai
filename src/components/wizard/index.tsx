@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { ProjectInputData, CoreRequirement, Priority, TemplateData } from '../../types';
 import { Button, Input, Textarea, Tag, Card, Modal } from '../ui';
 import { PlusCircleIcon, XIcon, WandSparklesIcon } from '../icons';
-import { generateCoreRequirements } from '../../services/geminiService';
+import { generateCoreRequirements } from '../../geminiService';
 
 const defaultFormData: ProjectInputData = {
   projectName: "",

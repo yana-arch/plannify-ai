@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { projectTemplates } from '../data/templates';
+import { projectTemplates } from '../templates';
 import type { TemplateData } from '../types';
 import { Card, Button, Tag } from './ui';
 import { WandSparklesIcon, DownloadIcon, UploadIcon } from './icons';
