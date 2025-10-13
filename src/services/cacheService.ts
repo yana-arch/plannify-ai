@@ -65,15 +65,39 @@ class CacheService {
     return this.cache.size;
   }
 
+  // Helper function to create safe cache key with Unicode support
+  private createSafeCacheKey(data: any): string {
+    try {
+      // Normalize Unicode characters to ensure consistency
+      const normalizedData = JSON.stringify(data, (key, value) => {
+        if (typeof value === 'string') {
+          return value.normalize('NFC');
+        }
+        return value;
+      });
+      return btoa(normalizedData).slice(0, 32);
+    } catch (error) {
+      // Fallback to simple hash if btoa fails
+      const str = JSON.stringify(data);
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
+      }
+      return Math.abs(hash).toString(36).slice(0, 32);
+    }
+  }
+
   // Generate cache key for project plan requests
   generateProjectPlanKey(data: any): string {
-    const hash = btoa(JSON.stringify(data)).slice(0, 32);
+    const hash = this.createSafeCacheKey(data);
     return `project_plan_${hash}`;
   }
 
   // Generate cache key for requirements generation
   generateRequirementsKey(data: any): string {
-    const hash = btoa(JSON.stringify(data)).slice(0, 32);
+    const hash = this.createSafeCacheKey(data);
     return `requirements_${hash}`;
   }
 }

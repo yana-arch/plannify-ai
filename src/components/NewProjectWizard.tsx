@@ -230,8 +230,343 @@ const Step3TechStack: React.FC<{ data: ProjectInputData; update: (field: string,
     );
 };
 
-// Step 4 Component
-const Step4MarketAnalysis: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
+// Step 4 Component - Core Modules
+const Step4CoreModules: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
+    const [newModule, setNewModule] = useState({ name: '', description: '', flows: [''] });
+
+    const addModule = () => {
+        if (!newModule.name.trim()) return;
+        const module = {
+            moduleName: newModule.name.trim(),
+            description: newModule.description.trim(),
+            flows: newModule.flows.filter(f => f.trim())
+        };
+        update('coreModules', [...(data.coreModules || []), module]);
+        setNewModule({ name: '', description: '', flows: [''] });
+    };
+
+    const removeModule = (index: number) => {
+        const modules = data.coreModules || [];
+        update('coreModules', modules.filter((_, i) => i !== index));
+    };
+
+    const updateModule = (index: number, field: string, value: string) => {
+        const modules = data.coreModules || [];
+        modules[index] = { ...modules[index], [field]: value };
+        update('coreModules', modules);
+    };
+
+    const addFlow = (moduleIndex: number) => {
+        const modules = data.coreModules || [];
+        modules[moduleIndex].flows.push('');
+        update('coreModules', [...modules]);
+    };
+
+    const updateFlow = (moduleIndex: number, flowIndex: number, value: string) => {
+        const modules = data.coreModules || [];
+        modules[moduleIndex].flows[flowIndex] = value;
+        update('coreModules', [...modules]);
+    };
+
+    const removeFlow = (moduleIndex: number, flowIndex: number) => {
+        const modules = data.coreModules || [];
+        modules[moduleIndex].flows = modules[moduleIndex].flows.filter((_, i) => i !== flowIndex);
+        update('coreModules', [...modules]);
+    };
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-lg font-semibold text-brand-text-primary mb-2">Core Modules</h3>
+                <p className="text-sm text-brand-text-secondary mb-4">Define the main modules/components of your system</p>
+
+                {(data.coreModules || []).map((module, moduleIndex) => (
+                    <Card key={moduleIndex} className="mb-4">
+                        <div className="flex justify-between items-start mb-3">
+                            <h4 className="font-medium text-brand-text-primary">Module {moduleIndex + 1}</h4>
+                            <Button variant="secondary" onClick={() => removeModule(moduleIndex)} className="!p-2">
+                                <XIcon className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <div className="space-y-3">
+                            <Input
+                                label="Module Name"
+                                value={module.moduleName}
+                                onChange={e => updateModule(moduleIndex, 'moduleName', e.target.value)}
+                            />
+                            <Textarea
+                                label="Description"
+                                value={module.description}
+                                onChange={e => updateModule(moduleIndex, 'description', e.target.value)}
+                                rows={2}
+                            />
+                            <div>
+                                <label className="block text-sm font-medium text-brand-text-secondary mb-2">Flows</label>
+                                {module.flows.map((flow, flowIndex) => (
+                                    <div key={flowIndex} className="flex gap-2 mb-2">
+                                        <Input
+                                            label=""
+                                            value={flow}
+                                            onChange={e => updateFlow(moduleIndex, flowIndex, e.target.value)}
+                                            placeholder="Flow name"
+                                            className="flex-grow"
+                                        />
+                                        <Button variant="secondary" onClick={() => removeFlow(moduleIndex, flowIndex)} className="!p-2">
+                                            <XIcon className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                <Button variant="secondary" onClick={() => addFlow(moduleIndex)} className="text-sm">
+                                    Add Flow
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
+                ))}
+
+                <Card className="bg-brand-bg/50">
+                    <h4 className="font-medium text-brand-text-primary mb-3">Add New Module</h4>
+                    <div className="space-y-3">
+                        <Input
+                            label="Module Name"
+                            value={newModule.name}
+                            onChange={e => setNewModule(prev => ({ ...prev, name: e.target.value }))}
+                        />
+                        <Textarea
+                            label="Description"
+                            value={newModule.description}
+                            onChange={e => setNewModule(prev => ({ ...prev, description: e.target.value }))}
+                            rows={2}
+                        />
+                        <div className="flex justify-end">
+                            <Button onClick={addModule} disabled={!newModule.name.trim()}>
+                                Add Module
+                            </Button>
+                        </div>
+                    </div>
+                </Card>
+            </div>
+        </div>
+    );
+};
+
+// Step 5 Component - Role Permissions
+const Step5RolePermissions: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
+    const [newRole, setNewRole] = useState({ role: '', permissions: [''] });
+
+    const addRole = () => {
+        if (!newRole.role.trim()) return;
+        const role = {
+            role: newRole.role.trim(),
+            permissions: newRole.permissions.filter(p => p.trim())
+        };
+        update('rolePermissions', [...(data.rolePermissions || []), role]);
+        setNewRole({ role: '', permissions: [''] });
+    };
+
+    const removeRole = (index: number) => {
+        const roles = data.rolePermissions || [];
+        update('rolePermissions', roles.filter((_, i) => i !== index));
+    };
+
+    const updateRole = (index: number, field: string, value: string) => {
+        const roles = data.rolePermissions || [];
+        roles[index] = { ...roles[index], [field]: value };
+        update('rolePermissions', [...roles]);
+    };
+
+    const addPermission = (roleIndex: number) => {
+        const roles = data.rolePermissions || [];
+        roles[roleIndex].permissions.push('');
+        update('rolePermissions', [...roles]);
+    };
+
+    const updatePermission = (roleIndex: number, permIndex: number, value: string) => {
+        const roles = data.rolePermissions || [];
+        roles[roleIndex].permissions[permIndex] = value;
+        update('rolePermissions', [...roles]);
+    };
+
+    const removePermission = (roleIndex: number, permIndex: number) => {
+        const roles = data.rolePermissions || [];
+        roles[roleIndex].permissions = roles[roleIndex].permissions.filter((_, i) => i !== permIndex);
+        update('rolePermissions', [...roles]);
+    };
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-lg font-semibold text-brand-text-primary mb-2">Role & Permissions</h3>
+                <p className="text-sm text-brand-text-secondary mb-4">Define user roles and their permissions</p>
+
+                {(data.rolePermissions || []).map((role, roleIndex) => (
+                    <Card key={roleIndex} className="mb-4">
+                        <div className="flex justify-between items-start mb-3">
+                            <h4 className="font-medium text-brand-text-primary">Role {roleIndex + 1}</h4>
+                            <Button variant="secondary" onClick={() => removeRole(roleIndex)} className="!p-2">
+                                <XIcon className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <div className="space-y-3">
+                            <Input
+                                label="Role Name"
+                                value={role.role}
+                                onChange={e => updateRole(roleIndex, 'role', e.target.value)}
+                            />
+                            <div>
+                                <label className="block text-sm font-medium text-brand-text-secondary mb-2">Permissions</label>
+                                {role.permissions.map((permission, permIndex) => (
+                                    <div key={permIndex} className="flex gap-2 mb-2">
+                                        <Input
+                                            label=""
+                                            value={permission}
+                                            onChange={e => updatePermission(roleIndex, permIndex, e.target.value)}
+                                            placeholder="Permission description"
+                                            className="flex-grow"
+                                        />
+                                        <Button variant="secondary" onClick={() => removePermission(roleIndex, permIndex)} className="!p-2">
+                                            <XIcon className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                <Button variant="secondary" onClick={() => addPermission(roleIndex)} className="text-sm">
+                                    Add Permission
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
+                ))}
+
+                <Card className="bg-brand-bg/50">
+                    <h4 className="font-medium text-brand-text-primary mb-3">Add New Role</h4>
+                    <div className="space-y-3">
+                        <Input
+                            label="Role Name"
+                            value={newRole.role}
+                            onChange={e => setNewRole(prev => ({ ...prev, role: e.target.value }))}
+                        />
+                        <div className="flex justify-end">
+                            <Button onClick={addRole} disabled={!newRole.role.trim()}>
+                                Add Role
+                            </Button>
+                        </div>
+                    </div>
+                </Card>
+            </div>
+        </div>
+    );
+};
+
+// Step 6 Component - Standard Flows
+const Step6StandardFlows: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
+    const [newFlow, setNewFlow] = useState({ name: '', steps: [''] });
+
+    const addFlow = () => {
+        if (!newFlow.name.trim()) return;
+        const flow = {
+            flowName: newFlow.name.trim(),
+            steps: newFlow.steps.filter(s => s.trim())
+        };
+        update('standardFlows', [...(data.standardFlows || []), flow]);
+        setNewFlow({ name: '', steps: [''] });
+    };
+
+    const removeFlow = (index: number) => {
+        const flows = data.standardFlows || [];
+        update('standardFlows', flows.filter((_, i) => i !== index));
+    };
+
+    const updateFlow = (index: number, field: string, value: string) => {
+        const flows = data.standardFlows || [];
+        flows[index] = { ...flows[index], [field]: value };
+        update('standardFlows', [...flows]);
+    };
+
+    const addStep = (flowIndex: number) => {
+        const flows = data.standardFlows || [];
+        flows[flowIndex].steps.push('');
+        update('standardFlows', [...flows]);
+    };
+
+    const updateStep = (flowIndex: number, stepIndex: number, value: string) => {
+        const flows = data.standardFlows || [];
+        flows[flowIndex].steps[stepIndex] = value;
+        update('standardFlows', [...flows]);
+    };
+
+    const removeStep = (flowIndex: number, stepIndex: number) => {
+        const flows = data.standardFlows || [];
+        flows[flowIndex].steps = flows[flowIndex].steps.filter((_, i) => i !== stepIndex);
+        update('standardFlows', [...flows]);
+    };
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-lg font-semibold text-brand-text-primary mb-2">Standard Flows</h3>
+                <p className="text-sm text-brand-text-secondary mb-4">Define key business processes and workflows</p>
+
+                {(data.standardFlows || []).map((flow, flowIndex) => (
+                    <Card key={flowIndex} className="mb-4">
+                        <div className="flex justify-between items-start mb-3">
+                            <h4 className="font-medium text-brand-text-primary">Flow {flowIndex + 1}</h4>
+                            <Button variant="secondary" onClick={() => removeFlow(flowIndex)} className="!p-2">
+                                <XIcon className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <div className="space-y-3">
+                            <Input
+                                label="Flow Name"
+                                value={flow.flowName}
+                                onChange={e => updateFlow(flowIndex, 'flowName', e.target.value)}
+                            />
+                            <div>
+                                <label className="block text-sm font-medium text-brand-text-secondary mb-2">Steps</label>
+                                {flow.steps.map((step, stepIndex) => (
+                                    <div key={stepIndex} className="flex gap-2 mb-2">
+                                        <span className="text-sm text-brand-text-secondary mt-2 w-6">{stepIndex + 1}.</span>
+                                        <Input
+                                            label=""
+                                            value={step}
+                                            onChange={e => updateStep(flowIndex, stepIndex, e.target.value)}
+                                            placeholder="Step description"
+                                            className="flex-grow"
+                                        />
+                                        <Button variant="secondary" onClick={() => removeStep(flowIndex, stepIndex)} className="!p-2">
+                                            <XIcon className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                <Button variant="secondary" onClick={() => addStep(flowIndex)} className="text-sm">
+                                    Add Step
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
+                ))}
+
+                <Card className="bg-brand-bg/50">
+                    <h4 className="font-medium text-brand-text-primary mb-3">Add New Flow</h4>
+                    <div className="space-y-3">
+                        <Input
+                            label="Flow Name"
+                            value={newFlow.name}
+                            onChange={e => setNewFlow(prev => ({ ...prev, name: e.target.value }))}
+                        />
+                        <div className="flex justify-end">
+                            <Button onClick={addFlow} disabled={!newFlow.name.trim()}>
+                                Add Flow
+                            </Button>
+                        </div>
+                    </div>
+                </Card>
+            </div>
+        </div>
+    );
+};
+
+// Step 7 Component - Market Analysis
+const Step7MarketAnalysis: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
     return (
         <div className="space-y-6">
             <Textarea
@@ -255,8 +590,8 @@ const Step4MarketAnalysis: React.FC<{ data: ProjectInputData; update: (field: st
 };
 
 
-// Step 5 Component
-const Step5Review: React.FC<{ data: ProjectInputData }> = ({ data }) => {
+// Step 8 Component - Review
+const Step8Review: React.FC<{ data: ProjectInputData }> = ({ data }) => {
     return (
         <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
             <h3 className="text-lg font-semibold text-brand-text-primary">Review Your Project Details</h3>
@@ -264,11 +599,55 @@ const Step5Review: React.FC<{ data: ProjectInputData }> = ({ data }) => {
             <div className="space-y-3 text-sm">
                 <p><strong>Project Name:</strong> {data.projectName}</p>
                 <p><strong>Description:</strong> {data.shortDescription}</p>
+                <p><strong>Business Goals:</strong> {data.businessGoals}</p>
+                <p><strong>Technical Goals:</strong> {data.technicalGoals}</p>
                 <p><strong>Target Users:</strong> {data.targetUsers.join(', ')}</p>
+                <p><strong>Number of Features:</strong> {data.numberOfFeatures}</p>
+                <p><strong>Estimated Budget:</strong> {data.estimatedScale}</p>
+                <p><strong>Timeline:</strong> {data.timeline}</p>
                 <p><strong>Core Requirements:</strong> {data.coreRequirements.length} item(s)</p>
-                <p><strong>Frontend:</strong> {data.techStack.frontend.join(', ')}</p>
-                <p><strong>Backend:</strong> {data.techStack.backend.join(', ')}</p>
-                <p><strong>Database:</strong> {data.techStack.database.join(', ')}</p>
+
+                {data.coreModules && data.coreModules.length > 0 && (
+                    <div>
+                        <p><strong>Core Modules:</strong> {data.coreModules.length} module(s)</p>
+                        <ul className="list-disc list-inside ml-4">
+                            {data.coreModules.map((module, i) => (
+                                <li key={i}>{module.moduleName} ({module.flows.length} flows)</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+                {data.rolePermissions && data.rolePermissions.length > 0 && (
+                    <div>
+                        <p><strong>Roles:</strong> {data.rolePermissions.length} role(s)</p>
+                        <ul className="list-disc list-inside ml-4">
+                            {data.rolePermissions.map((role, i) => (
+                                <li key={i}>{role.role} ({role.permissions.length} permissions)</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+                {data.standardFlows && data.standardFlows.length > 0 && (
+                    <div>
+                        <p><strong>Standard Flows:</strong> {data.standardFlows.length} flow(s)</p>
+                        <ul className="list-disc list-inside ml-4">
+                            {data.standardFlows.map((flow, i) => (
+                                <li key={i}>{flow.flowName} ({flow.steps.length} steps)</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+                <p><strong>Tech Stack:</strong></p>
+                <div className="ml-4">
+                    <p>• Frontend: {data.techStack.frontend.join(', ') || 'N/A'}</p>
+                    <p>• Backend: {data.techStack.backend.join(', ') || 'N/A'}</p>
+                    <p>• Database: {data.techStack.database.join(', ') || 'N/A'}</p>
+                    <p>• Other Tools: {data.techStack.otherTools.join(', ') || 'N/A'}</p>
+                </div>
+
                 <p><strong>Market Analysis:</strong> {data.marketAnalysis || 'N/A'}</p>
                 <p><strong>Competitors:</strong> {data.competitors.join(', ') || 'N/A'}</p>
             </div>
@@ -279,9 +658,12 @@ const Step5Review: React.FC<{ data: ProjectInputData }> = ({ data }) => {
 const STEPS = [
     { title: "Basic Information", component: Step1BasicInfo },
     { title: "Core Requirements", component: Step2CoreRequirements },
-    { title: "Anticipated Technology Stack", component: Step3TechStack },
-    { title: "Market & Competition", component: Step4MarketAnalysis },
-    { title: "Review & Generate Plan", component: Step5Review },
+    { title: "Technology Stack", component: Step3TechStack },
+    { title: "Core Modules", component: Step4CoreModules },
+    { title: "Role & Permissions", component: Step5RolePermissions },
+    { title: "Standard Flows", component: Step6StandardFlows },
+    { title: "Market Analysis", component: Step7MarketAnalysis },
+    { title: "Review & Generate", component: Step8Review },
 ];
 
 export const NewProjectWizard: React.FC<{ 

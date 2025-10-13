@@ -93,9 +93,46 @@ const planSchema = {
 };
 
 
+// Helper function to safely handle Vietnamese characters in JSON
+const sanitizeForJSON = (text: string): string => {
+  if (!text) return '';
+  return text
+    .replace(/\u201C/g, '"') // Left double quotation mark
+    .replace(/\u201D/g, '"') // Right double quotation mark
+    .replace(/\u2018/g, "'") // Left single quotation mark
+    .replace(/\u2019/g, "'") // Right single quotation mark
+    .replace(/\u2026/g, '...') // Horizontal ellipsis
+    .normalize('NFC'); // Normalize to composed form
+};
+
 const buildPrompt = (data: ProjectInputData): string => {
+  const coreModulesSection = data.coreModules && data.coreModules.length > 0 ? `
+    Core Modules:
+    ${data.coreModules.map(module => `
+      - Module: ${sanitizeForJSON(module.moduleName)}
+        Description: ${sanitizeForJSON(module.description)}
+        Flows: ${module.flows.map(flow => sanitizeForJSON(flow)).join(', ')}
+    `).join('')}
+  ` : '';
+
+  const rolePermissionsSection = data.rolePermissions && data.rolePermissions.length > 0 ? `
+    Role & Permissions:
+    ${data.rolePermissions.map(role => `
+      - Role: ${role.role}
+        Permissions: ${role.permissions.join(', ')}
+    `).join('')}
+  ` : '';
+
+  const standardFlowsSection = data.standardFlows && data.standardFlows.length > 0 ? `
+    Standard Flows:
+    ${data.standardFlows.map(flow => `
+      - Flow: ${flow.flowName}
+        Steps: ${flow.steps.join(' → ')}
+    `).join('')}
+  ` : '';
+
   return `
-    You are an expert Software Architect and Project Planner AI. Your task is to analyze the following project details and generate a comprehensive, structured project plan.
+    You are an expert Software Architect and Project Planner AI. Your task is to analyze the following comprehensive project details and generate a detailed, structured project plan.
 
     Project Details:
     - Project Name: ${data.projectName}
@@ -106,52 +143,60 @@ const buildPrompt = (data: ProjectInputData): string => {
     - Number of Features: ${data.numberOfFeatures}
     - Estimated Scale: ${data.estimatedScale}
     - Timeline: ${data.timeline}
-    - Core Requirements: 
-      ${data.coreRequirements.map(req => `- ${req.description} (Priority: ${req.priority})`).join('\n      ')}
-    - Anticipated Technology Stack:
-      - Frontend: ${data.techStack.frontend.join(', ')}
-      - Backend: ${data.techStack.backend.join(', ')}
-      - Database: ${data.techStack.database.join(', ')}
-      - Other Tools/Libraries: ${data.techStack.otherTools.join(', ')}
-    - Market Analysis: ${data.marketAnalysis || 'Not provided.'}
-    - Known Competitors: ${data.competitors.join(', ') || 'Not provided.'}
 
-    Please generate a project plan based on this information. The plan should be detailed, realistic, and provide actionable insights. Use the market and competitor information to inform the 'Potential Challenges' and 'Potential Opportunities' sections.
-    For the development plan, provide estimated start weeks and durations for each milestone so they can be displayed in a Gantt chart.
-    
+    Core Requirements:
+    ${data.coreRequirements.map(req => `- ${req.description} (Priority: ${req.priority})`).join('\n    ')}
+
+    ${coreModulesSection}
+
+    ${rolePermissionsSection}
+
+    ${standardFlowsSection}
+
+    Anticipated Technology Stack:
+    - Frontend: ${data.techStack.frontend.join(', ')}
+    - Backend: ${data.techStack.backend.join(', ')}
+    - Database: ${data.techStack.database.join(', ')}
+    - Other Tools/Libraries: ${data.techStack.otherTools.join(', ')}
+
+    Market Analysis: ${data.marketAnalysis || 'Not provided.'}
+    Known Competitors: ${data.competitors.join(', ') || 'Not provided.'}
+
+    Please generate a project plan based on this comprehensive information. The plan should be detailed, realistic, and provide actionable insights.
+
+    **IMPORTANT INSTRUCTIONS:**
+
+    1. **Use the Core Modules** to inform the 'Key Components' section. Each module should become a major component in your architecture.
+
+    2. **Use the Role & Permissions** to inform the 'Potential Challenges' section. Consider security implications, access control complexity, and user management challenges.
+
+    3. **Use the Standard Flows** to inform:
+       - The 'Detailed Features' section (each flow should become a feature or sub-feature)
+       - The 'User Flow Diagram' (use the most important flow as the primary user journey)
+       - The 'Development Plan' (flows indicate dependencies and sequencing)
+
+    4. **For the System Architecture Diagram**: Design it based on the core modules and their interactions. Show how data flows between modules and external systems.
+
+    5. **For the User Flow Diagram**: Use the most critical standard flow (e.g., the main business process) as the primary user journey.
+
+    Use the market and competitor information to inform the 'Potential Challenges' and 'Potential Opportunities' sections.
+
+    For the development plan, provide estimated start weeks and durations for each milestone so they can be displayed in a Gantt chart. Consider the standard flows to determine logical sequencing of milestones.
+
     When generating Mermaid.js diagrams, ensure the syntax is strictly valid. The entire diagram MUST be a single line of code starting with 'graph TD' or 'flowchart LR', with statements separated by semicolons.
 
     **CRITICAL MISTAKES TO AVOID:**
     - **INCORRECT (Unterminated Node):** \`A --> B[\`
-      (The definition for node B is incomplete. It's missing text and a closing bracket.)
     - **CORRECT:** \`A --> B[Node B Text]\`
-    
+
     - **INCORRECT (Undefined Node in Link):** \`A --> B\`
-      (The link points to a node 'B' that has no text definition. All nodes in a link must be fully defined with text.)
     - **CORRECT:** \`A[Client] --> B[Backend API]\`
-    
+
     - **INCORRECT (Invalid Label Character):** \`A -->|HTTP/S Request| B\`
-      (The '/' character can break the parser.)
     - **CORRECT:** \`A -->|HTTPS Request| B\`
 
     - **INCORRECT (Stray Identifier):** \`A[Client] --> B(Backend); B\`
-      (The 'B' at the end is a stray identifier. It must be part of a new, complete link, like \`B --> C\`.)
     - **CORRECT:** \`A[Client] --> B(Backend); B --> C{Database}\`
-
-    - **INCORRECT (Stray Identifier):** \`A[Node 1 Text]; B\`
-      (This is also a stray identifier. After a node definition, the next statement must be a complete link.)
-    - **CORRECT:** \`A[Node 1 Text]; A --> B[Node 2 Text]\`
-
-    - **INCORRECT (Incomplete Link):** \`A -->|API Request|\`
-      (This link is missing a destination node.)
-    - **CORRECT:** \`A -->|API Request| B[API Endpoint]\`
-
-    - **INCORRECT (Invalid Cover Sytax):** \`A -->B[API (Weather)]\`
-    - **CORRECT:** \`A -->B[API - Weather]\` or \`A -->B[API & Weather Provider]\`
-
-    First, generate a system architecture diagram using Mermaid.js syntax (starting with 'graph TD'). This diagram should visualize how the key components (like Frontend, Backend, Database, external services) interact with each other.
-
-    Second, generate a user flow diagram, also using Mermaid.js syntax (starting with 'flowchart LR'). This should illustrate a key user journey, such as user registration and login, or the main process for using the application's core feature. This is separate from the architecture diagram.
 
     Ensure the entire output is a single, valid JSON object that adheres to the provided schema.
   `;
@@ -226,21 +271,55 @@ const buildGenerateRequirementsPrompt = (data: Partial<ProjectInputData>): strin
     ---
   ` : '';
 
-  return `
-    You are an expert Software Product Manager. Your task is to analyze the following project idea and generate a list of core functional requirements.
+  const coreModulesSection = data.coreModules && data.coreModules.length > 0 ? `
+    Core Modules Defined:
+    ${data.coreModules.map(module => `- ${module.moduleName}: ${module.description}`).join('\n    ')}
+  ` : '';
 
-    Project Idea:
+  const rolePermissionsSection = data.rolePermissions && data.rolePermissions.length > 0 ? `
+    User Roles Defined:
+    ${data.rolePermissions.map(role => `- ${role.role}: ${role.permissions.join(', ')}`).join('\n    ')}
+  ` : '';
+
+  const standardFlowsSection = data.standardFlows && data.standardFlows.length > 0 ? `
+    Standard Flows Defined:
+    ${data.standardFlows.map(flow => `- ${flow.flowName}: ${flow.steps.length} steps`).join('\n    ')}
+  ` : '';
+
+  return `
+    You are an expert Software Product Manager. Your task is to analyze the following comprehensive project details and generate a list of core functional requirements.
+
+    Project Overview:
     - Project Name: ${data.projectName}
     - Short Description: ${data.shortDescription}
     - Business Goals: ${data.businessGoals}
+    - Technical Goals: ${data.technicalGoals}
     - Target Users: ${data.targetUsers?.join(', ')}
     - Desired Number of Features: ${data.numberOfFeatures}
+
+    ${coreModulesSection}
+
+    ${rolePermissionsSection}
+
+    ${standardFlowsSection}
+
     ${userRequestsSection}
-    Based on all this information, please generate a list of approximately ${data.numberOfFeatures} core requirements. 
+
+    Based on all this comprehensive information, please generate a list of approximately ${data.numberOfFeatures} core requirements that align with the defined modules, roles, and flows.
+
+    **IMPORTANT REQUIREMENTS GENERATION GUIDELINES:**
+
+    1. **Consider Core Modules**: Each module should have corresponding functional requirements. For example, if there's a "Student Management" module, you need requirements for student registration, data management, etc.
+
+    2. **Consider Role Permissions**: Different roles need different functional requirements. For example, admin roles need management features, while end users need access features.
+
+    3. **Consider Standard Flows**: Each flow step should translate to functional requirements. For example, a "Student Registration Flow" needs requirements for form submission, approval processes, etc.
+
+    4. **Balance Priorities**: Ensure a good mix of High (MVP essential), Medium (Phase 2), and Low (nice-to-have) priority requirements.
+
+    5. **Technical vs Business**: Include both technical requirements (security, performance) and business requirements (user workflows, reporting).
+
     Each requirement should have a clear description and a priority level (High, Medium, or Low).
-    A 'High' priority requirement is essential for the product's first launch (MVP).
-    A 'Medium' priority requirement is important but could be launched in a second phase.
-    A 'Low' priority requirement is a "nice-to-have" feature.
 
     Ensure the entire output is a single, valid JSON object that adheres to the provided schema, with a single key "requirements" containing the array of requirement objects.
   `;

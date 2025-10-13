@@ -37,8 +37,19 @@ export default defineConfig(({ mode }) => {
         chunkSizeWarningLimit: 600,
         // Enable source maps for better debugging
         sourcemap: false,
-        // Minify for production
-        minify: 'esbuild'
+        // Minify for production with Unicode support
+        minify: 'esbuild',
+        // Ensure proper charset handling
+        assetsInlineLimit: 4096,
+        // Configure ESBuild for better Unicode support
+        esbuild: {
+          charset: 'utf8',
+          legalComments: 'none'
+        }
+      },
+      // Add proper encoding support
+      esbuild: {
+        charset: 'utf8'
       }
     };
 });

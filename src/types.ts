@@ -8,6 +8,22 @@ export interface CoreRequirement {
   priority: Priority;
 }
 
+export interface CoreModule {
+  moduleName: string;
+  description: string;
+  flows: string[];
+}
+
+export interface RolePermission {
+  role: string;
+  permissions: string[];
+}
+
+export interface StandardFlow {
+  flowName: string;
+  steps: string[];
+}
+
 export interface ProjectInputData {
   projectName: string;
   shortDescription: string;
@@ -19,6 +35,9 @@ export interface ProjectInputData {
   timeline: string;
   coreRequirements: CoreRequirement[];
   userFeatureRequests?: string;
+  coreModules?: CoreModule[];
+  rolePermissions?: RolePermission[];
+  standardFlows?: StandardFlow[];
   techStack: {
     frontend: string[];
     backend: string[];
