@@ -3,10 +3,10 @@ import { GridIcon, LayoutDashboardIcon, FolderKanbanIcon, CopyIcon, PlusCircleIc
 import type { Screen } from '../types';
 
 const navigation = [
-  // { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboardIcon },
+  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboardIcon },
   { id: 'wizard', name: 'New Project', icon: PlusCircleIcon },
   { id: 'templates', name: 'Templates', icon: CopyIcon },
-  // { id: 'projects', name: 'My Projects', icon: FolderKanbanIcon },
+  { id: 'projects', name: 'My Projects', icon: FolderKanbanIcon },
 ];
 
 interface NavItemProps {

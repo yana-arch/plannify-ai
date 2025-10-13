@@ -69,9 +69,13 @@ const planSchema = {
     systemArchitectureMermaid: {
         type: Type.STRING,
         description: 'A Mermaid.js syntax string for a top-down (graph TD) system architecture diagram. It should visualize the key components and their interactions.'
+    },
+    userFlowMermaid: {
+        type: Type.STRING,
+        description: "A Mermaid.js syntax string for a user flow diagram (using 'flowchart LR' or 'graph LR'). It should visualize a primary user journey, like registration and onboarding, or a core interaction loop."
     }
   },
-  required: ['summary', 'keyComponents', 'recommendedTechStack', 'potentialChallenges', 'potentialOpportunities', 'detailedFeatures', 'developmentPlan', 'systemArchitectureMermaid']
+  required: ['summary', 'keyComponents', 'recommendedTechStack', 'potentialChallenges', 'potentialOpportunities', 'detailedFeatures', 'developmentPlan', 'systemArchitectureMermaid', 'userFlowMermaid']
 };
 
 
@@ -98,7 +102,9 @@ const buildPrompt = (data: ProjectInputData): string => {
 
     Please generate a project plan based on this information. The plan should be detailed, realistic, and provide actionable insights. 
     
-    Finally, generate a system architecture diagram using Mermaid.js syntax (using 'graph TD;'). This diagram should visualize how the key components (like Frontend, Backend, Database, external services) interact with each other.
+    First, generate a system architecture diagram using Mermaid.js syntax (using 'graph TD;'). This diagram should visualize how the key components (like Frontend, Backend, Database, external services) interact with each other.
+
+    Second, generate a user flow diagram, also using Mermaid.js syntax (using 'flowchart LR;'). This should illustrate a key user journey, such as user registration and login, or the main process for using the application's core feature. This is separate from the architecture diagram.
 
     Ensure the entire output is a single, valid JSON object that adheres to the provided schema.
   `;

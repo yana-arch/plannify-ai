@@ -21,28 +21,6 @@ const defaultFormData: ProjectInputData = {
   },
 };
 
-const initialFormData: ProjectInputData = {
-  projectName: "SynapsePlan AI",
-  shortDescription: "A web platform for AI-powered project planning...",
-  businessGoals: "Increase dev team efficiency, reduce planning time by 30%",
-  technicalGoals: "Achieve 99.9% uptime, integrate with major VCS platforms",
-  targetUsers: ["Developers", "Product Managers"],
-  numberOfFeatures: 20,
-  estimatedScale: "$50K-$100K",
-  timeline: "3-6 months",
-  coreRequirements: [
-    { id: "1", description: "User authentication with email & social login", priority: 'High' },
-    { id: "2", description: "Keyword-based document search", priority: 'High' },
-  ],
-  techStack: {
-    frontend: ["React", "Next.js"],
-    backend: ["Node.js", "Express.js"],
-    database: ["Firebase Firestore"],
-    otherTools: ["TailwindCSS", "Redux", "Jest", "Cypress", "Docker"],
-  },
-};
-
-
 const TagInput: React.FC<{
     values: string[];
     onValuesChange: (values: string[]) => void;
@@ -208,12 +186,12 @@ export const NewProjectWizard: React.FC<{
     initialData?: TemplateData 
 }> = ({ onGenerate, isGenerating, initialData }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<ProjectInputData>(initialFormData);
+  const [formData, setFormData] = useState<ProjectInputData>(defaultFormData);
 
   useEffect(() => {
       // If initialData is provided (from a template), use it.
       // Otherwise, use the default blank form for a "new" project.
-      const startingData = initialData ? { ...defaultFormData, ...initialData } : initialFormData;
+      const startingData = initialData ? { ...defaultFormData, ...initialData } : defaultFormData;
       setFormData(startingData as ProjectInputData);
       setCurrentStep(0); // Reset to first step when data changes
   }, [initialData]);

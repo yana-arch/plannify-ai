@@ -53,6 +53,11 @@ const formatPlanToMarkdown = (plan: ProjectPlan, projectName: string): string =>
   md += plan.systemArchitectureMermaid;
   md += '\n```\n';
 
+  md += `## 9. User Flow Diagram (Mermaid JS)\n`;
+  md += '```mermaid\n';
+  md += plan.userFlowMermaid;
+  md += '\n```\n';
+
   return md;
 };
 
@@ -70,7 +75,7 @@ const downloadAsMarkdown = (content: string, filename: string) => {
 
 
 const PlanSubNav: React.FC<{ activeTab: string; setActiveTab: (tab: string) => void; }> = ({ activeTab, setActiveTab }) => {
-    const navItems = ['Overview', 'Features', 'Development', 'Architecture', 'Reports'];
+    const navItems = ['Overview', 'Features', 'Development', 'Architecture', 'Workflow', 'Reports'];
     return (
         <aside className="w-56 flex-shrink-0 p-4 border-r border-brand-border">
             <nav className="space-y-1">
@@ -290,6 +295,46 @@ const ArchitectureTab: React.FC<{ plan: ProjectPlan }> = ({ plan }) => {
   );
 };
 
+const WorkflowTab: React.FC<{ plan: ProjectPlan }> = ({ plan }) => {
+  const mermaidRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const initializeMermaid = async () => {
+      // @ts-ignore - mermaid is global from CDN
+      const mermaid = window.mermaid;
+      if (mermaidRef.current && plan.userFlowMermaid) {
+        try {
+          mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+          const { svg } = await mermaid.render('mermaid-graph-flow', plan.userFlowMermaid);
+          if (mermaidRef.current) {
+            mermaidRef.current.innerHTML = svg;
+          }
+        } catch (error) {
+          console.error('Mermaid rendering error:', error);
+          if (mermaidRef.current) {
+             mermaidRef.current.innerText = 'Error rendering diagram. Check console for details.';
+          }
+        }
+      }
+    };
+    initializeMermaid();
+  }, [plan.userFlowMermaid]);
+
+  return (
+    <div className="space-y-6">
+      <h3 className="text-xl font-bold">Primary User Flow Diagram</h3>
+       <p className="text-brand-text-secondary">
+        This diagram illustrates a key user journey or process within the application, providing insight into the user experience from a high level.
+      </p>
+      <Card className="flex justify-center items-center p-8 bg-brand-bg min-h-[300px]">
+         <div ref={mermaidRef} key={plan.userFlowMermaid} className="mermaid-container">
+            {/* Mermaid will render here */}
+         </div>
+      </Card>
+    </div>
+  );
+};
+
 const reportTemplates: ReportTemplate[] = [
   {
     id: 'technical_spec',
@@ -393,6 +438,8 @@ export const ProjectPlanView: React.FC<{
                 return <DevelopmentTab plan={plan} />;
             case 'Architecture':
                 return <ArchitectureTab plan={plan} />;
+            case 'Workflow':
+                return <WorkflowTab plan={plan} />;
             case 'Reports':
                 return <ReportsTab plan={plan} projectName={projectName} />;
             default:

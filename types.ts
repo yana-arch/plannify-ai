@@ -59,6 +59,7 @@ export interface ProjectPlan {
     milestones: Milestone[];
   };
   systemArchitectureMermaid: string;
+  userFlowMermaid: string;
 }
 
 export type ReportType = 'technical_spec' | 'product_brief' | 'executive_summary';
@@ -72,3 +73,12 @@ export interface ReportTemplate {
 }
 
 export type Screen = 'wizard' | 'templates' | 'plan' | 'projects' | 'dashboard';
+
+export interface SavedProject {
+  id: string;
+  projectName: string;
+  shortDescription: string;
+  createdAt: string;
+  inputData: ProjectInputData;
+  projectPlan: ProjectPlan;
+}

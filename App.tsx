@@ -1,11 +1,12 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { NewProjectWizard } from './components/NewProjectWizard';
 import { ProjectPlanView } from './components/ProjectPlanView';
 import { TemplatesView } from './components/TemplatesView';
+import { MyProjectsView } from './components/MyProjectsView';
+import { DashboardView } from './components/DashboardView';
 import { generateProjectPlan } from './services/geminiService';
-import type { ProjectPlan, ProjectInputData, FeatureSpecification, Screen, TemplateData } from './types';
+import type { ProjectPlan, ProjectInputData, FeatureSpecification, Screen, TemplateData, SavedProject } from './types';
 import { WandSparklesIcon } from './components/icons';
 
 const App: React.FC = () => {
@@ -13,8 +14,30 @@ const App: React.FC = () => {
   const [projectInput, setProjectInput] = useState<ProjectInputData | null>(null);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [screen, setScreen] = useState<Screen>('wizard');
+  const [screen, setScreen] = useState<Screen>('dashboard');
   const [wizardInitialData, setWizardInitialData] = useState<TemplateData | undefined>(undefined);
+  const [savedProjects, setSavedProjects] = useState<SavedProject[]>([]);
+
+  useEffect(() => {
+    try {
+      const storedProjects = localStorage.getItem('plannifyai_projects');
+      if (storedProjects) {
+        const projects = JSON.parse(storedProjects);
+        setSavedProjects(projects);
+      }
+    } catch (error) {
+      console.error("Failed to load projects from localStorage", error);
+      setSavedProjects([]);
+    }
+  }, []);
+
+  const saveProjectsToStorage = (projects: SavedProject[]) => {
+    try {
+      localStorage.setItem('plannifyai_projects', JSON.stringify(projects));
+    } catch (error) {
+      console.error("Failed to save projects to localStorage", error);
+    }
+  };
 
   const handleGeneratePlan = async (data: ProjectInputData) => {
     setIsGenerating(true);
@@ -23,29 +46,48 @@ const App: React.FC = () => {
     try {
       const plan = await generateProjectPlan(data);
       setProjectPlan(plan);
+
+      const newProject: SavedProject = {
+        id: Date.now().toString(),
+        projectName: data.projectName,
+        shortDescription: data.shortDescription,
+        createdAt: new Date().toISOString(),
+        inputData: data,
+        projectPlan: plan,
+      };
+      const updatedProjects = [...savedProjects, newProject];
+      setSavedProjects(updatedProjects);
+      saveProjectsToStorage(updatedProjects);
+
       setScreen('plan');
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred.");
-      // Stay on the wizard screen if there's an error
     } finally {
       setIsGenerating(false);
     }
   };
 
   const handleFeatureUpdate = (featureIndex: number, updatedFeature: FeatureSpecification) => {
-    if (!projectPlan) return;
+    if (!projectPlan || !projectInput) return;
 
     const newFeatures = [...projectPlan.detailedFeatures];
     newFeatures[featureIndex] = updatedFeature;
-
     const newPlan = { ...projectPlan, detailedFeatures: newFeatures };
     setProjectPlan(newPlan);
+
+    // Update the saved project as well
+    const projectToUpdate = savedProjects.find(p => p.inputData.projectName === projectInput.projectName);
+    if (projectToUpdate) {
+        const updatedProject = { ...projectToUpdate, projectPlan: newPlan };
+        const updatedProjects = savedProjects.map(p => p.id === updatedProject.id ? updatedProject : p);
+        setSavedProjects(updatedProjects);
+        saveProjectsToStorage(updatedProjects);
+    }
   };
 
   const handleScreenChange = (newScreen: Screen) => {
     if (newScreen === 'wizard') {
-        // When explicitly clicking "New Project", clear any template data
-        setWizardInitialData(undefined);
+      setWizardInitialData(undefined);
     }
     setScreen(newScreen);
   }
@@ -63,7 +105,36 @@ const App: React.FC = () => {
     setScreen('wizard');
   };
   
+  const startNewProject = () => {
+    setProjectPlan(null);
+    setProjectInput(null);
+    setError(null);
+    setWizardInitialData(undefined);
+    setScreen('wizard');
+  };
+
+  const handleViewProject = (project: SavedProject) => {
+    setProjectInput(project.inputData);
+    setProjectPlan(project.projectPlan);
+    setScreen('plan');
+  };
+
+  const handleDeleteProject = (projectId: string) => {
+    const updatedProjects = savedProjects.filter(p => p.id !== projectId);
+    setSavedProjects(updatedProjects);
+    saveProjectsToStorage(updatedProjects);
+  };
+  
   const renderContent = () => {
+    if (screen === 'dashboard') {
+      return <DashboardView 
+        projects={savedProjects}
+        onViewProject={handleViewProject}
+        onNewProject={startNewProject}
+        onScreenChange={handleScreenChange}
+      />;
+    }
+
     if (screen === 'plan' && projectPlan && projectInput) {
       return (
          <>
@@ -74,7 +145,7 @@ const App: React.FC = () => {
                 onFeatureUpdate={handleFeatureUpdate}
               />
                <div className="text-center mt-4">
-                 <button onClick={resetProject} className="text-sm text-brand-text-secondary hover:text-brand-primary transition-colors flex items-center gap-2 mx-auto">
+                 <button onClick={startNewProject} className="text-sm text-brand-text-secondary hover:text-brand-primary transition-colors flex items-center gap-2 mx-auto">
                    <WandSparklesIcon className="h-4 w-4" />
                    Start a New Project Plan
                  </button>
@@ -85,7 +156,16 @@ const App: React.FC = () => {
     }
     
     if (screen === 'templates') {
-        return <TemplatesView onSelectTemplate={handleSelectTemplate} />;
+      return <TemplatesView onSelectTemplate={handleSelectTemplate} />;
+    }
+
+    if (screen === 'projects') {
+      return <MyProjectsView
+        projects={savedProjects}
+        onViewProject={handleViewProject}
+        onDeleteProject={handleDeleteProject}
+        onNewProject={startNewProject}
+      />;
     }
 
     // Default to wizard screen
