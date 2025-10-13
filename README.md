@@ -2,7 +2,11 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# PlannifyAI: Intelligent Project Planning
+
+**Version 1.0.0**
+
+An AI-powered web platform that transforms project ideas into comprehensive, actionable plans. Users input project details through a guided wizard, and Gemini AI generates a detailed blueprint including summaries, feature specifications, technology stack recommendations, and development milestones.
 
 This contains everything you need to run your app locally.
 
