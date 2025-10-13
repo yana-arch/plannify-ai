@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { ProjectInputData, CoreRequirement, Priority, TemplateData } from '../types';
-import { Button, Input, Textarea, Tag, Card } from './ui';
+import { Button, Input, Textarea, Tag, Card, Modal } from './ui';
 import { PlusCircleIcon, XIcon, WandSparklesIcon } from './icons';
 import { generateCoreRequirements } from '../services/geminiService';
 
@@ -93,8 +93,9 @@ const Step2CoreRequirements: React.FC<{ data: ProjectInputData; update: (field: 
     const [newReqPriority, setNewReqPriority] = useState<Priority>('Medium');
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationError, setGenerationError] = useState<string | null>(null);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-    const handleGenerateRequirements = async () => {
+    const handleConfirmGeneration = async () => {
         setIsGenerating(true);
         setGenerationError(null);
         try {
@@ -117,6 +118,7 @@ const Step2CoreRequirements: React.FC<{ data: ProjectInputData; update: (field: 
             setGenerationError(err instanceof Error ? err.message : 'An unknown error occurred.');
         } finally {
             setIsGenerating(false);
+            setShowConfirmModal(false);
         }
     };
 
@@ -133,6 +135,17 @@ const Step2CoreRequirements: React.FC<{ data: ProjectInputData; update: (field: 
 
     return (
         <div className="space-y-4">
+            <Modal
+                isOpen={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+                onConfirm={handleConfirmGeneration}
+                title="Confirm AI Generation"
+                confirmText="Generate"
+                isConfirming={isGenerating}
+            >
+                The AI will analyze your project details and suggest a list of core requirements. This will replace any requirements you have already added. Do you want to continue?
+            </Modal>
+
             <Card className="bg-brand-bg/50">
                 <div>
                     <h4 className="font-semibold text-brand-text-primary">Generate Requirements with AI</h4>
@@ -156,7 +169,7 @@ const Step2CoreRequirements: React.FC<{ data: ProjectInputData; update: (field: 
                     ) : (
                         <div/> /* Spacer */
                     )}
-                    <Button onClick={handleGenerateRequirements} isLoading={isGenerating} className="flex-shrink-0">
+                    <Button onClick={() => setShowConfirmModal(true)} isLoading={isGenerating} className="flex-shrink-0">
                         <WandSparklesIcon className="h-4 w-4 mr-2" />
                         Generate with AI
                     </Button>

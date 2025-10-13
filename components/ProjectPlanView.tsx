@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { ProjectPlan, FeatureSpecification, ReportTemplate, ReportType, ProjectInputData, PlanHistoryEntry, Milestone, SavedProject } from '../types';
-import { Card, Button } from './ui';
+import { Card, Button, Modal } from './ui';
 import { DownloadIcon, WandSparklesIcon, TerminalSquareIcon, LightbulbIcon, BriefcaseIcon, HistoryIcon } from './icons';
 import { enhanceFeatureSpecification, generateReport, regenerateProjectPlan, optimizeDevelopmentPlan } from '../services/geminiService';
 import { useProjects } from '../contexts/ProjectContext';
@@ -106,6 +106,7 @@ const OverviewTab: React.FC<{
     const [evolvePrompt, setEvolvePrompt] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
     const { updateCurrentProjectPlan } = useProjects();
 
     const handleEvolveToggle = () => setIsEvolving(!isEvolving);
@@ -126,11 +127,22 @@ const OverviewTab: React.FC<{
             setError(err instanceof Error ? err.message : "An unknown error occurred.");
         } finally {
             setIsGenerating(false);
+            setShowConfirmModal(false);
         }
     };
     
     return (
         <div className="space-y-8">
+            <Modal
+                isOpen={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+                onConfirm={handleRegenerate}
+                title="Confirm Plan Regeneration"
+                confirmText="Regenerate"
+                isConfirming={isGenerating}
+            >
+                The AI will regenerate the entire project plan based on your new prompt. This will save the current version to history and replace it. Are you sure you want to continue?
+            </Modal>
             <Card>
                 <div className="flex justify-between items-start gap-4">
                     <div>
@@ -157,7 +169,7 @@ const OverviewTab: React.FC<{
                       {error && <p className="text-sm text-red-400 mt-1">{error}</p>}
                       <div className="flex justify-end gap-2 pt-2">
                         <Button variant="secondary" onClick={handleEvolveToggle}>Cancel</Button>
-                        <Button onClick={handleRegenerate} isLoading={isGenerating}>
+                        <Button onClick={() => setShowConfirmModal(true)} isLoading={isGenerating}>
                           {isGenerating ? "Evolving..." : "Regenerate Plan"}
                         </Button>
                       </div>
@@ -206,6 +218,7 @@ const FeatureCard: React.FC<{
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const { updateCurrentProjectFeatures } = useProjects();
 
   const handleEnhanceToggle = () => {
@@ -230,11 +243,23 @@ const FeatureCard: React.FC<{
       setError(err instanceof Error ? err.message : "An unknown error occurred.");
     } finally {
       setIsGenerating(false);
+      setShowConfirmModal(false);
     }
   };
 
   return (
     <Card className="transition-all duration-300 ease-in-out">
+        <Modal
+            isOpen={showConfirmModal}
+            onClose={() => setShowConfirmModal(false)}
+            onConfirm={handleGenerate}
+            title="Confirm Feature Enhancement"
+            confirmText="Enhance"
+            isConfirming={isGenerating}
+        >
+            The AI will enhance this feature based on your prompt. This will save the current plan to history and replace this feature's details. Are you sure you want to continue?
+        </Modal>
+
       <div className="flex justify-between items-start gap-4">
         <div className="flex-grow">
           <h4 className="text-md font-semibold text-brand-primary-hover mb-2">{feature.name}</h4>
@@ -274,7 +299,7 @@ const FeatureCard: React.FC<{
           {error && <p className="text-sm text-red-400 mt-1">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={handleEnhanceToggle}>Cancel</Button>
-            <Button onClick={handleGenerate} isLoading={isGenerating}>
+            <Button onClick={() => setShowConfirmModal(true)} isLoading={isGenerating}>
               {isGenerating ? "Enhancing..." : "Generate"}
             </Button>
           </div>
@@ -310,6 +335,7 @@ const DevelopmentTab: React.FC<{
   const [optimizePrompt, setOptimizePrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const { updateCurrentProjectDevPlan } = useProjects();
 
   const milestones = plan.developmentPlan.milestones || [];
@@ -332,6 +358,7 @@ const DevelopmentTab: React.FC<{
       setError(err instanceof Error ? err.message : "An unknown error occurred.");
     } finally {
       setIsGenerating(false);
+      setShowConfirmModal(false);
     }
   };
 
@@ -354,6 +381,16 @@ const DevelopmentTab: React.FC<{
 
   return (
     <div className="space-y-6">
+       <Modal
+            isOpen={showConfirmModal}
+            onClose={() => setShowConfirmModal(false)}
+            onConfirm={handleGenerate}
+            title="Confirm Timeline Optimization"
+            confirmText="Optimize"
+            isConfirming={isGenerating}
+        >
+            The AI will generate a new development timeline based on your prompt. This will save the current version to history and replace the existing milestones. Are you sure you want to continue?
+        </Modal>
       <div className="flex justify-between items-start">
           <div>
             <h3 className="text-xl font-bold">Development Timeline</h3>
@@ -382,7 +419,7 @@ const DevelopmentTab: React.FC<{
               {error && <p className="text-sm text-red-400 mt-1">{error}</p>}
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="secondary" onClick={handleOptimizeToggle}>Cancel</Button>
-                <Button onClick={handleGenerate} isLoading={isGenerating}>
+                <Button onClick={() => setShowConfirmModal(true)} isLoading={isGenerating}>
                   {isGenerating ? "Optimizing..." : "Generate New Timeline"}
                 </Button>
               </div>

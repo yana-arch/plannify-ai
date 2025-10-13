@@ -137,7 +137,7 @@ export const projectTemplates: TemplateData[] = [
     ],
     techStack: {
       frontend: [],
-      backend: ["Python", "FastAPI", "Pytorch/TensorFlow"],
+      backend: ["Python", "FastAPI", "Go", "NVIDIA Triton Inference Server", "Pytorch/TensorFlow"],
       database: ["Redis (for caching)"],
       otherTools: ["Docker", "Kubernetes/SageMaker", "Prometheus", "Grafana"],
     },
