@@ -1,3 +1,4 @@
+import React from 'react';
 
 export type Priority = 'High' | 'Medium' | 'Low';
 
@@ -24,6 +25,8 @@ export interface ProjectInputData {
     otherTools: string[];
   };
 }
+
+export type TemplateData = Partial<ProjectInputData>;
 
 export interface FeatureSpecification {
   name: string;
@@ -55,4 +58,17 @@ export interface ProjectPlan {
   developmentPlan: {
     milestones: Milestone[];
   };
+  systemArchitectureMermaid: string;
 }
+
+export type ReportType = 'technical_spec' | 'product_brief' | 'executive_summary';
+
+export interface ReportTemplate {
+  id: ReportType;
+  title: string;
+  description: string;
+  persona: string;
+  icon: React.FC<React.SVGProps<SVGSVGElement>>;
+}
+
+export type Screen = 'wizard' | 'templates' | 'plan' | 'projects' | 'dashboard';

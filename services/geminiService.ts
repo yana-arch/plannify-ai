@@ -1,6 +1,18 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
-import type { ProjectInputData, ProjectPlan } from '../types';
+import type { ProjectInputData, ProjectPlan, FeatureSpecification, ReportType } from '../types';
+
+const featureSpecificationSchema = {
+    type: Type.OBJECT,
+    properties: {
+        name: { type: Type.STRING },
+        description: { type: Type.STRING },
+        targetUsers: { type: Type.ARRAY, items: { type: Type.STRING } },
+        mainFunctions: { type: Type.ARRAY, items: { type: Type.STRING } },
+        subFeatures: { type: Type.ARRAY, items: { type: Type.STRING } },
+        preConditions: { type: Type.ARRAY, items: { type: Type.STRING } }
+    },
+    required: ['name', 'description', 'targetUsers', 'mainFunctions', 'subFeatures', 'preConditions']
+};
 
 const planSchema = {
   type: Type.OBJECT,
@@ -33,18 +45,7 @@ const planSchema = {
     },
     detailedFeatures: {
       type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          name: { type: Type.STRING },
-          description: { type: Type.STRING },
-          targetUsers: { type: Type.ARRAY, items: { type: Type.STRING } },
-          mainFunctions: { type: Type.ARRAY, items: { type: Type.STRING } },
-          subFeatures: { type: Type.ARRAY, items: { type: Type.STRING } },
-          preConditions: { type: Type.ARRAY, items: { type: Type.STRING } }
-        },
-        required: ['name', 'description', 'targetUsers', 'mainFunctions', 'subFeatures', 'preConditions']
-      },
+      items: featureSpecificationSchema,
       description: 'A detailed breakdown of each core requirement into a feature specification.'
     },
     developmentPlan: {
@@ -64,9 +65,13 @@ const planSchema = {
         }
       },
       description: 'A high-level development plan with milestones and associated tasks.'
+    },
+    systemArchitectureMermaid: {
+        type: Type.STRING,
+        description: 'A Mermaid.js syntax string for a top-down (graph TD) system architecture diagram. It should visualize the key components and their interactions.'
     }
   },
-  required: ['summary', 'keyComponents', 'recommendedTechStack', 'potentialChallenges', 'potentialOpportunities', 'detailedFeatures', 'developmentPlan']
+  required: ['summary', 'keyComponents', 'recommendedTechStack', 'potentialChallenges', 'potentialOpportunities', 'detailedFeatures', 'developmentPlan', 'systemArchitectureMermaid']
 };
 
 
@@ -91,7 +96,11 @@ const buildPrompt = (data: ProjectInputData): string => {
       - Database: ${data.techStack.database.join(', ')}
       - Other Tools/Libraries: ${data.techStack.otherTools.join(', ')}
 
-    Please generate a project plan based on this information. The plan should be detailed, realistic, and provide actionable insights. Ensure the output is a valid JSON object that adheres to the provided schema.
+    Please generate a project plan based on this information. The plan should be detailed, realistic, and provide actionable insights. 
+    
+    Finally, generate a system architecture diagram using Mermaid.js syntax (using 'graph TD;'). This diagram should visualize how the key components (like Frontend, Backend, Database, external services) interact with each other.
+
+    Ensure the entire output is a single, valid JSON object that adheres to the provided schema.
   `;
 };
 
@@ -119,5 +128,153 @@ export const generateProjectPlan = async (data: ProjectInputData): Promise<Proje
   } catch (error) {
     console.error("Error generating project plan:", error);
     throw new Error("Failed to generate project plan from AI.");
+  }
+};
+
+
+const buildEnhanceFeaturePrompt = (
+  feature: FeatureSpecification,
+  userPrompt: string,
+  projectContext: { name: string; description: string }
+): string => {
+  return `
+    You are an expert Software Product Manager. Your task is to enhance a feature specification based on a user's request.
+
+    Project Context:
+    - Project Name: ${projectContext.name}
+    - Project Summary: ${projectContext.description}
+
+    Current Feature Specification:
+    - Name: ${feature.name}
+    - Description: ${feature.description}
+    - Target Users: ${feature.targetUsers.join(', ')}
+    - Main Functions: ${feature.mainFunctions.join('\n      - ')}
+    - Sub-Features: ${feature.subFeatures.join('\n      - ')}
+    - Pre-Conditions: ${feature.preConditions.join('\n      - ')}
+
+    User's Enhancement Request: "${userPrompt}"
+
+    Please generate an updated and improved version of the entire feature specification based on the user's request.
+    For example, if the user asks for "add user stories", you should enrich the description with them.
+    If the user asks to make it "more technical", you should elaborate on the main functions and sub-features with more technical detail.
+    
+    The feature name should remain the same.
+    
+    Ensure the entire output is a single, valid JSON object that adheres to the provided schema.
+  `;
+};
+
+export const enhanceFeatureSpecification = async (
+  feature: FeatureSpecification,
+  userPrompt: string,
+  projectContext: { name: string; description: string }
+): Promise<FeatureSpecification> => {
+  if (!process.env.API_KEY) {
+    throw new Error("API_KEY environment variable not set");
+  }
+
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const prompt = buildEnhanceFeaturePrompt(feature, userPrompt, projectContext);
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: featureSpecificationSchema,
+      },
+    });
+
+    const jsonText = response.text.trim();
+    const newFeature: FeatureSpecification = JSON.parse(jsonText);
+    return newFeature;
+  } catch (error) {
+    console.error("Error enhancing feature:", error);
+    throw new Error("Failed to enhance feature with AI.");
+  }
+};
+
+const buildReportPrompt = (
+  plan: ProjectPlan,
+  projectName: string,
+  reportType: ReportType
+): string => {
+  const planContext = `
+    Here is the full project plan for "${projectName}":
+
+    Summary: ${plan.summary}
+    Key Components: ${plan.keyComponents.join(', ')}
+    Recommended Tech Stack: 
+      - Frontend: ${plan.recommendedTechStack.frontend.join(', ')}
+      - Backend: ${plan.recommendedTechStack.backend.join(', ')}
+      - Database: ${plan.recommendedTechStack.database.join(', ')}
+      - Other: ${plan.recommendedTechStack.other.join(', ')}
+    Potential Challenges: ${plan.potentialChallenges.join(', ')}
+    Potential Opportunities: ${plan.potentialOpportunities.join(', ')}
+    Features:
+    ${plan.detailedFeatures.map(f => `
+      - Feature: ${f.name}
+        Description: ${f.description}
+        Main Functions: ${f.mainFunctions.join(', ')}
+    `).join('')}
+    Development Milestones:
+    ${plan.developmentPlan.milestones.map(m => `
+      - Milestone: ${m.name}
+        Description: ${m.description}
+        Tasks: ${m.tasks.join(', ')}
+    `).join('')}
+  `;
+
+  switch (reportType) {
+    case 'technical_spec':
+      return `
+        You are a Principal Software Engineer. Based on the following project plan, write a detailed technical specification document.
+        The document should be well-structured, written in Markdown, and focus on technical implementation details, architecture choices, data models, and API design considerations.
+        It should be comprehensive enough for a development team to start working from.
+
+        ${planContext}
+      `;
+    case 'product_brief':
+      return `
+        You are a Senior Product Manager. Based on the following project plan, write a concise product brief.
+        The brief should be written in Markdown and target stakeholders like marketing, sales, and leadership.
+        It should clearly articulate the problem, the solution, target users, key features, and success metrics. Avoid overly technical jargon.
+
+        ${planContext}
+      `;
+    case 'executive_summary':
+      return `
+        You are a C-level Executive (CEO/CTO). Based on the following project plan, write a high-level executive summary.
+        The summary must be brief, written in Markdown, and suitable for a board meeting or for investors.
+        Focus on the business opportunity, market potential, strategic value, high-level timeline, and required investment.
+
+        ${planContext}
+      `;
+  }
+};
+
+export const generateReport = async (
+  plan: ProjectPlan,
+  projectName: string,
+  reportType: ReportType
+): Promise<string> => {
+  if (!process.env.API_KEY) {
+    throw new Error("API_KEY environment variable not set");
+  }
+
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const prompt = buildReportPrompt(plan, projectName, reportType);
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+    
+    return response.text.trim();
+  } catch (error) {
+    console.error(`Error generating ${reportType} report:`, error);
+    throw new Error(`Failed to generate ${reportType} report with AI.`);
   }
 };

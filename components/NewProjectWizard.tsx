@@ -1,8 +1,25 @@
-
-import React, { useState } from 'react';
-import type { ProjectInputData, CoreRequirement, Priority } from '../types';
+import React, { useState, useEffect } from 'react';
+import type { ProjectInputData, CoreRequirement, Priority, TemplateData } from '../types';
 import { Button, Input, Textarea, Tag } from './ui';
-import { PlusCircleIcon, XIcon } from './icons';
+import { PlusCircleIcon, XIcon, WandSparklesIcon } from './icons';
+
+const defaultFormData: ProjectInputData = {
+  projectName: "",
+  shortDescription: "",
+  businessGoals: "",
+  technicalGoals: "",
+  targetUsers: [],
+  numberOfFeatures: 10,
+  estimatedScale: "",
+  timeline: "",
+  coreRequirements: [],
+  techStack: {
+    frontend: [],
+    backend: [],
+    database: [],
+    otherTools: [],
+  },
+};
 
 const initialFormData: ProjectInputData = {
   projectName: "SynapsePlan AI",
@@ -24,6 +41,7 @@ const initialFormData: ProjectInputData = {
     otherTools: ["TailwindCSS", "Redux", "Jest", "Cypress", "Docker"],
   },
 };
+
 
 const TagInput: React.FC<{
     values: string[];
@@ -184,9 +202,22 @@ const STEPS = [
     { title: "Review & Generate Plan", component: Step4Review },
 ];
 
-export const NewProjectWizard: React.FC<{ onGenerate: (data: ProjectInputData) => void, isGenerating: boolean }> = ({ onGenerate, isGenerating }) => {
+export const NewProjectWizard: React.FC<{ 
+    onGenerate: (data: ProjectInputData) => void, 
+    isGenerating: boolean,
+    initialData?: TemplateData 
+}> = ({ onGenerate, isGenerating, initialData }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<ProjectInputData>(initialFormData);
+
+  useEffect(() => {
+      // If initialData is provided (from a template), use it.
+      // Otherwise, use the default blank form for a "new" project.
+      const startingData = initialData ? { ...defaultFormData, ...initialData } : initialFormData;
+      setFormData(startingData as ProjectInputData);
+      setCurrentStep(0); // Reset to first step when data changes
+  }, [initialData]);
+
 
   const updateFormData = (field: keyof ProjectInputData, value: any) => {
       setFormData(prev => ({ ...prev, [field]: value }));
@@ -201,7 +232,7 @@ export const NewProjectWizard: React.FC<{ onGenerate: (data: ProjectInputData) =
     <div className="max-w-3xl mx-auto bg-brand-surface/50 backdrop-blur-lg border border-brand-border/50 rounded-xl shadow-2xl p-8">
         <header className="mb-8">
             <p className="text-right text-sm text-brand-text-secondary mb-2">{currentStep + 1}/{STEPS.length}</p>
-            <h2 className="text-2xl font-bold text-brand-text-primary">Start a New Project</h2>
+            <h2 className="text-2xl font-bold text-brand-text-primary">{initialData ? `New Project from Template: ${initialData.projectName}` : 'Start a New Project'}</h2>
             <p className="text-brand-text-secondary mt-1">Step {currentStep + 1}: {STEPS[currentStep].title}</p>
         </header>
         
@@ -219,7 +250,12 @@ export const NewProjectWizard: React.FC<{ onGenerate: (data: ProjectInputData) =
                 </Button>
             ) : (
                 <Button onClick={() => onGenerate(formData)} isLoading={isGenerating}>
-                    {isGenerating ? "AI is analyzing project data..." : "Review & Generate Plan"}
+                    {isGenerating ? "AI is analyzing project data..." : (
+                        <>
+                            <WandSparklesIcon className="-ml-1 mr-2 h-5 w-5" />
+                            Generate Plan with AI
+                        </>
+                    )}
                 </Button>
             )}
         </footer>

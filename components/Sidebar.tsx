@@ -1,28 +1,40 @@
 import React from 'react';
 import { GridIcon, LayoutDashboardIcon, FolderKanbanIcon, CopyIcon, PlusCircleIcon } from './icons';
+import type { Screen } from '../types';
 
 const navigation = [
-  { name: 'Dashboard', icon: LayoutDashboardIcon, href: '#', current: false },
-  { name: 'My Projects', icon: FolderKanbanIcon, href: '#', current: false },
-  { name: 'Templates', icon: CopyIcon, href: '#', current: false },
-  { name: 'New Project', icon: PlusCircleIcon, href: '#', current: true },
+  // { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboardIcon },
+  { id: 'wizard', name: 'New Project', icon: PlusCircleIcon },
+  { id: 'templates', name: 'Templates', icon: CopyIcon },
+  // { id: 'projects', name: 'My Projects', icon: FolderKanbanIcon },
 ];
 
-const NavItem: React.FC<{ item: typeof navigation[0] }> = ({ item }) => (
-  <a
-    href={item.href}
-    className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
-      ${item.current
+interface NavItemProps {
+    item: typeof navigation[0];
+    isActive: boolean;
+    onClick: () => void;
+}
+
+const NavItem: React.FC<NavItemProps> = ({ item, isActive, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
+      ${isActive
         ? 'bg-brand-primary/10 text-brand-primary-hover shadow-[inset_0_0_0_1px_rgba(47,129,247,0.4),inset_2px_0_0_rgba(47,129,247,1)]'
         : 'text-brand-text-secondary hover:bg-brand-surface hover:text-brand-text-primary'
       }`}
   >
     <item.icon className="h-5 w-5 mr-3" />
     {item.name}
-  </a>
+  </button>
 );
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+    activeScreen: Screen;
+    onScreenChange: (screen: Screen) => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ activeScreen, onScreenChange }) => {
   return (
     <aside className="w-64 flex-shrink-0 p-4 border-r border-brand-border">
       <div className="flex items-center mb-8">
@@ -33,7 +45,12 @@ export const Sidebar: React.FC = () => {
       </div>
       <nav className="space-y-1">
         {navigation.map((item) => (
-          <NavItem key={item.name} item={item} />
+          <NavItem 
+            key={item.id} 
+            item={item} 
+            isActive={activeScreen === item.id} 
+            onClick={() => onScreenChange(item.id as Screen)}
+          />
         ))}
       </nav>
     </aside>
