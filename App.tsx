@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
-import { NewProjectWizard } from './components/wizard';
-import { ProjectPlanView } from './components/plan';
-import { TemplatesView } from './components/templates';
-import { MyProjectsView } from './components/projects';
-import { DashboardView } from './components/dashboard';
 import { useProjects } from './contexts/ProjectContext';
 import type { Screen, TemplateData, ProjectInputData, SavedProject } from './types';
 import { WandSparklesIcon } from './components/icons';
+
+// Lazy load components for code splitting
+const NewProjectWizard = lazy(() => import('./components/wizard').then(module => ({ default: module.NewProjectWizard })));
+const ProjectPlanView = lazy(() => import('./components/plan').then(module => ({ default: module.ProjectPlanView })));
+const TemplatesView = lazy(() => import('./components/templates').then(module => ({ default: module.TemplatesView })));
+const MyProjectsView = lazy(() => import('./components/projects').then(module => ({ default: module.MyProjectsView })));
+const DashboardView = lazy(() => import('./components/dashboard').then(module => ({ default: module.DashboardView })));
 
 const App: React.FC = () => {
   const [screen, setScreen] = useState<Screen>('dashboard');
@@ -101,7 +103,13 @@ const App: React.FC = () => {
     <div className="min-h-screen flex font-sans bg-brand-bg bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]">
       <Sidebar activeScreen={screen} onScreenChange={handleScreenChange} />
       <div className="flex-grow p-8 flex flex-col items-center justify-center">
-        {renderContent()}
+        <Suspense fallback={
+          <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
+          </div>
+        }>
+          {renderContent()}
+        </Suspense>
       </div>
     </div>
   );

@@ -18,6 +18,27 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              // Vendor chunk for React and related libraries
+              vendor: ['react', 'react-dom'],
+              // Markdown processing
+              markdown: ['markdown-it'],
+              // Document generation
+              docx: ['docx'],
+              // AI services
+              ai: ['@google/genai']
+            }
+          }
+        },
+        chunkSizeWarningLimit: 600,
+        // Enable source maps for better debugging
+        sourcemap: false,
+        // Minify for production
+        minify: 'esbuild'
       }
     };
 });
