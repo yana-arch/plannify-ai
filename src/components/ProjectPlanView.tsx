@@ -773,16 +773,21 @@ const reportTemplates: ReportTemplate[] = [
 ];
 
 const ReportsTab: React.FC<{ plan: ProjectPlan; projectName: string }> = ({ plan, projectName }) => {
-  const [loadingReport, setLoadingReport] = useState<ReportType | null>(null);
+  const [loadingReport, setLoadingReport] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleGenerateReport = async (template: ReportTemplate) => {
-    setLoadingReport(template.id);
+  const handleGenerateReport = async (template: ReportTemplate, format: 'md' | 'docx') => {
+    setLoadingReport(`${template.id}_${format}`);
     setError(null);
     try {
       const reportContent = await generateReport(plan, projectName, template.id);
-      const filename = `${projectName.replace(/\s+/g, '_')}_${template.id}.md`;
-      downloadAsMarkdown(reportContent, filename);
+
+      if (format === 'md') {
+        const filename = `${projectName.replace(/\s+/g, '_')}_${template.id}.md`;
+        downloadAsMarkdown(reportContent, filename);
+      } else {
+        await exportReportAsDocx(reportContent, projectName, template.title);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred.");
     } finally {
@@ -794,7 +799,7 @@ const ReportsTab: React.FC<{ plan: ProjectPlan; projectName: string }> = ({ plan
     <div className="space-y-6">
       <h3 className="text-xl font-bold">Generate Project Reports</h3>
       <p className="text-brand-text-secondary">
-        Select a template to generate a tailored report using AI. The report will be downloaded as a Markdown file.
+        Select a template to generate a tailored report using AI. Choose between Markdown (.md) or Microsoft Word (.docx) format.
       </p>
       {error && (
         <div className="mt-4 text-red-400 bg-red-500/10 p-3 rounded-md">{error}</div>
@@ -812,14 +817,23 @@ const ReportsTab: React.FC<{ plan: ProjectPlan; projectName: string }> = ({ plan
               </div>
             </div>
             <p className="text-sm text-brand-text-secondary flex-grow mb-6">{template.description}</p>
-            <Button
-              onClick={() => handleGenerateReport(template)}
-              isLoading={loadingReport === template.id}
-              className="mt-auto w-full"
-            >
-              <DownloadIcon className="h-4 w-4 mr-2" />
-              {loadingReport === template.id ? 'Generating...' : 'Generate & Download'}
-            </Button>
+            <div className="flex gap-2 mt-auto w-full">
+                <Button
+                    variant="secondary"
+                    onClick={() => handleGenerateReport(template, 'md')}
+                    isLoading={loadingReport === `${template.id}_md`}
+                    className="w-full text-xs"
+                    >
+                    Generate MD
+                </Button>
+                <Button
+                    onClick={() => handleGenerateReport(template, 'docx')}
+                    isLoading={loadingReport === `${template.id}_docx`}
+                    className="w-full text-xs"
+                    >
+                    Generate DOCX
+                </Button>
+            </div>
           </Card>
         ))}
       </div>
@@ -889,9 +903,25 @@ export const ProjectPlanView: React.FC<{ project: SavedProject }> = ({ project }
         setActiveTab('Overview');
     }, [project.id]);
 
-    const handleExport = () => {
-      const markdownContent = formatPlanToMarkdown(projectPlan, projectName);
-      downloadAsMarkdown(markdownContent, `${projectName.replace(/\s+/g, '_')}_Plan.md`);
+    const [exportFormat, setExportFormat] = useState<'md' | 'docx'>('md');
+    const [isExporting, setIsExporting] = useState(false);
+
+    const handleExport = async (format?: 'md' | 'docx') => {
+      const selectedFormat = format || exportFormat;
+      setIsExporting(true);
+
+      try {
+        if (selectedFormat === 'md') {
+          const markdownContent = formatPlanToMarkdown(projectPlan, projectName);
+          downloadAsMarkdown(markdownContent, `${projectName.replace(/\s+/g, '_')}_Plan.md`);
+        } else {
+          await exportPlanAsDocx(projectPlan, projectName);
+        }
+      } catch (error) {
+        console.error('Export failed:', error);
+      } finally {
+        setIsExporting(false);
+      }
     };
 
     const renderContent = () => {
@@ -920,10 +950,20 @@ export const ProjectPlanView: React.FC<{ project: SavedProject }> = ({ project }
         <div className="flex flex-col flex-grow bg-brand-surface/50 backdrop-blur-lg border border-brand-border/50 rounded-xl shadow-2xl p-4 w-full">
             <header className="flex justify-between items-center border-b border-brand-border pb-4 mb-4 px-4">
               <h2 className="text-xl font-bold text-brand-text-primary">{projectName} - Project Plan</h2>
-              <Button variant="secondary" onClick={handleExport}>
-                <DownloadIcon className="h-4 w-4 mr-2" />
-                Export Plan
-              </Button>
+              <div className="flex items-center gap-3">
+                <select
+                  value={exportFormat}
+                  onChange={(e) => setExportFormat(e.target.value as 'md' | 'docx')}
+                  className="bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-sm text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                >
+                  <option value="md">Markdown (.md)</option>
+                  <option value="docx">Word (.docx)</option>
+                </select>
+                <Button variant="secondary" onClick={() => handleExport()} isLoading={isExporting}>
+                  <DownloadIcon className="h-4 w-4 mr-2" />
+                  {isExporting ? 'Exporting...' : 'Export Plan'}
+                </Button>
+              </div>
             </header>
             <div className="flex flex-grow">
                 <PlanSubNav activeTab={activeTab} setActiveTab={setActiveTab} />
