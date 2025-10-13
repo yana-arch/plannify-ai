@@ -113,9 +113,11 @@ const buildPrompt = (data: ProjectInputData): string => {
     Please generate a project plan based on this information. The plan should be detailed, realistic, and provide actionable insights. Use the market and competitor information to inform the 'Potential Challenges' and 'Potential Opportunities' sections.
     For the development plan, provide estimated start weeks and durations for each milestone so they can be displayed in a Gantt chart.
     
-    First, generate a system architecture diagram using Mermaid.js syntax (using 'graph TD;'). This diagram should visualize how the key components (like Frontend, Backend, Database, external services) interact with each other.
+    When generating Mermaid.js diagrams, ensure the syntax is valid. Each link or node definition must be a complete, valid statement. Do not add stray characters or node identifiers after a statement is terminated with a semicolon on the same line. For example, 'A --> B; B --> C' is valid, but 'A --> B; B' is invalid.
 
-    Second, generate a user flow diagram, also using Mermaid.js syntax (using 'flowchart LR;'). This should illustrate a key user journey, such as user registration and login, or the main process for using the application's core feature. This is separate from the architecture diagram.
+    First, generate a system architecture diagram using Mermaid.js syntax (starting with 'graph TD'). This diagram should visualize how the key components (like Frontend, Backend, Database, external services) interact with each other.
+
+    Second, generate a user flow diagram, also using Mermaid.js syntax (starting with 'flowchart LR'). This should illustrate a key user journey, such as user registration and login, or the main process for using the application's core feature. This is separate from the architecture diagram.
 
     Ensure the entire output is a single, valid JSON object that adheres to the provided schema.
   `;
