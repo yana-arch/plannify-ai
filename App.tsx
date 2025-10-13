@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Sidebar } from './components/Sidebar';
-import { NewProjectWizard } from './components/NewProjectWizard';
-import { ProjectPlanView } from './components/ProjectPlanView';
-import { TemplatesView } from './components/TemplatesView';
-import { MyProjectsView } from './components/MyProjectsView';
-import { DashboardView } from './components/DashboardView';
+import { Sidebar } from './components/layout/Sidebar';
+import { NewProjectWizard } from './components/wizard';
+import { ProjectPlanView } from './components/plan';
+import { TemplatesView } from './components/templates';
+import { MyProjectsView } from './components/projects';
+import { DashboardView } from './components/dashboard';
 import { useProjects } from './contexts/ProjectContext';
 import type { Screen, TemplateData, ProjectInputData, SavedProject } from './types';
 import { WandSparklesIcon } from './components/icons';
