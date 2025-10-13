@@ -1,7 +1,7 @@
 import React from 'react';
 import type { SavedProject, Screen } from '../types';
 import { Card, Button } from './ui';
-import { WandSparklesIcon, FolderKanbanIcon, CopyIcon } from './icons';
+import { WandSparklesIcon, FolderKanbanIcon, CopyIcon, LightbulbIcon } from './icons';
 
 interface DashboardViewProps {
   projects: SavedProject[];
@@ -77,6 +77,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ projects, onViewPr
                     </button>
                  </div>
              </Card>
+             {/* AI Insights Widget */}
+             <Card>
+                <div className="flex items-start gap-4">
+                    <div className="p-3 bg-brand-border rounded-lg flex-shrink-0">
+                        <LightbulbIcon className="h-6 w-6 text-brand-primary-hover"/>
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-brand-text-primary">AI Insight</h3>
+                        <p className="text-sm text-brand-text-secondary mt-1">
+                            For projects with many features, try asking the AI to "Evolve" the plan and suggest a phased rollout in the milestones.
+                        </p>
+                    </div>
+                </div>
+            </Card>
         </div>
       </main>
 
