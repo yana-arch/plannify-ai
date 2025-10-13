@@ -19,6 +19,8 @@ const defaultFormData: ProjectInputData = {
     database: [],
     otherTools: [],
   },
+  marketAnalysis: "",
+  competitors: [],
 };
 
 const TagInput: React.FC<{
@@ -155,7 +157,32 @@ const Step3TechStack: React.FC<{ data: ProjectInputData; update: (field: string,
 };
 
 // Step 4 Component
-const Step4Review: React.FC<{ data: ProjectInputData }> = ({ data }) => {
+const Step4MarketAnalysis: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
+    return (
+        <div className="space-y-6">
+            <Textarea
+                label="Market Analysis"
+                id="marketAnalysis"
+                placeholder="Describe the target market, key trends, and existing competitors. What makes your project unique?"
+                value={data.marketAnalysis}
+                onChange={e => update('marketAnalysis', e.target.value)}
+                rows={5}
+            />
+            <div>
+                <label className="block text-sm font-medium text-brand-text-secondary mb-1">Known Competitors</label>
+                <TagInput
+                    values={data.competitors}
+                    onValuesChange={v => update('competitors', v)}
+                    placeholder="Add competitor and press Enter..."
+                />
+            </div>
+        </div>
+    );
+};
+
+
+// Step 5 Component
+const Step5Review: React.FC<{ data: ProjectInputData }> = ({ data }) => {
     return (
         <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
             <h3 className="text-lg font-semibold text-brand-text-primary">Review Your Project Details</h3>
@@ -168,6 +195,8 @@ const Step4Review: React.FC<{ data: ProjectInputData }> = ({ data }) => {
                 <p><strong>Frontend:</strong> {data.techStack.frontend.join(', ')}</p>
                 <p><strong>Backend:</strong> {data.techStack.backend.join(', ')}</p>
                 <p><strong>Database:</strong> {data.techStack.database.join(', ')}</p>
+                <p><strong>Market Analysis:</strong> {data.marketAnalysis || 'N/A'}</p>
+                <p><strong>Competitors:</strong> {data.competitors.join(', ') || 'N/A'}</p>
             </div>
         </div>
     );
@@ -177,7 +206,8 @@ const STEPS = [
     { title: "Basic Information", component: Step1BasicInfo },
     { title: "Core Requirements", component: Step2CoreRequirements },
     { title: "Anticipated Technology Stack", component: Step3TechStack },
-    { title: "Review & Generate Plan", component: Step4Review },
+    { title: "Market & Competition", component: Step4MarketAnalysis },
+    { title: "Review & Generate Plan", component: Step5Review },
 ];
 
 export const NewProjectWizard: React.FC<{ 

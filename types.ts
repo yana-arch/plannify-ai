@@ -24,6 +24,8 @@ export interface ProjectInputData {
     database: string[];
     otherTools: string[];
   };
+  marketAnalysis: string;
+  competitors: string[];
 }
 
 export type TemplateData = Partial<ProjectInputData>;

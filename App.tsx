@@ -17,6 +17,7 @@ const App: React.FC = () => {
   const [screen, setScreen] = useState<Screen>('dashboard');
   const [wizardInitialData, setWizardInitialData] = useState<TemplateData | undefined>(undefined);
   const [savedProjects, setSavedProjects] = useState<SavedProject[]>([]);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -58,7 +59,7 @@ const App: React.FC = () => {
       const updatedProjects = [...savedProjects, newProject];
       setSavedProjects(updatedProjects);
       saveProjectsToStorage(updatedProjects);
-
+      setCurrentProjectId(newProject.id);
       setScreen('plan');
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred.");
@@ -67,8 +68,21 @@ const App: React.FC = () => {
     }
   };
 
+  const handlePlanUpdate = (newPlan: ProjectPlan) => {
+    if (!projectPlan || !projectInput || !currentProjectId) return;
+
+    setProjectPlan(newPlan);
+
+    // Update the saved project as well
+    const updatedProjects = savedProjects.map(p =>
+      p.id === currentProjectId ? { ...p, projectPlan: newPlan } : p
+    );
+    setSavedProjects(updatedProjects);
+    saveProjectsToStorage(updatedProjects);
+  };
+
   const handleFeatureUpdate = (featureIndex: number, updatedFeature: FeatureSpecification) => {
-    if (!projectPlan || !projectInput) return;
+    if (!projectPlan || !projectInput || !currentProjectId) return;
 
     const newFeatures = [...projectPlan.detailedFeatures];
     newFeatures[featureIndex] = updatedFeature;
@@ -76,7 +90,7 @@ const App: React.FC = () => {
     setProjectPlan(newPlan);
 
     // Update the saved project as well
-    const projectToUpdate = savedProjects.find(p => p.inputData.projectName === projectInput.projectName);
+    const projectToUpdate = savedProjects.find(p => p.id === currentProjectId);
     if (projectToUpdate) {
         const updatedProject = { ...projectToUpdate, projectPlan: newPlan };
         const updatedProjects = savedProjects.map(p => p.id === updatedProject.id ? updatedProject : p);
@@ -102,6 +116,7 @@ const App: React.FC = () => {
     setProjectInput(null);
     setError(null);
     setWizardInitialData(undefined);
+    setCurrentProjectId(null);
     setScreen('wizard');
   };
   
@@ -110,12 +125,14 @@ const App: React.FC = () => {
     setProjectInput(null);
     setError(null);
     setWizardInitialData(undefined);
+    setCurrentProjectId(null);
     setScreen('wizard');
   };
 
   const handleViewProject = (project: SavedProject) => {
     setProjectInput(project.inputData);
     setProjectPlan(project.projectPlan);
+    setCurrentProjectId(project.id);
     setScreen('plan');
   };
 
@@ -142,7 +159,9 @@ const App: React.FC = () => {
               <ProjectPlanView
                 plan={projectPlan}
                 projectName={projectInput.projectName}
+                projectInput={projectInput}
                 onFeatureUpdate={handleFeatureUpdate}
+                onPlanUpdate={handlePlanUpdate}
               />
                <div className="text-center mt-4">
                  <button onClick={startNewProject} className="text-sm text-brand-text-secondary hover:text-brand-primary transition-colors flex items-center gap-2 mx-auto">

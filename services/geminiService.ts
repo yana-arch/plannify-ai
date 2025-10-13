@@ -99,8 +99,10 @@ const buildPrompt = (data: ProjectInputData): string => {
       - Backend: ${data.techStack.backend.join(', ')}
       - Database: ${data.techStack.database.join(', ')}
       - Other Tools/Libraries: ${data.techStack.otherTools.join(', ')}
+    - Market Analysis: ${data.marketAnalysis || 'Not provided.'}
+    - Known Competitors: ${data.competitors.join(', ') || 'Not provided.'}
 
-    Please generate a project plan based on this information. The plan should be detailed, realistic, and provide actionable insights. 
+    Please generate a project plan based on this information. The plan should be detailed, realistic, and provide actionable insights. Use the market and competitor information to inform the 'Potential Challenges' and 'Potential Opportunities' sections.
     
     First, generate a system architecture diagram using Mermaid.js syntax (using 'graph TD;'). This diagram should visualize how the key components (like Frontend, Backend, Database, external services) interact with each other.
 
@@ -134,6 +136,67 @@ export const generateProjectPlan = async (data: ProjectInputData): Promise<Proje
   } catch (error) {
     console.error("Error generating project plan:", error);
     throw new Error("Failed to generate project plan from AI.");
+  }
+};
+
+const buildRegeneratePrompt = (currentPlan: ProjectPlan, originalInput: ProjectInputData, userPrompt: string): string => {
+  const originalRequestPrompt = buildPrompt(originalInput);
+  
+  return `
+    You are an expert Software Architect and Project Planner AI.
+    You have previously generated a project plan for a user. Now, the user has feedback and wants you to regenerate the plan.
+
+    Here is the user's original request:
+    ---
+    ${originalRequestPrompt}
+    ---
+
+    Here is the project plan you generated previously:
+    ---
+    ${JSON.stringify(currentPlan, null, 2)}
+    ---
+
+    Now, here is the user's new request for changes:
+    ---
+    "${userPrompt}"
+    ---
+
+    Please regenerate the **entire** project plan, incorporating the user's new feedback. 
+    The new plan should be a complete replacement, not just an update. 
+    Maintain the context from the original request but modify the plan according to the new instructions.
+
+    Ensure the entire output is a single, valid JSON object that adheres to the provided schema.
+  `;
+};
+
+export const regenerateProjectPlan = async (
+  currentPlan: ProjectPlan,
+  originalInput: ProjectInputData,
+  userPrompt: string
+): Promise<ProjectPlan> => {
+  if (!process.env.API_KEY) {
+    throw new Error("API_KEY environment variable not set");
+  }
+
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const prompt = buildRegeneratePrompt(currentPlan, originalInput, userPrompt);
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: planSchema,
+      },
+    });
+
+    const jsonText = response.text.trim();
+    const plan: ProjectPlan = JSON.parse(jsonText);
+    return plan;
+  } catch (error) {
+    console.error("Error regenerating project plan:", error);
+    throw new Error("Failed to regenerate project plan with AI.");
   }
 };
 

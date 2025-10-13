@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { ProjectPlan, FeatureSpecification, ReportTemplate, ReportType } from '../types';
+import type { ProjectPlan, FeatureSpecification, ReportTemplate, ReportType, ProjectInputData } from '../types';
 import { Card, Button } from './ui';
 import { DownloadIcon, WandSparklesIcon, TerminalSquareIcon, LightbulbIcon, BriefcaseIcon } from './icons';
-import { enhanceFeatureSpecification, generateReport } from '../services/geminiService';
+import { enhanceFeatureSpecification, generateReport, regenerateProjectPlan } from '../services/geminiService';
 
 // --- Utility function to format plan for export ---
 const formatPlanToMarkdown = (plan: ProjectPlan, projectName: string): string => {
@@ -97,43 +97,104 @@ const PlanSubNav: React.FC<{ activeTab: string; setActiveTab: (tab: string) => v
     );
 };
 
-const OverviewTab: React.FC<{ plan: ProjectPlan }> = ({ plan }) => (
-    <div className="space-y-8">
-        <Card>
-            <h3 className="text-lg font-semibold mb-2">AI-Generated Project Summary</h3>
-            <p className="text-brand-text-secondary">{plan.summary}</p>
-        </Card>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+const OverviewTab: React.FC<{ 
+    plan: ProjectPlan;
+    projectInput: ProjectInputData;
+    onPlanUpdate: (newPlan: ProjectPlan) => void;
+}> = ({ plan, projectInput, onPlanUpdate }) => {
+    const [isEvolving, setIsEvolving] = useState(false);
+    const [evolvePrompt, setEvolvePrompt] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleEvolveToggle = () => setIsEvolving(!isEvolving);
+
+    const handleRegenerate = async () => {
+        if (!evolvePrompt.trim()) {
+            setError("Please enter a prompt to evolve the plan.");
+            return;
+        }
+        setIsGenerating(true);
+        setError(null);
+        try {
+            const newPlan = await regenerateProjectPlan(plan, projectInput, evolvePrompt);
+            onPlanUpdate(newPlan);
+            setIsEvolving(false);
+            setEvolvePrompt('');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "An unknown error occurred.");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+    
+    return (
+        <div className="space-y-8">
             <Card>
-                <h3 className="text-lg font-semibold mb-2">Identified Key Components</h3>
-                <ul className="list-decimal list-inside space-y-1 text-brand-text-secondary">
-                    {plan.keyComponents.map((comp, i) => <li key={i}>{comp}</li>)}
-                </ul>
-            </Card>
-             <Card>
-                <h3 className="text-lg font-semibold mb-2">Recommended Technology Stack</h3>
-                <div className="text-sm text-brand-text-secondary space-y-1">
-                    <p><strong>Frontend:</strong> {plan.recommendedTechStack.frontend.join(', ')}</p>
-                    <p><strong>Backend:</strong> {plan.recommendedTechStack.backend.join(', ')}</p>
-                    <p><strong>Database:</strong> {plan.recommendedTechStack.database.join(', ')}</p>
-                    <p><strong>Other:</strong> {plan.recommendedTechStack.other.join(', ')}</p>
+                <div className="flex justify-between items-start gap-4">
+                    <div>
+                        <h3 className="text-lg font-semibold mb-2">AI-Generated Project Summary</h3>
+                        <p className="text-brand-text-secondary">{plan.summary}</p>
+                    </div>
+                    <Button variant="secondary" className="!px-2 !py-1 text-xs flex-shrink-0" onClick={handleEvolveToggle}>
+                        <WandSparklesIcon className="h-4 w-4 mr-1.5" />
+                        Evolve
+                    </Button>
                 </div>
+
+                {isEvolving && (
+                    <div className="mt-4 pt-4 border-t border-brand-border/50 space-y-3">
+                       <label htmlFor="evolve-prompt" className="block text-sm font-medium text-brand-text-secondary">How should the AI evolve this plan?</label>
+                      <input
+                        id="evolve-prompt"
+                        type="text"
+                        value={evolvePrompt}
+                        onChange={(e) => setEvolvePrompt(e.target.value)}
+                        placeholder="e.g., Suggest alternative backend technologies"
+                        className="w-full bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-sm text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                      />
+                      {error && <p className="text-sm text-red-400 mt-1">{error}</p>}
+                      <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="secondary" onClick={handleEvolveToggle}>Cancel</Button>
+                        <Button onClick={handleRegenerate} isLoading={isGenerating}>
+                          {isGenerating ? "Evolving..." : "Regenerate Plan"}
+                        </Button>
+                      </div>
+                    </div>
+                )}
             </Card>
-            <Card>
-                <h3 className="text-lg font-semibold mb-2">Potential Challenges</h3>
-                 <ul className="list-disc list-inside space-y-1 text-brand-text-secondary">
-                    {plan.potentialChallenges.map((challenge, i) => <li key={i}>{challenge}</li>)}
-                </ul>
-            </Card>
-            <Card>
-                <h3 className="text-lg font-semibold mb-2">Potential Opportunities</h3>
-                 <ul className="list-disc list-inside space-y-1 text-brand-text-secondary">
-                    {plan.potentialOpportunities.map((opp, i) => <li key={i}>{opp}</li>)}
-                </ul>
-            </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                    <h3 className="text-lg font-semibold mb-2">Identified Key Components</h3>
+                    <ul className="list-decimal list-inside space-y-1 text-brand-text-secondary">
+                        {plan.keyComponents.map((comp, i) => <li key={i}>{comp}</li>)}
+                    </ul>
+                </Card>
+                 <Card>
+                    <h3 className="text-lg font-semibold mb-2">Recommended Technology Stack</h3>
+                    <div className="text-sm text-brand-text-secondary space-y-1">
+                        <p><strong>Frontend:</strong> {plan.recommendedTechStack.frontend.join(', ')}</p>
+                        <p><strong>Backend:</strong> {plan.recommendedTechStack.backend.join(', ')}</p>
+                        <p><strong>Database:</strong> {plan.recommendedTechStack.database.join(', ')}</p>
+                        <p><strong>Other:</strong> {plan.recommendedTechStack.other.join(', ')}</p>
+                    </div>
+                </Card>
+                <Card>
+                    <h3 className="text-lg font-semibold mb-2">Potential Challenges</h3>
+                     <ul className="list-disc list-inside space-y-1 text-brand-text-secondary">
+                        {plan.potentialChallenges.map((challenge, i) => <li key={i}>{challenge}</li>)}
+                    </ul>
+                </Card>
+                <Card>
+                    <h3 className="text-lg font-semibold mb-2">Potential Opportunities</h3>
+                     <ul className="list-disc list-inside space-y-1 text-brand-text-secondary">
+                        {plan.potentialOpportunities.map((opp, i) => <li key={i}>{opp}</li>)}
+                    </ul>
+                </Card>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 const FeatureCard: React.FC<{
   feature: FeatureSpecification;
@@ -418,8 +479,10 @@ const ReportsTab: React.FC<{ plan: ProjectPlan; projectName: string }> = ({ plan
 export const ProjectPlanView: React.FC<{
   plan: ProjectPlan,
   projectName: string,
+  projectInput: ProjectInputData;
   onFeatureUpdate: (featureIndex: number, updatedFeature: FeatureSpecification) => void;
-}> = ({ plan, projectName, onFeatureUpdate }) => {
+  onPlanUpdate: (newPlan: ProjectPlan) => void;
+}> = ({ plan, projectName, projectInput, onFeatureUpdate, onPlanUpdate }) => {
     const [activeTab, setActiveTab] = useState('Overview');
 
     const handleExport = () => {
@@ -431,7 +494,7 @@ export const ProjectPlanView: React.FC<{
         const projectContext = { name: projectName, description: plan.summary };
         switch (activeTab) {
             case 'Overview':
-                return <OverviewTab plan={plan} />;
+                return <OverviewTab plan={plan} projectInput={projectInput} onPlanUpdate={onPlanUpdate} />;
             case 'Features':
                 return <FeaturesTab plan={plan} projectContext={projectContext} onFeatureUpdate={onFeatureUpdate} />;
             case 'Development':
@@ -443,7 +506,7 @@ export const ProjectPlanView: React.FC<{
             case 'Reports':
                 return <ReportsTab plan={plan} projectName={projectName} />;
             default:
-                return <OverviewTab plan={plan} />;
+                return <OverviewTab plan={plan} projectInput={projectInput} onPlanUpdate={onPlanUpdate} />;
         }
     };
 
