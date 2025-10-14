@@ -113,3 +113,28 @@ export const HistoryIcon = (props: React.SVGProps<SVGSVGElement>) => (
         <path d="M12 7v5l4 2" />
     </svg>
 );
+
+export const InfoIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M12 16v-4"></path>
+        <path d="M12 8h.01"></path>
+    </svg>
+);
+
+export const AlertTriangleIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M21 12 3 12l8.5-9L11.5 3H13l-1.5 2.5L21 12Z"></path>
+        <path d="m12 2 10 20H2L12 2Z"></path>
+        <path d="m9.1 17.2 2.8 1.1 2.9-1.1"></path>
+        <path d="m9.1 14.7 2.8 1.1 2.9-1.1"></path>
+        <path d="m9.1 12.2 2.8 1.1 2.9-1.1"></path>
+    </svg>
+);
+
+export const CheckCircleIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22,4 12,14.01 9,11.01"></polyline>
+    </svg>
+);

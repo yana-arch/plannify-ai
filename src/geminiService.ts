@@ -211,7 +211,7 @@ export const generateProjectPlan = async (data: ProjectInputData): Promise<Proje
   const cacheKey = cacheService.generateProjectPlanKey(data);
   const cachedResult = cacheService.get<ProjectPlan>(cacheKey);
   if (cachedResult) {
-    console.log("Returning cached project plan");
+    console.log("✅ Returning cached project plan");
     return cachedResult;
   }
 
@@ -219,7 +219,8 @@ export const generateProjectPlan = async (data: ProjectInputData): Promise<Proje
   const prompt = buildPrompt(data);
 
   try {
-    const response = await retryService.executeApiCall(async () => {
+    const response = await retryService.executeAIOperation(async () => {
+      console.log("🧠 Sending request to AI for plan generation...");
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: prompt,
@@ -229,26 +230,43 @@ export const generateProjectPlan = async (data: ProjectInputData): Promise<Proje
         },
       });
       return result;
-    });
+    }, "Project Plan Generation");
 
+    console.log("📝 Processing AI response...");
     const jsonText = response.text.trim();
     const plan: ProjectPlan = JSON.parse(jsonText);
 
     // Post-process Mermaid diagrams to ensure correct formatting
     if (plan.systemArchitectureMermaid) {
+      console.log("🔧 Post-processing architecture diagram...");
       plan.systemArchitectureMermaid = postProcessMermaidCode(plan.systemArchitectureMermaid);
     }
     if (plan.userFlowMermaid) {
+      console.log("🔧 Post-processing user flow diagram...");
       plan.userFlowMermaid = postProcessMermaidCode(plan.userFlowMermaid);
     }
 
-    // Cache the result
-    cacheService.set(cacheKey, plan);
+    // Cache the result with longer TTL for complex operations
+    cacheService.set(cacheKey, plan, 1000 * 60 * 60); // 1 hour TTL for plans
+    console.log("💾 Plan cached successfully");
 
+    console.log("🎉 Project plan generation completed successfully!");
     return plan;
   } catch (error) {
-    console.error("Error generating project plan:", error);
-    throw new Error("Failed to generate project plan from AI.");
+    console.error("❌ Error generating project plan:", error);
+
+    // Provide more helpful error messages
+    if (error.name === 'AIRetryError') {
+      const originalError = (error as any).originalError;
+      if (originalError?.message?.includes('quota')) {
+        throw new Error("AI service quota exceeded. Please try again later or contact support.");
+      }
+      if (originalError?.message?.includes('rate limit')) {
+        throw new Error("AI service is temporarily overloaded. Please wait a moment and try again.");
+      }
+    }
+
+    throw new Error(`Failed to generate project plan: ${error.message}. Please check your input data and try again.`);
   }
 };
 

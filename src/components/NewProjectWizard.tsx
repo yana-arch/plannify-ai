@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import type { ProjectInputData, CoreRequirement, Priority, TemplateData } from '../types';
 import { Button, Input, Textarea, Tag, Card, Modal } from './ui';
-import { PlusCircleIcon, XIcon, WandSparklesIcon } from './icons';
+import { PlusCircleIcon, XIcon, WandSparklesIcon, InfoIcon, AlertTriangleIcon, CheckCircleIcon } from './icons';
 import { generateCoreRequirements } from '../geminiService';
+import { validateStepData, validateCompleteForm, getFieldTooltip } from '../utils/validation';
+import type { ValidationResult, ValidationError } from '../utils/validation';
 
 const defaultFormData: ProjectInputData = {
   projectName: "",
@@ -23,6 +25,9 @@ const defaultFormData: ProjectInputData = {
   },
   marketAnalysis: "",
   competitors: [],
+  riskAssessment: [],
+  featureDependencies: {},
+  successMetrics: [],
 };
 
 const TagInput: React.FC<{
@@ -63,25 +68,156 @@ const TagInput: React.FC<{
     );
 };
 
+// Enhanced Input Component with Validation and Tooltip
+const ValidatedInput: React.FC<{
+    label: string;
+    id: string;
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+    type?: string;
+    required?: boolean;
+    minLength?: number;
+    placeholder?: string;
+    tooltip?: string;
+    validation?: { isValid: boolean; errors: string[]; warnings: string[] };
+}> = ({ label, id, value, onChange, type = "text", required = false, minLength, placeholder, tooltip, validation }) => {
+    const hasErrors = validation?.errors.length > 0;
+    const hasWarnings = validation?.warnings.length > 0;
+
+    return (
+        <div className="space-y-1">
+            <div className="flex items-center gap-2">
+                <label htmlFor={id} className="block text-sm font-medium text-brand-text-secondary">
+                    {label}
+                    {required && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                {tooltip && (
+                    <div className="group relative">
+                        <InfoIcon className="h-4 w-4 text-brand-text-secondary/60 hover:text-brand-text-secondary cursor-help" />
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-brand-surface border border-brand-border rounded-md text-xs text-brand-text-primary opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                            {tooltip}
+                        </div>
+                    </div>
+                )}
+            </div>
+            {type === "textarea" ? (
+                <Textarea
+                    id={id}
+                    value={value}
+                    onChange={onChange}
+                    placeholder={placeholder}
+                    className={hasErrors ? "border-red-500 focus:ring-red-500" : ""}
+                />
+            ) : (
+                <Input
+                    id={id}
+                    type={type}
+                    value={value}
+                    onChange={onChange}
+                    placeholder={placeholder}
+                    className={hasErrors ? "border-red-500 focus:ring-red-500" : ""}
+                />
+            )}
+            {hasErrors && (
+                <div className="flex items-start gap-2 text-sm text-red-600">
+                    <AlertTriangleIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <span>{validation.errors[0]}</span>
+                </div>
+            )}
+            {hasWarnings && !hasErrors && (
+                <div className="flex items-start gap-2 text-sm text-yellow-600">
+                    <InfoIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <span>{validation.warnings[0]}</span>
+                </div>
+            )}
+        </div>
+    );
+};
+
 // Step 1 Component
 const Step1BasicInfo: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
     return (
         <div className="space-y-6">
-            <Input label="Project Name" id="projectName" value={data.projectName} onChange={e => update('projectName', e.target.value)} />
-            <Textarea label="Short Description" id="shortDescription" value={data.shortDescription} onChange={e => update('shortDescription', e.target.value)} />
-            <Input label="Business Goals" id="businessGoals" value={data.businessGoals} onChange={e => update('businessGoals', e.target.value)} />
-            <Input label="Technical Goals" id="technicalGoals" value={data.technicalGoals} onChange={e => update('technicalGoals', e.target.value)} />
-            <div>
-                <label className="block text-sm font-medium text-brand-text-secondary mb-1">Target Users</label>
+            <ValidatedInput
+                label="Project Name"
+                id="projectName"
+                value={data.projectName}
+                onChange={e => update('projectName', e.target.value)}
+                required
+                tooltip={getFieldTooltip('projectName')}
+            />
+            <ValidatedInput
+                label="Short Description"
+                id="shortDescription"
+                value={data.shortDescription}
+                onChange={e => update('shortDescription', e.target.value)}
+                type="textarea"
+                required
+                minLength={20}
+                tooltip={getFieldTooltip('shortDescription')}
+            />
+            <ValidatedInput
+                label="Business Goals"
+                id="businessGoals"
+                value={data.businessGoals}
+                onChange={e => update('businessGoals', e.target.value)}
+                required
+                minLength={30}
+                tooltip={getFieldTooltip('businessGoals')}
+            />
+            <ValidatedInput
+                label="Technical Goals"
+                id="technicalGoals"
+                value={data.technicalGoals}
+                onChange={e => update('technicalGoals', e.target.value)}
+                required
+                minLength={30}
+                tooltip={getFieldTooltip('technicalGoals')}
+            />
+            <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                    <label className="block text-sm font-medium text-brand-text-secondary">Target Users</label>
+                    <span className="text-red-500">*</span>
+                    <div className="group relative">
+                        <InfoIcon className="h-4 w-4 text-brand-text-secondary/60 hover:text-brand-text-secondary cursor-help" />
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-brand-surface border border-brand-border rounded-md text-xs text-brand-text-primary opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                            {getFieldTooltip('targetUsers')}
+                        </div>
+                    </div>
+                </div>
                 <TagInput values={data.targetUsers} onValuesChange={v => update('targetUsers', v)} placeholder="Type and press Enter..." />
             </div>
-            <div>
-                <label htmlFor="numFeatures" className="block text-sm font-medium text-brand-text-secondary mb-1">Approximate Number of Core Features: {data.numberOfFeatures}</label>
+            <div className="space-y-2">
+                <label htmlFor="numFeatures" className="block text-sm font-medium text-brand-text-secondary">
+                    Approximate Number of Core Features: {data.numberOfFeatures}
+                    <div className="inline-block ml-2 group relative">
+                        <InfoIcon className="h-4 w-4 text-brand-text-secondary/60 hover:text-brand-text-secondary cursor-help inline" />
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-brand-surface border border-brand-border rounded-md text-xs text-brand-text-primary opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                            {getFieldTooltip('numberOfFeatures')}
+                        </div>
+                    </div>
+                </label>
                 <input type="range" id="numFeatures" min="3" max="20" value={data.numberOfFeatures} onChange={e => update('numberOfFeatures', parseInt(e.target.value))} className="w-full h-2 bg-brand-border rounded-lg appearance-none cursor-pointer" />
             </div>
             <div className="grid grid-cols-2 gap-4">
-                <Input label="Estimated Budget" id="estimatedScale" value={data.estimatedScale} onChange={e => update('estimatedScale', e.target.value)} />
-                <Input label="Timeline" id="timeline" value={data.timeline} onChange={e => update('timeline', e.target.value)} />
+                <ValidatedInput
+                    label="Estimated Budget"
+                    id="estimatedScale"
+                    value={data.estimatedScale}
+                    onChange={e => update('estimatedScale', e.target.value)}
+                    required
+                    placeholder="$10K-$50K"
+                    tooltip={getFieldTooltip('estimatedScale')}
+                />
+                <ValidatedInput
+                    label="Timeline"
+                    id="timeline"
+                    value={data.timeline}
+                    onChange={e => update('timeline', e.target.value)}
+                    required
+                    placeholder="3-6 months"
+                    tooltip={getFieldTooltip('timeline')}
+                />
             </div>
         </div>
     );
@@ -565,25 +701,175 @@ const Step6StandardFlows: React.FC<{ data: ProjectInputData; update: (field: str
     );
 };
 
-// Step 7 Component - Market Analysis
-const Step7MarketAnalysis: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
+// Step 7 Component - Risk Assessment & Success Metrics
+const Step7RiskAssessmentAndMetrics: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
+    const [newRisk, setNewRisk] = useState({ risk: '', impact: 'Medium' as const, probability: 'Medium' as const, mitigation: '' });
+    const [newMetric, setNewMetric] = useState({ metric: '', target: '', timeframe: '' });
+
+    const addRisk = () => {
+        if (!newRisk.risk.trim()) return;
+        const risk = {
+            risk: newRisk.risk.trim(),
+            impact: newRisk.impact,
+            probability: newRisk.probability,
+            mitigation: newRisk.mitigation.trim()
+        };
+        update('riskAssessment', [...data.riskAssessment, risk]);
+        setNewRisk({ risk: '', impact: 'Medium', probability: 'Medium', mitigation: '' });
+    };
+
+    const removeRisk = (index: number) => {
+        update('riskAssessment', data.riskAssessment.filter((_, i) => i !== index));
+    };
+
+    const addMetric = () => {
+        if (!newMetric.metric.trim()) return;
+        update('successMetrics', [...data.successMetrics, newMetric]);
+        setNewMetric({ metric: '', target: '', timeframe: '' });
+    };
+
+    const removeMetric = (index: number) => {
+        update('successMetrics', data.successMetrics.filter((_, i) => i !== index));
+    };
+
     return (
-        <div className="space-y-6">
-            <Textarea
-                label="Market Analysis"
-                id="marketAnalysis"
-                placeholder="Describe the target market, key trends, and existing competitors. What makes your project unique?"
-                value={data.marketAnalysis}
-                onChange={e => update('marketAnalysis', e.target.value)}
-                rows={5}
-            />
+        <div className="space-y-8">
             <div>
-                <label className="block text-sm font-medium text-brand-text-secondary mb-1">Known Competitors</label>
-                <TagInput
-                    values={data.competitors}
-                    onValuesChange={v => update('competitors', v)}
-                    placeholder="Add competitor and press Enter..."
-                />
+                <h3 className="text-lg font-semibold text-brand-text-primary mb-2">Risk Assessment</h3>
+                <p className="text-sm text-brand-text-secondary mb-4">Identify potential risks and their mitigation strategies</p>
+
+                {data.riskAssessment.map((risk, index) => (
+                    <Card key={index} className="mb-4">
+                        <div className="flex justify-between items-start mb-3">
+                            <h4 className="font-medium text-brand-text-primary">Risk {index + 1}: {risk.risk}</h4>
+                            <Button variant="secondary" onClick={() => removeRisk(index)} className="!p-2">
+                                <XIcon className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <span className="font-medium">Impact:</span>
+                                <span className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                                    risk.impact === 'High' ? 'bg-red-500/20 text-red-400' :
+                                    risk.impact === 'Low' ? 'bg-blue-500/20 text-blue-400' :
+                                    'bg-yellow-500/20 text-yellow-400'
+                                }`}>{risk.impact}</span>
+                            </div>
+                            <div>
+                                <span className="font-medium">Probability:</span>
+                                <span className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                                    risk.probability === 'High' ? 'bg-red-500/20 text-red-400' :
+                                    risk.probability === 'Low' ? 'bg-blue-500/20 text-blue-400' :
+                                    'bg-yellow-500/20 text-yellow-400'
+                                }`}>{risk.probability}</span>
+                            </div>
+                            <div className="md:col-span-1 col-span-3">
+                                <span className="font-medium">Mitigation:</span>
+                                <p className="mt-1 text-sm">{risk.mitigation}</p>
+                            </div>
+                        </div>
+                    </Card>
+                ))}
+
+                <Card className="bg-brand-bg/50">
+                    <h4 className="font-medium text-brand-text-primary mb-3">Add New Risk</h4>
+                    <div className="space-y-3">
+                        <Input
+                            label="Risk Description"
+                            value={newRisk.risk}
+                            onChange={e => setNewRisk(prev => ({ ...prev, risk: e.target.value }))}
+                            placeholder="Describe the potential risk..."
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                            <select
+                                value={newRisk.impact}
+                                onChange={e => setNewRisk(prev => ({ ...prev, impact: e.target.value as 'Low' | 'Medium' | 'High' }))}
+                                className="bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                            >
+                                <option value="Low">Low Impact</option>
+                                <option value="Medium">Medium Impact</option>
+                                <option value="High">High Impact</option>
+                            </select>
+                            <select
+                                value={newRisk.probability}
+                                onChange={e => setNewRisk(prev => ({ ...prev, probability: e.target.value as 'Low' | 'Medium' | 'High' }))}
+                                className="bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                            >
+                                <option value="Low">Low Probability</option>
+                                <option value="Medium">Medium Probability</option>
+                                <option value="High">High Probability</option>
+                            </select>
+                        </div>
+                        <Input
+                            label="Mitigation Strategy"
+                            value={newRisk.mitigation}
+                            onChange={e => setNewRisk(prev => ({ ...prev, mitigation: e.target.value }))}
+                            placeholder="How will you mitigate this risk?"
+                        />
+                        <div className="flex justify-end">
+                            <Button onClick={addRisk} disabled={!newRisk.risk.trim()}>
+                                Add Risk
+                            </Button>
+                        </div>
+                    </div>
+                </Card>
+            </div>
+
+            <div>
+                <h3 className="text-lg font-semibold text-brand-text-primary mb-2">Success Metrics</h3>
+                <p className="text-sm text-brand-text-secondary mb-4">Define key performance indicators for measuring success</p>
+
+                {data.successMetrics.map((metric, index) => (
+                    <Card key={index} className="mb-4">
+                        <div className="flex justify-between items-start mb-3">
+                            <h4 className="font-medium text-brand-text-primary">Metric {index + 1}: {metric.metric}</h4>
+                            <Button variant="secondary" onClick={() => removeMetric(index)} className="!p-2">
+                                <XIcon className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span className="font-medium">Target:</span>
+                                <p className="mt-1">{metric.target}</p>
+                            </div>
+                            <div>
+                                <span className="font-medium">Timeframe:</span>
+                                <p className="mt-1">{metric.timeframe}</p>
+                            </div>
+                        </div>
+                    </Card>
+                ))}
+
+                <Card className="bg-brand-bg/50">
+                    <h4 className="font-medium text-brand-text-primary mb-3">Add Success Metric</h4>
+                    <div className="space-y-3">
+                        <Input
+                            label="Metric Name"
+                            value={newMetric.metric}
+                            onChange={e => setNewMetric(prev => ({ ...prev, metric: e.target.value }))}
+                            placeholder="e.g., User engagement rate, Revenue growth..."
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                            <Input
+                                label="Target"
+                                value={newMetric.target}
+                                onChange={e => setNewMetric(prev => ({ ...prev, target: e.target.value }))}
+                                placeholder="e.g., 75%, $1M..."
+                            />
+                            <Input
+                                label="Timeframe"
+                                value={newMetric.timeframe}
+                                onChange={e => setNewMetric(prev => ({ ...prev, timeframe: e.target.value }))}
+                                placeholder="e.g., Q1 2025, 6 months..."
+                            />
+                        </div>
+                        <div className="flex justify-end">
+                            <Button onClick={addMetric} disabled={!newMetric.metric.trim()}>
+                                Add Metric
+                            </Button>
+                        </div>
+                    </div>
+                </Card>
             </div>
         </div>
     );
@@ -662,17 +948,20 @@ const STEPS = [
     { title: "Core Modules", component: Step4CoreModules },
     { title: "Role & Permissions", component: Step5RolePermissions },
     { title: "Standard Flows", component: Step6StandardFlows },
-    { title: "Market Analysis", component: Step7MarketAnalysis },
+    { title: "Risk Assessment & Metrics", component: Step7RiskAssessmentAndMetrics },
     { title: "Review & Generate", component: Step8Review },
 ];
 
-export const NewProjectWizard: React.FC<{ 
-    onGenerate: (data: ProjectInputData) => void, 
+export const NewProjectWizard: React.FC<{
+    onGenerate: (data: ProjectInputData) => void,
     isGenerating: boolean,
-    initialData?: TemplateData 
+    initialData?: TemplateData
 }> = ({ onGenerate, isGenerating, initialData }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<ProjectInputData>(defaultFormData);
+  const [validationResult, setValidationResult] = useState<ValidationResult>({ isValid: true, errors: [], warnings: [] });
+  const [showValidationPanel, setShowValidationPanel] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   useEffect(() => {
       // If initialData is provided (from a template), use it.
@@ -680,49 +969,251 @@ export const NewProjectWizard: React.FC<{
       const startingData = initialData ? { ...defaultFormData, ...initialData } : defaultFormData;
       setFormData(startingData as ProjectInputData);
       setCurrentStep(0); // Reset to first step when data changes
+      setValidationResult({ isValid: true, errors: [], warnings: [] });
+      setShowValidationPanel(false);
   }, [initialData]);
 
+  // Validate current step when it changes or when form data updates
+  useEffect(() => {
+      const result = validateStepData(currentStep, formData);
+      setValidationResult(result);
+  }, [currentStep, formData]);
 
   const updateFormData = (field: keyof ProjectInputData, value: any) => {
       setFormData(prev => ({ ...prev, [field]: value }));
+      // Re-validate the current step after changes
+      setTimeout(() => {
+          const result = validateStepData(currentStep, { ...formData, [field]: value });
+          setValidationResult(result);
+      }, 0);
   };
 
-  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
+  const nextStep = () => {
+      if (validationResult.isValid || currentStep === STEPS.length - 1) {
+          setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
+      } else {
+          setShowValidationPanel(true);
+      }
+  };
+
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 0));
-  
+
+  const handleGenerate = () => {
+      const completeValidation = validateCompleteForm(formData);
+      if (completeValidation.isValid) {
+          setShowPreviewModal(true);
+      } else {
+          setValidationResult(completeValidation);
+          setShowValidationPanel(true);
+      }
+  };
+
+  const handleConfirmGenerate = () => {
+      setShowPreviewModal(false);
+      onGenerate(formData);
+  };
+
+  const ValidationPanel: React.FC<{ result: ValidationResult }> = ({ result }) => {
+      if (!showValidationPanel || (result.errors.length === 0 && result.warnings.length === 0)) return null;
+
+      return (
+          <Card className="mt-4 border-l-4 border-l-red-500 bg-red-500/10">
+              <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                      {result.errors.length > 0 ? (
+                          <AlertTriangleIcon className="h-5 w-5 text-red-500 mt-0.5" />
+                      ) : (
+                          <InfoIcon className="h-5 w-5 text-yellow-500 mt-0.5" />
+                      )}
+                  </div>
+                  <div className="flex-grow">
+                      <h4 className={`font-semibold ${result.errors.length > 0 ? 'text-red-700' : 'text-yellow-700'}`}>
+                          {result.errors.length > 0 ? 'Please fix the following issues:' : 'Consider these suggestions:'}
+                      </h4>
+                      <ul className="mt-2 space-y-1 text-sm">
+                          {result.errors.map((error, i) => (
+                              <li key={`error-${i}`} className="flex items-start gap-2">
+                                  <span className="text-red-500 font-bold">•</span>
+                                  <span className="text-red-700">{error.message}</span>
+                              </li>
+                          ))}
+                          {result.warnings.map((warning, i) => (
+                              <li key={`warning-${i}`} className="flex items-start gap-2">
+                                  <span className="text-yellow-500 font-bold">•</span>
+                                  <span className="text-yellow-700">{warning.message}</span>
+                              </li>
+                          ))}
+                      </ul>
+                      <button
+                          onClick={() => setShowValidationPanel(false)}
+                          className="mt-3 text-sm text-gray-600 hover:text-gray-800 underline"
+                      >
+                          Dismiss
+                      </button>
+                  </div>
+              </div>
+          </Card>
+      );
+  };
+
+  const StepIndicator: React.FC<{ current: number; total: number }> = ({ current, total }) => {
+      return (
+          <div className="flex items-center gap-2 mb-2">
+              {Array.from({ length: total }, (_, i) => (
+                  <div key={i} className="flex items-center">
+                      <div className={`w-2 h-2 rounded-full ${
+                          i < current ? 'bg-green-500' :
+                          i === current ? (validationResult.isValid ? 'bg-blue-500' : 'bg-red-500') :
+                          'bg-gray-300'
+                      }`} />
+                      {i < total - 1 && <div className={`w-4 h-0.5 ${i < current ? 'bg-green-500' : 'bg-gray-300'}`} />}
+                  </div>
+              ))}
+          </div>
+      );
+  };
+
   const CurrentStepComponent = STEPS[currentStep].component;
 
-  return (
-    <div className="max-w-3xl mx-auto bg-brand-surface/50 backdrop-blur-lg border border-brand-border/50 rounded-xl shadow-2xl p-8">
-        <header className="mb-8">
-            <p className="text-right text-sm text-brand-text-secondary mb-2">{currentStep + 1}/{STEPS.length}</p>
-            <h2 className="text-2xl font-bold text-brand-text-primary">{initialData ? `New Project from Template: ${initialData.projectName}` : 'Start a New Project'}</h2>
-            <p className="text-brand-text-secondary mt-1">Step {currentStep + 1}: {STEPS[currentStep].title}</p>
-        </header>
-        
-        <main>
-            <CurrentStepComponent data={formData} update={updateFormData} />
-        </main>
+  const PreviewModal: React.FC = () => {
+      if (!showPreviewModal) return null;
 
-        <footer className="mt-8 pt-6 border-t border-brand-border flex justify-between items-center">
-            <Button variant="secondary" onClick={prevStep} disabled={currentStep === 0}>
-                Back
-            </Button>
-            {currentStep < STEPS.length - 1 ? (
-                <Button onClick={nextStep}>
-                    Next: {STEPS[currentStep + 1].title}
+      return (
+          <Modal
+              isOpen={showPreviewModal}
+              onClose={() => setShowPreviewModal(false)}
+              onConfirm={handleConfirmGenerate}
+              title="Preview Plan Generation"
+              confirmText="Generate Plan"
+          >
+              <div className="space-y-4">
+                  <div className="flex items-center gap-3 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                      <InfoIcon className="h-5 w-5 text-blue-500 flex-shrink-0" />
+                      <div>
+                          <h4 className="font-semibold text-blue-700">AI Plan Generation Preview</h4>
+                          <p className="text-sm text-blue-600 mt-1">
+                              The following AI generation process will be performed:
+                          </p>
+                      </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                          <h5 className="font-medium text-brand-text-primary">📋 Requirements Analysis</h5>
+                          <p className="text-sm text-brand-text-secondary">
+                              AI will analyze {formData.coreRequirements.length} core requirements
+                          </p>
+                      </div>
+
+                      <div className="space-y-2">
+                          <h5 className="font-medium text-brand-text-primary">🛠️ Architecture Design</h5>
+                          <p className="text-sm text-brand-text-secondary">
+                              System architecture diagram based on your modules
+                          </p>
+                      </div>
+
+                      <div className="space-y-2">
+                          <h5 className="font-medium text-brand-text-primary">📊 Development Timeline</h5>
+                          <p className="text-sm text-brand-text-secondary">
+                              {formData.timeline} with {formData.numberOfFeatures} features
+                          </p>
+                      </div>
+
+                      <div className="space-y-2">
+                          <h5 className="font-medium text-brand-text-primary">🎯 Feature Specification</h5>
+                          <p className="text-sm text-brand-text-secondary">
+                              Detailed breakdown of all {formData.numberOfFeatures} features
+                          </p>
+                      </div>
+                  </div>
+
+                  <div className="mt-4 p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                      <div className="flex items-start gap-3">
+                          <AlertTriangleIcon className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                          <div>
+                              <h6 className="font-semibold text-yellow-700 mb-1">Important Notes:</h6>
+                              <ul className="text-sm text-yellow-600 space-y-1">
+                                  <li>• Generation typically takes 10-30 seconds depending on complexity</li>
+                                  <li>• AI will generate comprehensive Mermaid diagrams for visualization</li>
+                                  <li>• All generated content can be edited and refined afterwards</li>
+                                  <li>• Previous plan versions are automatically saved</li>
+                              </ul>
+                          </div>
+                      </div>
+                  </div>
+
+                  <div className="mt-4 p-3 bg-green-500/10 rounded border border-green-500/20">
+                      <p className="text-sm text-green-600">
+                          ✨ <strong>Ready to proceed!</strong> Your project data looks comprehensive for high-quality AI plan generation.
+                      </p>
+                  </div>
+              </div>
+          </Modal>
+      );
+  };
+
+  return (
+    <>
+        <div className="max-w-4xl mx-auto bg-brand-surface/50 backdrop-blur-lg border border-brand-border/50 rounded-xl shadow-2xl p-8">
+            <header className="mb-8">
+                <div className="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 className="text-2xl font-bold text-brand-text-primary">
+                            {initialData ? `New Project from Template: ${initialData.projectName}` : 'Start a New Project'}
+                        </h2>
+                        <p className="text-brand-text-secondary mt-1">Step {currentStep + 1}: {STEPS[currentStep].title}</p>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                        {!validationResult.isValid && (
+                            <span className="flex items-center gap-1 text-red-500">
+                                <AlertTriangleIcon className="h-4 w-4" />
+                                Issues to fix
+                            </span>
+                        )}
+                        {validationResult.warnings.length > 0 && validationResult.isValid && (
+                            <span className="flex items-center gap-1 text-yellow-500">
+                                <InfoIcon className="h-4 w-4" />
+                                Suggestions available
+                            </span>
+                        )}
+                        {validationResult.isValid && validationResult.errors.length === 0 && validationResult.warnings.length === 0 && (
+                            <span className="flex items-center gap-1 text-green-500">
+                                <CheckCircleIcon className="h-4 w-4" />
+                                All good
+                            </span>
+                        )}
+                    </div>
+                </div>
+                <StepIndicator current={currentStep} total={STEPS.length} />
+            </header>
+
+            <main className="space-y-6">
+                <CurrentStepComponent data={formData} update={updateFormData} />
+                <ValidationPanel result={validationResult} />
+            </main>
+
+            <footer className="mt-8 pt-6 border-t border-brand-border flex justify-between items-center">
+                <Button variant="secondary" onClick={prevStep} disabled={currentStep === 0}>
+                    Back
                 </Button>
-            ) : (
-                <Button onClick={() => onGenerate(formData)} isLoading={isGenerating}>
-                    {isGenerating ? "AI is analyzing project data..." : (
-                        <>
-                            <WandSparklesIcon className="-ml-1 mr-2 h-5 w-5" />
-                            Generate Plan with AI
-                        </>
-                    )}
-                </Button>
-            )}
-        </footer>
-    </div>
+                {currentStep < STEPS.length - 1 ? (
+                    <Button onClick={nextStep} disabled={!validationResult.isValid}>
+                        Next: {STEPS[currentStep + 1].title}
+                    </Button>
+                ) : (
+                    <Button onClick={handleGenerate} isLoading={isGenerating}>
+                        {isGenerating ? "AI is analyzing project data..." : (
+                            <>
+                                <WandSparklesIcon className="-ml-1 mr-2 h-5 w-5" />
+                                Generate Plan with AI
+                            </>
+                        )}
+                    </Button>
+                )}
+            </footer>
+        </div>
+
+        <PreviewModal />
+    </>
   );
 };

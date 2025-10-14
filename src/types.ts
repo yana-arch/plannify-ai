@@ -24,6 +24,19 @@ export interface StandardFlow {
   steps: string[];
 }
 
+export interface Risk {
+  risk: string;
+  impact: 'Low' | 'Medium' | 'High';
+  probability: 'Low' | 'Medium' | 'High';
+  mitigation: string;
+}
+
+export interface SuccessMetric {
+  metric: string;
+  target: string;
+  timeframe: string;
+}
+
 export interface ProjectInputData {
   projectName: string;
   shortDescription: string;
@@ -46,6 +59,9 @@ export interface ProjectInputData {
   };
   marketAnalysis: string;
   competitors: string[];
+  riskAssessment: Risk[];
+  featureDependencies: { [featureId: string]: string[] };
+  successMetrics: SuccessMetric[];
 }
 
 export type TemplateData = Partial<ProjectInputData>;
