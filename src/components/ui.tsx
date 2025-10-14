@@ -1,33 +1,59 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 // Input Component
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
+  error?: boolean;
+  loading?: boolean;
 }
-export const Input: React.FC<InputProps> = ({ label, id, ...props }) => (
+export const Input: React.FC<InputProps> = ({ label, id, error = false, loading = false, className = "", ...props }) => (
   <div>
     <label htmlFor={id} className="block text-sm font-medium text-brand-text-secondary mb-1">{label}</label>
-    <input
-      id={id}
-      className="w-full bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
-      {...props}
-    />
+    <div className="relative">
+      <input
+        id={id}
+        className={`w-full bg-brand-bg border rounded-md px-3 py-2 text-brand-text-primary transition-all duration-200 ${
+          error
+            ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+            : "border-brand-border focus:ring-2 focus:ring-brand-primary focus:border-brand-primary"
+        } focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-brand-bg ${loading ? 'pr-10' : ''} ${className}`}
+        {...props}
+      />
+      {loading && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          <div className="h-4 w-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
+    </div>
   </div>
 );
 
 // Textarea Component
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string;
+  error?: boolean;
+  loading?: boolean;
 }
-export const Textarea: React.FC<TextareaProps> = ({ label, id, ...props }) => (
+export const Textarea: React.FC<TextareaProps> = ({ label, id, error = false, loading = false, className = "", ...props }) => (
   <div>
     <label htmlFor={id} className="block text-sm font-medium text-brand-text-secondary mb-1">{label}</label>
-    <textarea
-      id={id}
-      rows={3}
-      className="w-full bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
-      {...props}
-    />
+    <div className="relative">
+      <textarea
+        id={id}
+        rows={3}
+        className={`w-full bg-brand-bg border rounded-md px-3 py-2 text-brand-text-primary resize-vertical transition-all duration-200 ${
+          error
+            ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+            : "border-brand-border focus:ring-2 focus:ring-brand-primary focus:border-brand-primary"
+        } focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-brand-bg ${loading ? 'pr-10' : ''} ${className}`}
+        {...props}
+      />
+      {loading && (
+        <div className="absolute right-3 top-3">
+          <div className="h-4 w-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
+    </div>
   </div>
 );
 
@@ -115,6 +141,140 @@ export const Modal: React.FC<ModalProps> = ({
           </Button>
         </div>
       </div>
+    </div>
+  );
+};
+
+// Search Input Component with enhanced UX
+interface SearchInputProps {
+  label: string;
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  suggestions?: string[];
+  onSuggestionSelect?: (suggestion: string) => void;
+  loading?: boolean;
+  error?: boolean;
+  className?: string;
+}
+
+export const SearchInput: React.FC<SearchInputProps> = ({
+  label,
+  id,
+  value,
+  onChange,
+  placeholder = "Enter value...",
+  suggestions = [],
+  onSuggestionSelect,
+  loading = false,
+  error = false,
+  className = ""
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+
+  const filteredSuggestions = suggestions.filter(suggestion =>
+    suggestion.toLowerCase().includes(value.toLowerCase()) && suggestion.toLowerCase() !== value.toLowerCase()
+  );
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isOpen || filteredSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex(prev => (prev + 1) % filteredSuggestions.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex(prev => prev <= 0 ? filteredSuggestions.length - 1 : prev - 1);
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      e.preventDefault();
+      const selectedSuggestion = filteredSuggestions[selectedIndex];
+      onSuggestionSelect?.(selectedSuggestion);
+      onChange(selectedSuggestion);
+      setIsOpen(false);
+      setSelectedIndex(-1);
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+      setSelectedIndex(-1);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value);
+    setIsOpen(true);
+    setSelectedIndex(-1);
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    onSuggestionSelect?.(suggestion);
+    onChange(suggestion);
+    setIsOpen(false);
+  };
+
+  React.useEffect(() => {
+    if (value && filteredSuggestions.length > 0) {
+      setIsOpen(true);
+    } else {
+      setIsOpen(false);
+    }
+  }, [value, suggestions]);
+
+  return (
+    <div className="relative">
+      <label htmlFor={id} className="block text-sm font-medium text-brand-text-secondary mb-1">{label}</label>
+      <div className="relative">
+        <input
+          id={id}
+          type="text"
+          value={value}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onFocus={() => value && filteredSuggestions.length > 0 && setIsOpen(true)}
+          onBlur={() => setTimeout(() => { setIsOpen(false); setSelectedIndex(-1); }, 200)}
+          placeholder={placeholder}
+          className={`w-full bg-brand-bg border rounded-md px-3 py-2 text-brand-text-primary transition-all duration-200 pr-10 ${
+            error
+              ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+              : "border-brand-border focus:ring-2 focus:ring-brand-primary focus:border-brand-primary"
+          } focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-brand-bg ${className}`}
+          autoComplete="off"
+        />
+        <div className={`absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2`}>
+          {loading && (
+            <div className="h-4 w-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+          )}
+          {!loading && value && (
+            <button
+              type="button"
+              onClick={() => onChange('')}
+              className="h-4 w-4 text-brand-text-secondary hover:text-brand-text-primary transition-colors"
+              title="Clear"
+            >
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {isOpen && filteredSuggestions.length > 0 && (
+        <div className="absolute z-50 w-full mt-1 bg-brand-surface border border-brand-border rounded-md shadow-lg max-h-60 overflow-auto">
+          {filteredSuggestions.slice(0, 10).map((suggestion, index) => (
+            <button
+              key={suggestion}
+              type="button"
+              onClick={() => handleSuggestionClick(suggestion)}
+              className={`w-full text-left px-3 py-2 hover:bg-brand-bg transition-colors ${
+                index === selectedIndex ? 'bg-brand-primary/10 text-brand-primary' : 'text-brand-text-primary'
+              }`}
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

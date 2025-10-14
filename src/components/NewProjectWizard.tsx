@@ -79,10 +79,13 @@ const ValidatedInput: React.FC<{
     minLength?: number;
     placeholder?: string;
     tooltip?: string;
-    validation?: { isValid: boolean; errors: string[]; warnings: string[] };
-}> = ({ label, id, value, onChange, type = "text", required = false, minLength, placeholder, tooltip, validation }) => {
-    const hasErrors = validation?.errors.length > 0;
-    const hasWarnings = validation?.warnings.length > 0;
+    validation?: ValidationResult;
+    fieldName?: string;
+}> = ({ label, id, value, onChange, type = "text", required = false, minLength, placeholder, tooltip, validation, fieldName = id }) => {
+    const fieldErrors = validation?.errors.filter(e => e.field === fieldName) || [];
+    const fieldWarnings = validation?.warnings.filter(w => w.field === fieldName) || [];
+    const hasErrors = fieldErrors.length > 0;
+    const hasWarnings = fieldWarnings.length > 0;
 
     return (
         <div className="space-y-1">
@@ -121,13 +124,13 @@ const ValidatedInput: React.FC<{
             {hasErrors && (
                 <div className="flex items-start gap-2 text-sm text-red-600">
                     <AlertTriangleIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                    <span>{validation.errors[0]}</span>
+                    <span>{fieldErrors[0].message}</span>
                 </div>
             )}
             {hasWarnings && !hasErrors && (
                 <div className="flex items-start gap-2 text-sm text-yellow-600">
                     <InfoIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                    <span>{validation.warnings[0]}</span>
+                    <span>{fieldWarnings[0].message}</span>
                 </div>
             )}
         </div>
@@ -135,7 +138,7 @@ const ValidatedInput: React.FC<{
 };
 
 // Step 1 Component
-const Step1BasicInfo: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
+const Step1BasicInfo: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void; validation?: ValidationResult }> = ({ data, update, validation }) => {
     return (
         <div className="space-y-6">
             <ValidatedInput
@@ -145,6 +148,7 @@ const Step1BasicInfo: React.FC<{ data: ProjectInputData; update: (field: string,
                 onChange={e => update('projectName', e.target.value)}
                 required
                 tooltip={getFieldTooltip('projectName')}
+                validation={validation}
             />
             <ValidatedInput
                 label="Short Description"
@@ -1156,14 +1160,14 @@ export const NewProjectWizard: React.FC<{
     <>
         <div className="max-w-4xl mx-auto bg-brand-surface/50 backdrop-blur-lg border border-brand-border/50 rounded-xl shadow-2xl p-8">
             <header className="mb-8">
-                <div className="flex justify-between items-start mb-4">
+                <div className="relative flex justify-between items-start mb-4">
                     <div>
                         <h2 className="text-2xl font-bold text-brand-text-primary">
                             {initialData ? `New Project from Template: ${initialData.projectName}` : 'Start a New Project'}
                         </h2>
                         <p className="text-brand-text-secondary mt-1">Step {currentStep + 1}: {STEPS[currentStep].title}</p>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="absolute right-0 top-10 items-center gap-2 text-sm">
                         {!validationResult.isValid && (
                             <span className="flex items-center gap-1 text-red-500">
                                 <AlertTriangleIcon className="h-4 w-4" />
@@ -1188,7 +1192,7 @@ export const NewProjectWizard: React.FC<{
             </header>
 
             <main className="space-y-6">
-                <CurrentStepComponent data={formData} update={updateFormData} />
+                <CurrentStepComponent data={formData} update={updateFormData} validation={validationResult} />
                 <ValidationPanel result={validationResult} />
             </main>
 
