@@ -20,6 +20,10 @@ export const projectTemplates: TemplateData[] = [
         { id: "2", description: "User profile management", priority: 'High' },
         { id: "3", description: "Admin dashboard for user management", priority: 'Medium' },
     ],
+    userFeatureRequests: "",
+    coreModules: [],
+    rolePermissions: [],
+    standardFlows: [],
     techStack: {
       frontend: ["React", "TypeScript", "Tailwind CSS"],
       backend: ["Node.js", "Express.js"],
@@ -28,6 +32,37 @@ export const projectTemplates: TemplateData[] = [
     },
     marketAnalysis: "The market for general web applications is vast. Success depends on finding a niche and providing a superior user experience compared to existing solutions.",
     competitors: ["Generic SaaS tools", "Custom-built internal apps"],
+    riskAssessment: [
+      {
+        risk: "User data privacy breach",
+        impact: 'High',
+        probability: 'Low',
+        mitigation: "Implement strong encryption, regular security audits, and follow data privacy best practices."
+      },
+      {
+        risk: "Scalability issues with user growth",
+        impact: 'Medium',
+        probability: 'Medium',
+        mitigation: "Design a scalable architecture from the start, use load balancing, and monitor performance."
+      }
+    ],
+    featureDependencies: {
+      "1": [],
+      "2": ["1"],
+      "3": ["1"]
+    },
+    successMetrics: [
+      {
+        metric: "User acquisition rate",
+        target: "1000 new users in the first 3 months",
+        timeframe: "3 months"
+      },
+      {
+        metric: "User engagement",
+        target: "50% of users active weekly",
+        timeframe: "6 months"
+      }
+    ],
   },
   {
     projectName: "Mobile App Backend",
@@ -44,6 +79,10 @@ export const projectTemplates: TemplateData[] = [
         { id: "3", description: "User data storage with encryption", priority: 'High' },
         { id: "4", description: "Image and media upload/storage", priority: 'Medium' },
     ],
+    userFeatureRequests: "",
+    coreModules: [],
+    rolePermissions: [],
+    standardFlows: [],
     techStack: {
       frontend: [],
       backend: ["Python", "Django Rest Framework", "Celery"],
@@ -52,6 +91,38 @@ export const projectTemplates: TemplateData[] = [
     },
     marketAnalysis: "The success of a mobile backend is directly tied to the success of the mobile app it serves. The market requires high reliability and scalability to handle fluctuating user loads.",
     competitors: ["Firebase", "Supabase", "AWS Amplify"],
+    riskAssessment: [
+      {
+        risk: "API security vulnerabilities",
+        impact: 'High',
+        probability: 'Medium',
+        mitigation: "Implement robust authentication, input validation, and regular security testing (pentesting)."
+      },
+      {
+        risk: "Data synchronization issues with mobile clients",
+        impact: 'Medium',
+        probability: 'High',
+        mitigation: "Design a clear API contract, use versioning, and implement offline-first strategies on the client."
+      }
+    ],
+    featureDependencies: {
+      "1": [],
+      "2": ["1"],
+      "3": ["1"],
+      "4": ["1", "3"]
+    },
+    successMetrics: [
+      {
+        metric: "API response time",
+        target: "Average response time < 200ms",
+        timeframe: "Ongoing"
+      },
+      {
+        metric: "API uptime",
+        target: "99.9% uptime",
+        timeframe: "Ongoing"
+      }
+    ],
   },
   {
     projectName: "Data Analytics Dashboard",
@@ -62,6 +133,7 @@ export const projectTemplates: TemplateData[] = [
     numberOfFeatures: 30,
     estimatedScale: "$100K-$250K",
     timeline: "5-8 months",
+    userFeatureRequests: "",
     coreModules: [
       {
         moduleName: "Data Integration",
@@ -226,6 +298,7 @@ export const projectTemplates: TemplateData[] = [
     numberOfFeatures: 20,
     estimatedScale: "$80K-$200K",
     timeline: "7-10 months",
+    userFeatureRequests: "",
     coreModules: [
       {
         moduleName: "Product Catalog",
@@ -381,6 +454,7 @@ export const projectTemplates: TemplateData[] = [
     numberOfFeatures: 35,
     estimatedScale: "$150K-$500K",
     timeline: "9-12 months",
+    userFeatureRequests: "",
     coreModules: [
       {
         moduleName: "User & Organization Management",
@@ -541,6 +615,7 @@ export const projectTemplates: TemplateData[] = [
     numberOfFeatures: 10,
     estimatedScale: "$40K-$120K",
     timeline: "3-5 months",
+    userFeatureRequests: "",
     coreModules: [
       {
         moduleName: "Model Management",
@@ -702,6 +777,7 @@ export const projectTemplates: TemplateData[] = [
     numberOfFeatures: 30,
     estimatedScale: "$80K-$150K",
     timeline: "8-12 months",
+    userFeatureRequests: "",
     coreModules: [
       {
         moduleName: "Student Management",
@@ -875,6 +951,13 @@ export const projectTemplates: TemplateData[] = [
         ]
       }
     ],
+    coreRequirements: [
+        { id: "1", description: "Student Information System (SIS) including enrollment, attendance, and grades", priority: 'High' },
+        { id: "2", description: "Staff Management for teacher/staff records, attendance, and salary", priority: 'High' },
+        { id: "3", description: "Inventory Management for school supplies and materials", priority: 'Medium' },
+        { id: "4", description: "Event Management for school activities and competitions", priority: 'Medium' },
+        { id: "5", description: "Product Management for internal sales of books and uniforms", priority: 'Low' }
+    ],
     techStack: {
       frontend: [
         "Vue.js 3",
@@ -967,6 +1050,7 @@ export const projectTemplates: TemplateData[] = [
     numberOfFeatures: 35,
     estimatedScale: "$120K-$250K",
     timeline: "10-14 months",
+    userFeatureRequests: "",
     coreModules: [
       {
         moduleName: "Patient Management",
@@ -1068,6 +1152,12 @@ export const projectTemplates: TemplateData[] = [
         ]
       }
     ],
+    coreRequirements: [
+        { id: "1", description: "Patient Management with registration, medical records (EHR), and treatment plans", priority: 'High' },
+        { id: "2", description: "Appointment Scheduling for doctors, consultations, and procedures", priority: 'High' },
+        { id: "3", description: "Billing & Insurance module for claim processing and payments", priority: 'High' },
+        { id: "4", description: "Role-based access control for all user types (HIPAA compliance)", priority: 'High' }
+    ],
     techStack: {
       frontend: [
         "React",
@@ -1158,6 +1248,7 @@ export const projectTemplates: TemplateData[] = [
     numberOfFeatures: 28,
     estimatedScale: "$70K-$140K",
     timeline: "7-10 months",
+    userFeatureRequests: "",
     coreModules: [
       {
         moduleName: "Property Listings",
@@ -1250,6 +1341,12 @@ export const projectTemplates: TemplateData[] = [
           "Request closed and tenant notified"
         ]
       }
+    ],
+    coreRequirements: [
+        { id: "1", description: "Property Listing and Management", priority: 'High' },
+        { id: "2", description: "Tenant Application and Lease Management", priority: 'High' },
+        { id: "3", description: "Online Rent Payment and Financial Tracking", priority: 'High' },
+        { id: "4", description: "Maintenance Request and Work Order Management", priority: 'Medium' }
     ],
     techStack: {
       frontend: [
