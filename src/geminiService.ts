@@ -87,9 +87,13 @@ const planSchema = {
     userFlowMermaid: {
         type: Type.STRING,
         description: "A Mermaid.js syntax string for a user flow diagram (using 'flowchart LR' or 'graph LR'). It should visualize a primary user journey, like registration and onboarding, or a core interaction loop."
+    },
+    databaseERDMermaid: {
+        type: Type.STRING,
+        description: "A Mermaid.js syntax string for an Entity-Relationship Diagram (ERD) showing the database schema. Use 'erDiagram' syntax to illustrate tables, their columns, and relationships with proper cardinality."
     }
   },
-  required: ['summary', 'keyComponents', 'recommendedTechStack', 'potentialChallenges', 'potentialOpportunities', 'detailedFeatures', 'developmentPlan', 'systemArchitectureMermaid', 'userFlowMermaid']
+  required: ['summary', 'keyComponents', 'recommendedTechStack', 'potentialChallenges', 'potentialOpportunities', 'detailedFeatures', 'developmentPlan', 'systemArchitectureMermaid', 'userFlowMermaid', 'databaseERDMermaid']
 };
 
 
@@ -105,7 +109,7 @@ const sanitizeForJSON = (text: string): string => {
     .normalize('NFC'); // Normalize to composed form
 };
 
-const buildPrompt = (data: ProjectInputData): string => {
+  const buildPrompt = (data: ProjectInputData): string => {
   const coreModulesSection = data.coreModules && data.coreModules.length > 0 ? `
     Core Modules:
     ${data.coreModules.map(module => `
@@ -179,13 +183,93 @@ const buildPrompt = (data: ProjectInputData): string => {
 
     5. **For the User Flow Diagram**: Use the most critical standard flow (e.g., the main business process) as the primary user journey.
 
+    6. **For the Database ERD Diagram**: Design an Entity-Relationship Diagram using 'erDiagram' syntax that shows the main tables/entities, their columns/attributes, and relationships with proper cardinality. Follow the official Mermaid.js ERD syntax:
+
+    **Entity Definition Syntax:**
+    \`\`\`
+    EntityName {
+      attribute1 dataType [PK|FK|UK]
+      +attribute2 dataType [PK]
+      attribute3 dataType FK "references Entity.field"
+    }
+    \`\`\`
+
+    **Relationship Syntax:**
+    \`\`\`
+    Entity1 ||--o{ Entity2 : "one to many - description"
+    Entity1 ||--|| Entity2 : "one to one"
+    Entity1 }o--|| Entity2 : "zero/one to one"
+    Entity1 }o--o{ Entity2 : "zero/one to many"
+    Entity1 o{--o{ Entity2 : "many to many"
+    \`\`\`
+
+    **Cardinality symbols:**
+    - \`||\` or \`||\` : exactly one (required)
+    - \`|{ \` or \` }o\` : zero or one (optional)
+    - \`|{ \` or \`o{ \` : zero or more
+    - \`}o\` or \`o{ \` : one or more
+
+    **Attribute constraints:**
+    - \`PK\`: Primary Key
+    - \`FK\`: Foreign Key
+    - \`UK\`: Unique Key
+    - \`+\` : Indicates primary key attribute
+
+    Use the core modules and standard flows to identify the main entities that need to be stored. Include proper data types, relationships, and referential integrity constraints.
+
     Use the market and competitor information to inform the 'Potential Challenges' and 'Potential Opportunities' sections.
 
     For the development plan, provide estimated start weeks and durations for each milestone so they can be displayed in a Gantt chart. Consider the standard flows to determine logical sequencing of milestones.
 
-    When generating Mermaid.js diagrams, ensure the syntax is strictly valid. The entire diagram MUST be a single line of code starting with 'graph TD' or 'flowchart LR', with statements separated by semicolons.
+    When generating Mermaid.js diagrams, ensure the syntax is strictly valid. Use multi-line format with proper indentation - do NOT use semicolons to separate lines. Each diagram must start with its appropriate keyword ('graph TD', 'flowchart LR', or 'erDiagram') and each statement should be on its own line.
 
-    **CRITICAL MISTAKES TO AVOID:**
+    **MULTI-LINE DIAGRAM FORMAT REQUIREMENTS (All Diagram Types):**
+    - **CORRECT FORMAT** (Multi-line, no semicolons):
+      \`\`\`
+      graph TD
+          A[Start Process]
+          B[Process Step 2]
+          C[End Process]
+
+          A --> B
+          B --> C
+      \`\`\`
+
+    - **INCORRECT FORMAT** (Single line with semicolons - DO NOT USE):
+      \`\`\`
+      graph TD A[Start Process]; B[Process Step 2]; C[End Process]; A --> B; B --> C
+      \`\`\`
+
+    Use exactly the multi-line format shown above for ALL diagram types (graphs, flowcharts, and ERDs). Each line should contain a single statement, and proper indentation should be used.
+
+    **CRITICAL MISTAKES TO AVOID FOR ER DIAGRAMS:**
+
+    **Entity Definition Examples:**
+    - **INCORRECT (Incorrect constraints):** 'User { id; name }'
+    - **CORRECT:** 'User { int id PK "Primary key for user"; varchar name "User\'s full name" }'
+
+    - **INCORRECT (Missing quotes in descriptions):** 'User { int id PK; varchar email FK }'
+    - **CORRECT:** 'User { int id PK "Primary key"; varchar email FK "References..." }'
+
+    **Relationship Syntax Examples:**
+    - **INCORRECT (Space in cardinality):** 'User ||--o { Post : "has many"'
+    - **CORRECT:** 'User ||--o{ Post : "one to many posts"'
+
+    - **INCORRECT (Missing cardinality symbols):** 'User -- Post'
+    - **CORRECT:** 'User ||--o{ Post : "one to many"'
+
+    - **INCORRECT (Closure symbol spacing):** 'User ||-- }o Post'
+    - **CORRECT:** 'User ||--o{ Post : "one to many"'
+
+    **Important Rules:**
+    1. **NO SPACES** between cardinality symbols: '||--o{' not '||--o {'
+    2. **ALWAYS QUOTE** attribute descriptions: 'int id PK "description"'
+    3. **ONE-TO-MANY**: EntityOne ||--o{ EntityTwo : "relationship description"
+    4. **ONE-TO-ONE**: EntityOne ||--|| EntityTwo : "one to one relationship"
+    5. **ZERO-ONE-TO-MANY**: EntityOne }o--o{ EntityTwo : "optional to many"
+    6. **MANY-TO-MANY**: EntityOne }o--o{ EntityTwo : "many to many"
+
+    **CRITICAL MISTAKES TO AVOID FOR FLOWCHARTS AND GRAPHS:**
     - **INCORRECT (Unterminated Node):** \`A --> B[\`
     - **CORRECT:** \`A --> B[Node B Text]\`
 
@@ -244,6 +328,10 @@ export const generateProjectPlan = async (data: ProjectInputData): Promise<Proje
     if (plan.userFlowMermaid) {
       console.log("🔧 Post-processing user flow diagram...");
       plan.userFlowMermaid = postProcessMermaidCode(plan.userFlowMermaid);
+    }
+    if (plan.databaseERDMermaid) {
+      console.log("🔧 Post-processing database ERD diagram...");
+      plan.databaseERDMermaid = postProcessMermaidERDCode(plan.databaseERDMermaid);
     }
 
     // Cache the result with longer TTL for complex operations
@@ -683,8 +771,24 @@ const buildFixMermaidPrompt = (
     ${faultyCode}
     ---
 
-    Your task is to correct the syntax errors and return a valid Mermaid.js string.
-    The entire diagram MUST be a single line of code starting with 'graph TD' for architecture or 'flowchart LR' for user flow, with statements separated by semicolons.
+    Your task is to correct the syntax errors and return a valid Mermaid.js string using multi-line format with proper indentation - do NOT use semicolons to separate lines.
+
+    **MULTI-LINE FORMATTING REQUIREMENTS:**
+    The corrected diagram MUST use multi-line format similar to this example:
+    \`\`\`
+    graph TD
+        A[Start Process]
+        B[Process Step 2]
+        C[End Process]
+
+        A --> B
+        B --> C
+    \`\`\`
+
+    **Do NOT use single-line format like this:**
+    \`\`\`
+    graph TD A[Start]; B[Step]; C[End]; A-->B; B-->C
+    \`\`\`
 
     **IMPORTANT FORMATTING RULES:**
 
@@ -697,7 +801,6 @@ const buildFixMermaidPrompt = (
 
     2. **Keep Special Node Types Unchanged:**
        - **KEEP AS IS:** \`B[(Database)]\` (cylindrical database)
-       - **KEEP AS IS:** \`B[(SQL Database)]\` (cylindrical database)
        - **KEEP AS IS:** \`B{C[Decision Point]}\` (diamond decision)
        - **KEEP AS IS:** \`B>[Flag]\` (flag shape)
        - **KEEP AS IS:** \`B{{Hexagon}}\` (hexagonal shape)
@@ -712,15 +815,17 @@ const buildFixMermaidPrompt = (
        - **INCORRECT (Invalid Label Character):** \`A -->|HTTP/S Request| B\`
        - **CORRECT:** \`A -->|HTTPS Request| B\`
 
-       - **INCORRECT (Stray Identifier):** \`A[Client] --> B(Backend); B\`
-       - **CORRECT:** \`A[Client] --> B(Backend); B --> C{Database}\`
+    **ERD Specific Rules (if diagram type includes 'ERD'):**
+    - Use multi-line entity definitions with proper indentation
+    - Each entity attribute on separate line
+    - Relationships on separate lines with 4-space indentation
 
     **SPECIFIC VIETNAMESE PROJECT REQUIREMENTS:**
     - Ensure all Vietnamese text in node labels is properly formatted
     - Replace parentheses with dashes in Vietnamese node labels
     - Keep technical terms in English even when mixed with Vietnamese
 
-    Return ONLY the corrected, valid Mermaid.js code as a plain text string. Do not include any explanations, markdown code fences, or any other text.
+    Return ONLY the corrected, valid Mermaid.js code as a multi-line formatted string. Do not include any explanations, markdown code fences, or any other text.
   `;
 };
 
@@ -730,30 +835,78 @@ const postProcessMermaidCode = (code: string): string => {
 
   let processedCode = code;
 
-  // Fix 1: Replace (Desc) pattern with - Desc pattern for regular nodes
-  // Pattern: B[Content (Desc)] -> B[Content - Desc]
-  processedCode = processedCode.replace(
-    /([A-Z][\w]*)\[([^\(\)]+)\s*\(([^\)]+)\)\]/g,
-    '$1[$2 - $3]'
-  );
+  // Apply general Mermaid post-processing for all diagram types
+  // Convert escaped sequences to actual newlines and ensure proper formatting
 
-  // Fix 2: Handle multiple parentheses in node labels
-  // Pattern: B[API (Service Provider)] -> B[API - Service Provider]
-  processedCode = processedCode.replace(
-    /([A-Z][\w]*)\[([^\[\]]+)\s*\(([^\)]+)\)\s*([^\[\]]*)?\]/g,
-    (match, nodeId, beforeText, parenText, afterText) => {
-      const cleanText = [beforeText, parenText, afterText].filter(Boolean).join(' - ');
-      return `${nodeId}[${cleanText}]`;
-    }
-  );
+  // First, handle HTML-style line breaks (\n) and convert them to actual newlines
+  processedCode = processedCode.replace(/\\n/g, '\n');
 
-  // Fix 3: Clean up multiple spaces and normalize
-  processedCode = processedCode.replace(/\s+/g, ' ');
+  // Remove semicolons and ensure multi-line format
+  processedCode = processedCode
+    // Remove any remaining semicolons by replacing them with newlines
+    .replace(/;/g, '\n')
+    // Ensure proper indentation (4 spaces) for all lines after the diagram type
+    .replace(/^\s*(graph|flowchart|erDiagram)\s+(\w+)\s*\n(.+)$/ms, (match, type, direction, content) => {
+      // Split content by newlines and add proper indentation
+      const lines = content.split('\n').map(line => {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('    ')) {
+          return '    ' + trimmed;
+        }
+        return trimmed;
+      });
 
-  // Fix 4: Ensure proper semicolon separation
-  processedCode = processedCode.replace(/;\s*;/g, ';');
+      // Add a blank line between node definitions and relationships for readability
+      const processedLines = [];
+      let foundRelationship = false;
 
-  return processedCode.trim();
+      for (const line of lines) {
+        if (line.includes('-->') || line.includes('|>') || line.includes('->')) {
+          if (!foundRelationship) {
+            processedLines.push('');
+            foundRelationship = true;
+          }
+        }
+        processedLines.push(line);
+      }
+
+      return `${type} ${direction}\n${processedLines.join('\n')}`;
+    })
+    // Clean up any remaining multiple spaces (but preserve indentation)
+    .replace(/[^\n]\s{2,}/g, ' ')
+    // Remove any trailing whitespace
+    .replace(/[ \t]+$/gm, '')
+    // Trim the entire thing
+    .trim();
+
+  return processedCode;
+};
+
+// Helper function to post-process Mermaid ERD code and fix common formatting issues
+const postProcessMermaidERDCode = (code: string): string => {
+  if (!code) return code;
+
+  let processedCode = code;
+
+  // ERD-specific post-processing: REMOVE semicolons for multi-line format
+  // The ERD format requires multi-line with newlines, not semicolons
+  processedCode = processedCode
+    // Replace all semicolons in ERD context with newlines (except after 'erDiagram')
+    .replace(/erDiagram\s*;/g, 'erDiagram\n')
+    .replace(/;/g, '\n')
+    // Ensure proper indentation (4 spaces) for entity definitions
+    .replace(/^(\s*)(\w+\s*\{.*)$/gm, '$1    $2')
+    .replace(/^\s*(\w+)\s*\{\s*$/gm, '    $1 {')
+    .replace(/^\s*\}\s*$/gm, '    }')
+    // Ensure relationships are properly indented without semicolons
+    .replace(/^(\s*)(Entity\w+\s*\|\|.*)$/gm, '$1    $2')
+    // Clean up multiple spaces
+    .replace(/\s+/g, ' ')
+    // Normalize newlines and ensure proper line breaks
+    .replace(/\s*\n\s*/g, '\n')
+    .trim();
+
+  return processedCode;
 };
 
 export const fixMermaidCode = async (

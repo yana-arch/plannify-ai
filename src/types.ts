@@ -100,6 +100,7 @@ export interface ProjectPlan {
   };
   systemArchitectureMermaid: string;
   userFlowMermaid: string;
+  databaseERDMermaid: string;
 }
 
 export type ReportType = 'technical_spec' | 'product_brief' | 'executive_summary';

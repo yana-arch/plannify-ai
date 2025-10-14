@@ -60,6 +60,11 @@ const formatPlanToMarkdown = (plan: ProjectPlan, projectName: string): string =>
   md += plan.userFlowMermaid;
   md += '\n```\n';
 
+  md += `## 10. Database ERD Diagram (Mermaid JS)\n`;
+  md += '```mermaid\n';
+  md += plan.databaseERDMermaid;
+  md += '\n```\n';
+
   return md;
 };
 
@@ -77,7 +82,7 @@ const downloadAsMarkdown = (content: string, filename: string) => {
 
 
 const PlanSubNav: React.FC<{ activeTab: string; setActiveTab: (tab: string) => void; }> = ({ activeTab, setActiveTab }) => {
-    const navItems = ['Overview', 'Features', 'Development', 'Architecture', 'Workflow', 'Reports', 'History'];
+    const navItems = ['Overview', 'Features', 'Development', 'Architecture', 'Database', 'Workflow', 'Reports', 'History'];
     return (
         <aside className="w-56 flex-shrink-0 p-4 border-r border-brand-border">
             <nav className="space-y-1">
@@ -491,6 +496,8 @@ const DevelopmentTab: React.FC<{
   );
 };
 
+
+
 const EditableArchitectureTab: React.FC<{
   plan: ProjectPlan;
   projectContext: { name: string; description: string };
@@ -607,6 +614,137 @@ const EditableArchitectureTab: React.FC<{
                 )}
                 <Button variant="secondary" onClick={() => setIsEditing(true)} className="mt-4">
                   Create Diagram
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+};
+
+const EditableERDTab: React.FC<{
+  plan: ProjectPlan;
+  projectContext: { name: string; description: string };
+}> = ({ plan, projectContext }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedCode, setEditedCode] = useState(plan.databaseERDMermaid);
+  const [renderError, setRenderError] = useState<string | null>(null);
+  const [isFixing, setIsFixing] = useState(false);
+  const [fixError, setFixError] = useState<string | null>(null);
+  const { updateCurrentProjectPlan } = useProjects();
+  const mermaidRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setEditedCode(plan.databaseERDMermaid);
+    setRenderError(null);
+
+    const initializeMermaid = async () => {
+      // @ts-ignore - mermaid is global from CDN
+      const mermaid = window.mermaid;
+      if (mermaidRef.current && plan.databaseERDMermaid) {
+        try {
+          mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+          const { svg } = await mermaid.render('mermaid-erd', plan.databaseERDMermaid);
+          if (mermaidRef.current) {
+            mermaidRef.current.innerHTML = svg;
+          }
+        } catch (error: any) {
+          console.error('Mermaid ERD rendering error:', error.str || error.message);
+          setRenderError(error.str || error.message || 'Failed to render ERD diagram.');
+          if (mermaidRef.current) {
+            mermaidRef.current.innerHTML = '';
+          }
+        }
+      }
+    };
+
+    if (!isEditing) {
+      initializeMermaid();
+    }
+  }, [plan.databaseERDMermaid, isEditing]);
+
+  const handleSave = () => {
+    const newPlan = { ...plan, databaseERDMermaid: editedCode };
+    updateCurrentProjectPlan(newPlan);
+    setIsEditing(false);
+    setRenderError(null);
+  };
+
+  const handleCancel = () => {
+    setEditedCode(plan.databaseERDMermaid);
+    setIsEditing(false);
+    setFixError(null);
+  };
+
+  const handleFixWithAI = async () => {
+    setIsFixing(true);
+    setFixError(null);
+    try {
+      const fixedCode = await fixMermaidCode(editedCode, 'system architecture', projectContext);
+      setEditedCode(fixedCode);
+    } catch (err) {
+      setFixError(err instanceof Error ? err.message : 'An unknown AI error occurred.');
+    } finally {
+      setIsFixing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-xl font-bold">Database ERD Diagram</h3>
+          <p className="text-brand-text-secondary mt-1">
+            Entity-Relationship Diagram showing the database schema with tables, columns, and relationships.
+          </p>
+        </div>
+        {!isEditing && !renderError && plan.databaseERDMermaid && (
+          <Button variant="secondary" onClick={() => setIsEditing(true)} className="!py-1 !px-2 text-xs">
+            Edit Diagram
+          </Button>
+        )}
+      </div>
+
+      <Card className="bg-brand-bg min-h-[300px]">
+        {isEditing ? (
+          <div className="space-y-4">
+            <textarea
+              value={editedCode}
+              onChange={(e) => setEditedCode(e.target.value)}
+              className="w-full h-64 bg-brand-bg border border-brand-border rounded-md p-3 font-mono text-sm text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
+              placeholder="Enter Mermaid.js ERD code here..."
+            />
+            {fixError && <p className="text-sm text-red-400">{fixError}</p>}
+            <div className="flex justify-between items-center">
+              <Button onClick={handleFixWithAI} isLoading={isFixing} variant="secondary">
+                <WandSparklesIcon className="h-4 w-4 mr-2" />
+                Fix with AI
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
+                <Button onClick={handleSave}>Save Changes</Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="flex justify-center items-center p-8" ref={mermaidRef} key={plan.databaseERDMermaid}>
+              {/* Mermaid ERD will render here */}
+            </div>
+            {(renderError || !plan.databaseERDMermaid) && (
+              <div className="text-center text-brand-text-secondary p-4">
+                {renderError ? (
+                  <>
+                    <p className="font-semibold text-red-400">ERD Diagram Rendering Failed</p>
+                    <pre className="mt-2 text-xs text-left bg-brand-surface p-3 rounded-md overflow-x-auto">{renderError}</pre>
+                  </>
+                ) : (
+                  <p>No ERD diagram code provided.</p>
+                )}
+                <Button variant="secondary" onClick={() => setIsEditing(true)} className="mt-4">
+                  Create ERD Diagram
                 </Button>
               </div>
             )}
@@ -935,6 +1073,8 @@ export const ProjectPlanView: React.FC<{ project: SavedProject }> = ({ project }
                 return <DevelopmentTab plan={projectPlan} projectContext={projectContext} />;
             case 'Architecture':
                 return <EditableArchitectureTab plan={projectPlan} projectContext={projectContext} />;
+            case 'Database':
+                return <EditableERDTab plan={projectPlan} projectContext={projectContext} />;
             case 'Workflow':
                 return <EditableWorkflowTab plan={projectPlan} projectContext={projectContext} />;
             case 'Reports':
