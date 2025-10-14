@@ -62,6 +62,103 @@ export const projectTemplates: TemplateData[] = [
     numberOfFeatures: 30,
     estimatedScale: "$100K-$250K",
     timeline: "5-8 months",
+    coreModules: [
+      {
+        moduleName: "Data Integration",
+        description: "Connect and ingest data from various sources including databases, APIs, and external services.",
+        flows: [
+          "Data Source Connection Flow",
+          "Data Pipeline Setup Flow",
+          "Data Validation & Cleaning Flow",
+          "Scheduled Data Refresh Flow"
+        ]
+      },
+      {
+        moduleName: "Visualization Engine",
+        description: "Create and manage interactive charts, graphs, and dashboards with custom configurations.",
+        flows: [
+          "Chart Creation & Configuration Flow",
+          "Dashboard Assembly & Layout Flow",
+          "Interactive Filtering Flow",
+          "Export & Sharing Flow"
+        ]
+      },
+      {
+        moduleName: "User Management",
+        description: "Manage user access, roles, and permissions for data security and governance.",
+        flows: [
+          "User Registration Flow",
+          "Role Assignment Flow",
+          "Permission Management Flow",
+          "Access Audit Flow"
+        ]
+      },
+      {
+        moduleName: "Reporting",
+        description: "Generate scheduled reports and automated alerts based on data insights.",
+        flows: [
+          "Report Template Creation Flow",
+          "Scheduled Report Generation Flow",
+          "Alert Configuration Flow",
+          "Report Delivery Flow"
+        ]
+      }
+    ],
+    rolePermissions: [
+      {
+        role: "Data Analysts",
+        permissions: [
+          "Create and modify dashboards",
+          "Access all data sources",
+          "Design custom visualizations",
+          "Generate ad-hoc reports",
+          "Share insights with team members"
+        ]
+      },
+      {
+        role: "Business Managers",
+        permissions: [
+          "View assigned dashboards",
+          "Access predefined reports",
+          "Filter and drill-down data",
+          "Receive automated alerts",
+          "Export basic reports"
+        ]
+      },
+      {
+        role: "Executives",
+        permissions: [
+          "View executive summary dashboards",
+          "Access high-level KPIs",
+          "Receive strategic reports",
+          "View trend analysis",
+          "Access real-time metrics"
+        ]
+      }
+    ],
+    standardFlows: [
+      {
+        flowName: "Dashboard Creation Flow",
+        steps: [
+          "Analyst selects data sources",
+          "System validates data permissions",
+          "Analyst configures visualizations",
+          "Dashboard layout is designed",
+          "Access permissions are set",
+          "Dashboard is published and shared"
+        ]
+      },
+      {
+        flowName: "Data Alert Flow",
+        steps: [
+          "Automated monitoring checks data thresholds",
+          "Alert conditions are triggered",
+          "System notifies relevant users",
+          "Users review alert details",
+          "Action items are created if needed"
+        ]
+      }
+    ],
     coreRequirements: [
         { id: "1", description: "Integration with multiple data sources (SQL, NoSQL, APIs)", priority: 'High' },
         { id: "2", description: "Customizable and interactive charts and graphs", priority: 'High' },
@@ -74,6 +171,49 @@ export const projectTemplates: TemplateData[] = [
       database: ["Snowflake", "ClickHouse"],
       otherTools: ["Airflow", "Docker", "Pandas"],
     },
+    riskAssessment: [
+      {
+        risk: "Data quality issues affecting dashboard accuracy",
+        impact: 'High',
+        probability: 'Medium',
+        mitigation: "Implement robust data validation, monitoring, and cleansing processes with automated quality checks."
+      },
+      {
+        risk: "Performance degradation with large datasets",
+        impact: 'Medium',
+        probability: 'High',
+        mitigation: "Use efficient data structures, implement caching layers, and optimize queries with proper indexing."
+      },
+      {
+        risk: "Data security and privacy breaches",
+        impact: 'High',
+        probability: 'Low',
+        mitigation: "Encrypt sensitive data, implement role-based access control, and conduct regular security audits."
+      }
+    ],
+    featureDependencies: {
+      "1": ["Data source connections", "Authentication system"],
+      "2": ["Visualization library", "Data processing pipeline"],
+      "3": ["User management", "Access control"],
+      "4": ["Report scheduling", "Email service"]
+    },
+    successMetrics: [
+      {
+        metric: "Data processing and dashboard load times",
+        target: "<5 seconds for dashboard loading",
+        timeframe: "6 months"
+      },
+      {
+        metric: "User adoption and engagement",
+        target: "70% of target users actively using dashboards weekly",
+        timeframe: "12 months"
+      },
+      {
+        metric: "Data accuracy and reliability",
+        target: "95% data accuracy with <1% error rate",
+        timeframe: "Ongoing"
+      }
+    ],
     marketAnalysis: "Internal tools market is focused on increasing efficiency. Key selling points are ease of use, powerful features, and seamless integration with existing company data stacks.",
     competitors: ["Tableau", "PowerBI", "Looker", "Metabase"],
   },
@@ -86,6 +226,94 @@ export const projectTemplates: TemplateData[] = [
     numberOfFeatures: 20,
     estimatedScale: "$80K-$200K",
     timeline: "7-10 months",
+    coreModules: [
+      {
+        moduleName: "Product Catalog",
+        description: "Manage product information, categories, inventory, and pricing with rich media support.",
+        flows: [
+          "Product Creation & Management Flow",
+          "Category Organization Flow",
+          "Inventory Tracking Flow",
+          "Price Management Flow"
+        ]
+      },
+      {
+        moduleName: "Shopping Experience",
+        description: "Handle product browsing, search, cart management, and checkout process for customers.",
+        flows: [
+          "Product Discovery Flow",
+          "Cart Management Flow",
+          "Checkout & Payment Flow",
+          "Order Confirmation Flow"
+        ]
+      },
+      {
+        moduleName: "Order Management",
+        description: "Process and fulfill orders, handle returns, and manage customer communications.",
+        flows: [
+          "Order Processing Flow",
+          "Shipping & Fulfillment Flow",
+          "Return & Refund Management Flow",
+          "Customer Service Flow"
+        ]
+      },
+      {
+        moduleName: "Analytics & Reporting",
+        description: "Track sales performance, customer behavior, and business metrics with insights.",
+        flows: [
+          "Sales Analytics Flow",
+          "Customer Behavior Tracking Flow",
+          "Inventory Optimization Flow",
+          "Financial Reporting Flow"
+        ]
+      }
+    ],
+    rolePermissions: [
+      {
+        role: "Store Administrators",
+        permissions: [
+          "Full system access",
+          "Manage products and categories",
+          "Handle orders and returns",
+          "Configure payment methods",
+          "Access all analytics and reports"
+        ]
+      },
+      {
+        role: "Online Shoppers",
+        permissions: [
+          "Browse products and categories",
+          "Add items to cart and checkout",
+          "View order history and status",
+          "Manage shipping addresses",
+          "Leave product reviews"
+        ]
+      }
+    ],
+    standardFlows: [
+      {
+        flowName: "Purchase Flow",
+        steps: [
+          "Customer browses products",
+          "Adds items to cart",
+          "Initiates checkout process",
+          "Provides shipping and payment information",
+          "Completes purchase and receives confirmation",
+          "Order is processed and shipped"
+        ]
+      },
+      {
+        flowName: "Product Management Flow",
+        steps: [
+          "Administrator logs into admin panel",
+          "Creates or edits product information",
+          "Uploads product images and sets pricing",
+          "Configures inventory levels",
+          "Publishes product to store",
+          "Monitors sales and adjusts as needed"
+        ]
+      }
+    ],
     coreRequirements: [
       { id: "1", description: "Product catalog with categories, filtering, and search", priority: 'High' },
       { id: "2", description: "Shopping cart and multi-step checkout flow", priority: 'High' },
@@ -98,6 +326,49 @@ export const projectTemplates: TemplateData[] = [
       database: ["MongoDB"],
       otherTools: ["Vercel", "Docker", "Jest"],
     },
+    riskAssessment: [
+      {
+        risk: "Payment processing failures during peak traffic",
+        impact: 'High',
+        probability: 'Medium',
+        mitigation: "Implement multiple payment gateways, proper error handling, and transaction monitoring with automatic failover."
+      },
+      {
+        risk: "Inventory synchronization issues leading to overselling",
+        impact: 'Medium',
+        probability: 'High',
+        mitigation: "Use atomic inventory updates, implement real-time stock tracking, and add inventory alerts for low stock levels."
+      },
+      {
+        risk: "Data breaches exposing customer payment information",
+        impact: 'High',
+        probability: 'Low',
+        mitigation: "Comply with PCI DSS standards, use encryption for sensitive data, and conduct regular security audits and penetration testing."
+      }
+    ],
+    featureDependencies: {
+      "1": ["Database setup", "Media storage"],
+      "2": ["Product catalog", "User accounts"],
+      "3": ["Payment gateway integration", "SSL certificates"],
+      "4": ["Order management", "Email notifications"]
+    },
+    successMetrics: [
+      {
+        metric: "Conversion rate from visitor to customer",
+        target: "3-5% conversion rate",
+        timeframe: "3 months"
+      },
+      {
+        metric: "Average order value and customer lifetime value",
+        target: "Increase AOV by 20% within 6 months",
+        timeframe: "6 months"
+      },
+      {
+        metric: "Site uptime and performance",
+        target: "99.9% uptime with <2s page load times",
+        timeframe: "Ongoing"
+      }
+    ],
     marketAnalysis: "The e-commerce market is highly competitive. Differentiation can be achieved through niche products, superior user experience, or building a strong brand community.",
     competitors: ["Shopify", "BigCommerce", "WooCommerce", "Magento"],
   },
@@ -110,6 +381,99 @@ export const projectTemplates: TemplateData[] = [
     numberOfFeatures: 35,
     estimatedScale: "$150K-$500K",
     timeline: "9-12 months",
+    coreModules: [
+      {
+        moduleName: "User & Organization Management",
+        description: "Handle multi-tenant user accounts, organization hierarchies, and team management.",
+        flows: [
+          "Organization Setup Flow",
+          "User Invitation & Onboarding Flow",
+          "Team Hierarchy Management Flow",
+          "Account Suspension/Reactivation Flow"
+        ]
+      },
+      {
+        moduleName: "Subscription & Billing",
+        description: "Manage subscription plans, billing cycles, payments, and plan upgrades/downgrades.",
+        flows: [
+          "Subscription Plan Selection Flow",
+          "Billing Cycle Management Flow",
+          "Payment Processing Flow",
+          "Plan Change & Proration Flow"
+        ]
+      },
+      {
+        moduleName: "Access Control & Security",
+        description: "Implement role-based permissions, data isolation, and security compliance.",
+        flows: [
+          "Role Assignment & Permission Flow",
+          "Data Access Control Flow",
+          "Security Audit & Compliance Flow",
+          "Multi-Tenant Data Isolation Flow"
+        ]
+      },
+      {
+        moduleName: "Core Business Feature",
+        description: "The main functionality of the SaaS platform (e.g., project management, CRM, or other business tool).",
+        flows: [
+          "Feature Core Functionality Flow",
+          "Collaboration & Sharing Flow",
+          "Data Export & Integration Flow",
+          "Custom Workflow Creation Flow"
+        ]
+      }
+    ],
+    rolePermissions: [
+      {
+        role: "Company Owners",
+        permissions: [
+          "Full organization access",
+          "Manage subscription and billing",
+          "Configure organization settings",
+          "Access all company data and reports"
+        ]
+      },
+      {
+        role: "Team Admins",
+        permissions: [
+          "Manage team members",
+          "Configure team permissions",
+          "Access team analytics",
+          "Customize team-specific features"
+        ]
+      },
+      {
+        role: "Business Users",
+        permissions: [
+          "Access assigned features and data",
+          "Collaborate with team members",
+          "Generate personal reports",
+          "Customize personal dashboard"
+        ]
+      }
+    ],
+    standardFlows: [
+      {
+        flowName: "Organization Onboarding Flow",
+        steps: [
+          "Owner creates organization account",
+          "System sets up tenant isolation",
+          "Owner configures initial settings",
+          "Team members are invited",
+          "Subscription is activated and billing begins"
+        ]
+      },
+      {
+        flowName: "Subscription Management Flow",
+        steps: [
+          "Owner reviews current plan and usage",
+          "System suggests upgrades or downgrades",
+          "Owner selects new plan",
+          "Payment is processed with proration",
+          "New plan features are activated"
+        ]
+      }
+    ],
     coreRequirements: [
       { id: "1", description: "User authentication with team/organization support", priority: 'High' },
       { id: "2", description: "Subscription plans and billing integration (e.g., Chargebee, Stripe)", priority: 'High' },
@@ -122,6 +486,49 @@ export const projectTemplates: TemplateData[] = [
       database: ["PostgreSQL"],
       otherTools: ["Heroku", "Stripe Billing", "RSpec"],
     },
+    riskAssessment: [
+      {
+        risk: "Data isolation failures between tenants leading to data leakage",
+        impact: 'High',
+        probability: 'Low',
+        mitigation: "Implement strict database row-level security, conduct regular tenant data isolation testing, and use encrypted tenant-specific keys."
+      },
+      {
+        risk: "Subscription billing errors causing customer dissatisfaction",
+        impact: 'High',
+        probability: 'Medium',
+        mitigation: "Implement robust billing logic with comprehensive testing, integrate with reliable payment processors, and provide clear billing transparency."
+      },
+      {
+        risk: "Single point of failure in multi-tenant architecture",
+        impact: 'Medium',
+        probability: 'Low',
+        mitigation: "Deploy redundant architecture with automatic failover, implement circuit breakers, and conduct regular disaster recovery testing."
+      }
+    ],
+    featureDependencies: {
+      "1": ["User authentication", "Multi-tenant database schema"],
+      "2": ["Payment gateway integration", "Invoice generation"],
+      "3": ["Role management system", "Access control"],
+      "4": ["Core business logic", "API endpoints"]
+    },
+    successMetrics: [
+      {
+        metric: "Monthly recurring revenue (MRR) growth",
+        target: "20% month-over-month growth in first 12 months",
+        timeframe: "Ongoing"
+      },
+      {
+        metric: "Customer churn rate",
+        target: "<5% monthly churn rate",
+        timeframe: "Ongoing"
+      },
+      {
+        metric: "Customer acquisition cost (CAC) payback period",
+        target: "<12 months",
+        timeframe: "Annual"
+      }
+    ],
     marketAnalysis: "B2B SaaS is about solving a specific business problem more efficiently than existing solutions. Customer support and reliability are paramount. The sales cycle is longer, but customer lifetime value is higher.",
     competitors: ["Salesforce", "Atlassian Jira", "HubSpot", "Various niche competitors"],
   },
@@ -134,6 +541,92 @@ export const projectTemplates: TemplateData[] = [
     numberOfFeatures: 10,
     estimatedScale: "$40K-$120K",
     timeline: "3-5 months",
+    coreModules: [
+      {
+        moduleName: "Model Management",
+        description: "Handle model deployment, versioning, scaling, and performance monitoring.",
+        flows: [
+          "Model Deployment Flow",
+          "Version Control Flow",
+          "Auto-scaling Flow",
+          "Performance Monitoring Flow"
+        ]
+      },
+      {
+        moduleName: "API Gateway",
+        description: "Manage authentication, rate limiting, request routing, and API documentation.",
+        flows: [
+          "Authentication & Authorization Flow",
+          "Rate Limiting Flow",
+          "Request Routing Flow",
+          "API Documentation Generation Flow"
+        ]
+      },
+      {
+        moduleName: "Usage Analytics",
+        description: "Track API usage, billing, analytics, and provide insights to developers.",
+        flows: [
+          "Usage Tracking Flow",
+          "Billing & Invoicing Flow",
+          "Analytics Dashboard Flow",
+          "Developer Portal Access Flow"
+        ]
+      },
+      {
+        moduleName: "Infrastructure Management",
+        description: "Manage compute resources, monitoring, logging, and deployment automation.",
+        flows: [
+          "Resource Provisioning Flow",
+          "Monitoring & Alerting Flow",
+          "Logging & Tracing Flow",
+          "CI/CD Pipeline Flow"
+        ]
+      }
+    ],
+    rolePermissions: [
+      {
+        role: "Developers",
+        permissions: [
+          "Access API documentation",
+          "Generate API keys",
+          "View usage statistics",
+          "Test API endpoints",
+          "Access developer support"
+        ]
+      },
+      {
+        role: "Data Scientists",
+        permissions: [
+          "Monitor model performance",
+          "Submit model updates",
+          "Access advanced analytics",
+          "Request model retraining",
+          "Access training data insights"
+        ]
+      }
+    ],
+    standardFlows: [
+      {
+        flowName: "API Access Setup Flow",
+        steps: [
+          "Developer registers for account",
+          "Generates API keys with appropriate permissions",
+          "Configures rate limits and usage plans",
+          "Accesses API documentation and testing tools",
+          "Begins integration and testing"
+        ]
+      },
+      {
+        flowName: "Model Inference Flow",
+        steps: [
+          "Client sends authenticated request with data",
+          "API gateway validates request and rate limits",
+          "Request routed to appropriate model instance",
+          "Model processes inference and returns result",
+          "Response logged and usage tracked"
+        ]
+      }
+    ],
     coreRequirements: [
       { id: "1", description: "A secure API endpoint for model inference", priority: 'High' },
       { id: "2", description: "API key authentication and usage tracking/rate limiting", priority: 'High' },
@@ -146,6 +639,49 @@ export const projectTemplates: TemplateData[] = [
       database: ["Redis (for caching)"],
       otherTools: ["Docker", "Kubernetes/SageMaker", "Prometheus", "Grafana"],
     },
+    riskAssessment: [
+      {
+        risk: "Model performance degradation over time due to data drift",
+        impact: 'Medium',
+        probability: 'High',
+        mitigation: "Implement continuous monitoring, automated retraining pipelines, and regular model validation against ground truth data."
+      },
+      {
+        risk: "API service unavailability affecting dependent applications",
+        impact: 'High',
+        probability: 'Medium',
+        mitigation: "Deploy across multiple availability zones, implement automatic failover, and provide clear SLA guarantees."
+      },
+      {
+        risk: "Security vulnerabilities in model inference exposing sensitive data",
+        impact: 'High',
+        probability: 'Low',
+        mitigation: "Use secure model serving frameworks, implement input validation, sanitize outputs, and conduct regular security audits."
+      }
+    ],
+    featureDependencies: {
+      "1": ["Secure API gateway", "Model serving infrastructure"],
+      "2": ["Authentication system", "Usage tracking database"],
+      "3": ["Model versioning system", "CI/CD pipeline"],
+      "4": ["Documentation generation", "Developer portal"]
+    },
+    successMetrics: [
+      {
+        metric: "API response time and throughput",
+        target: "<100ms average latency, 1000+ requests/second",
+        timeframe: "3 months"
+      },
+      {
+        metric: "API uptime and reliability",
+        target: "99.9% uptime with clear SLA terms",
+        timeframe: "Ongoing"
+      },
+      {
+        metric: "Developer adoption and API usage growth",
+        target: "50% month-over-month usage increase",
+        timeframe: "6 months"
+      }
+    ],
     marketAnalysis: "The AI API market is rapidly growing. Success hinges on the quality and uniqueness of the underlying model, as well as the reliability and ease of use of the API.",
     competitors: ["OpenAI API", "Hugging Face Inference API", "Google Cloud AI", "AWS AI Services"],
   },
@@ -361,6 +897,51 @@ export const projectTemplates: TemplateData[] = [
         "GitHub Actions"
       ]
     },
+    riskAssessment: [
+      {
+        risk: "Data security breaches from unauthorized access",
+        impact: 'High',
+        probability: 'Medium',
+        mitigation: "Implement robust encryption, regular security audits, and compliance with data protection regulations like GDPR or local equivalents."
+      },
+      {
+        risk: "System downtime during peak usage periods (e.g., enrollment season)",
+        impact: 'Medium',
+        probability: 'Low',
+        mitigation: "Deploy scalable infrastructure with load balancing, implement redundancy measures, and perform regular maintenance during off-peak hours."
+      },
+      {
+        risk: "Resistance to change from school staff accustomed to manual processes",
+        impact: 'Medium',
+        probability: 'High',
+        mitigation: "Conduct comprehensive training programs, provide ongoing support, and demonstrate clear benefits through phased implementation."
+      }
+    ],
+    featureDependencies: {
+      "1": ["User authentication system", "Database setup"],
+      "2": ["Staff Management", "Academic modules"],
+      "3": ["Student Management", "Financial modules"],
+      "4": ["Role-based access control"],
+      "5": ["Inventory tracking system"],
+      "6": ["Product catalog", "Payment integration"]
+    },
+    successMetrics: [
+      {
+        metric: "Reduction in administrative paperwork processing time",
+        target: "50% reduction within 6 months",
+        timeframe: "6 months"
+      },
+      {
+        metric: "User adoption rate among staff and students",
+        target: "80% active users within 1 year",
+        timeframe: "12 months"
+      },
+      {
+        metric: "System uptime and reliability",
+        target: "99.9% uptime annually",
+        timeframe: "Ongoing"
+      }
+    ],
     marketAnalysis: "Educational institutions are rapidly digitizing. A unified platform like this can streamline academic and operational workflows, making it highly adaptable for schools, colleges, and training centers.",
     competitors: [
       "Schoology",
@@ -510,6 +1091,49 @@ export const projectTemplates: TemplateData[] = [
         "Stripe for payments"
       ]
     },
+    riskAssessment: [
+      {
+        risk: "Data breaches violating HIPAA regulations",
+        impact: 'High',
+        probability: 'Medium',
+        mitigation: "Implement HIPAA-compliant encryption, regular audits, and strict access controls with audit logging."
+      },
+      {
+        risk: "System unavailability during critical care situations",
+        impact: 'High',
+        probability: 'Low',
+        mitigation: "Deploy redundant systems, conduct regular failover testing, and have manual backup procedures."
+      },
+      {
+        risk: "Integration issues with existing hospital systems",
+        impact: 'Medium',
+        probability: 'High',
+        mitigation: "Conduct thorough requirements gathering, perform integration testing, and provide comprehensive documentation."
+      }
+    ],
+    featureDependencies: {
+      "1": ["Patient records system", "HL7 integration"],
+      "2": ["Appointment scheduling system"],
+      "3": ["Electronic health records (EHR)", "Data security"],
+      "4": ["Billing system", "Insurance integration"]
+    },
+    successMetrics: [
+      {
+        metric: "Patient data accessibility and wait times",
+        target: "50% reduction in data retrieval time",
+        timeframe: "6 months"
+      },
+      {
+        metric: "System adoption by medical staff",
+        target: "95% of staff using system daily",
+        timeframe: "12 months"
+      },
+      {
+        metric: "Error reduction in patient records",
+        target: "80% reduction in data entry errors",
+        timeframe: "9 months"
+      }
+    ],
     marketAnalysis: "Healthcare digitization is accelerating due to regulatory requirements and the need for better patient outcomes. Systems must prioritize security, interoperability, and user-friendly interfaces for medical professionals.",
     competitors: [
       "Epic Systems",
@@ -649,6 +1273,49 @@ export const projectTemplates: TemplateData[] = [
         "Redis"
       ]
     },
+    riskAssessment: [
+      {
+        risk: "Tenant data privacy violations",
+        impact: 'High',
+        probability: 'Medium',
+        mitigation: "Implement comprehensive data encryption, GDPR/CCPA compliance measures, and regular privacy audits."
+      },
+      {
+        risk: "Maintenance service disruptions and cost overruns",
+        impact: 'Medium',
+        probability: 'High',
+        mitigation: "Establish vendor contracts with SLAs, maintain emergency service backups, and implement budget tracking controls."
+      },
+      {
+        risk: "Property vacancy periods extending unexpectedly",
+        impact: 'Medium',
+        probability: 'High',
+        mitigation: "Implement automated marketing tools, comprehensive property search features, and predictive analytics for vacancy forecasting."
+      }
+    ],
+    featureDependencies: {
+      "1": ["Property database", "Media storage"],
+      "2": ["Tenant verification services", "Document management"],
+      "3": ["Maintenance scheduling system"],
+      "4": ["Financial reporting", "Payment processing"]
+    },
+    successMetrics: [
+      {
+        metric: "Property occupancy rate",
+        target: "95% average occupancy across portfolio",
+        timeframe: "Ongoing"
+      },
+      {
+        metric: "Tenant satisfaction scores",
+        target: "4.5/5 average rating",
+        timeframe: "Annual"
+      },
+      {
+        metric: "Maintenance response time",
+        target: "24 hours for routine requests, 2 hours for emergencies",
+        timeframe: "Monthly"
+      }
+    ],
     marketAnalysis: "Property management is becoming increasingly digital. Modern tenants expect online portals, digital payments, and quick response times. The market favors platforms that can handle multiple property types and scales.",
     competitors: [
       "AppFolio",
