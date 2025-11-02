@@ -320,18 +320,18 @@ export const generateProjectPlan = async (data: ProjectInputData): Promise<Proje
     const jsonText = response.text.trim();
     const plan: ProjectPlan = JSON.parse(jsonText);
 
-    // Post-process Mermaid diagrams to ensure correct formatting
+    // Validate Mermaid diagrams (removed aggressive post-processing)
     if (plan.systemArchitectureMermaid) {
-      console.log("🔧 Post-processing architecture diagram...");
-      plan.systemArchitectureMermaid = postProcessMermaidCode(plan.systemArchitectureMermaid);
+      console.log("🔍 Validating architecture diagram...");
+      plan.systemArchitectureMermaid = validateMermaidCode(plan.systemArchitectureMermaid);
     }
     if (plan.userFlowMermaid) {
-      console.log("🔧 Post-processing user flow diagram...");
-      plan.userFlowMermaid = postProcessMermaidCode(plan.userFlowMermaid);
+      console.log("� Validating user flow diagram...");
+      plan.userFlowMermaid = validateMermaidCode(plan.userFlowMermaid);
     }
     if (plan.databaseERDMermaid) {
-      console.log("🔧 Post-processing database ERD diagram...");
-      plan.databaseERDMermaid = postProcessMermaidERDCode(plan.databaseERDMermaid);
+      console.log("� Validating database ERD diagram...");
+      plan.databaseERDMermaid = validateMermaidERDCode(plan.databaseERDMermaid);
     }
 
     // Cache the result with longer TTL for complex operations
@@ -829,84 +829,59 @@ const buildFixMermaidPrompt = (
   `;
 };
 
-// Helper function to post-process Mermaid code and fix common formatting issues
-const postProcessMermaidCode = (code: string): string => {
+// Helper function to validate Mermaid code (conservative approach)
+const validateMermaidCode = (code: string): string => {
   if (!code) return code;
 
-  let processedCode = code;
+  // Only perform minimal validation and basic cleanup
+  let validatedCode = code.trim();
 
-  // Apply general Mermaid post-processing for all diagram types
-  // Convert escaped sequences to actual newlines and ensure proper formatting
+  // Convert escaped newlines to actual newlines
+  validatedCode = validatedCode.replace(/\\n/g, '\n');
 
-  // First, handle HTML-style line breaks (\n) and convert them to actual newlines
-  processedCode = processedCode.replace(/\\n/g, '\n');
+  // Ensure the code starts with proper diagram declaration
+  if (!validatedCode.match(/^(graph|flowchart)\s+(TD|LR|TB|BT|RL)/m)) {
+    // If it doesn't start with proper declaration, try to add one
+    if (validatedCode.includes('-->') || validatedCode.includes('->')) {
+      validatedCode = `graph TD\n${validatedCode}`;
+    } else if (validatedCode.includes('flowchart')) {
+      // Already has flowchart, keep as is
+    } else {
+      validatedCode = `flowchart LR\n${validatedCode}`;
+    }
+  }
 
-  // Remove semicolons and ensure multi-line format
-  processedCode = processedCode
-    // Remove any remaining semicolons by replacing them with newlines
-    .replace(/;/g, '\n')
-    // Ensure proper indentation (4 spaces) for all lines after the diagram type
-    .replace(/^\s*(graph|flowchart|erDiagram)\s+(\w+)\s*\n(.+)$/ms, (match, type, direction, content) => {
-      // Split content by newlines and add proper indentation
-      const lines = content.split('\n').map(line => {
-        const trimmed = line.trim();
-        if (trimmed && !trimmed.startsWith('    ')) {
-          return '    ' + trimmed;
-        }
-        return trimmed;
-      });
-
-      // Add a blank line between node definitions and relationships for readability
-      const processedLines = [];
-      let foundRelationship = false;
-
-      for (const line of lines) {
-        if (line.includes('-->') || line.includes('|>') || line.includes('->')) {
-          if (!foundRelationship) {
-            processedLines.push('');
-            foundRelationship = true;
-          }
-        }
-        processedLines.push(line);
-      }
-
-      return `${type} ${direction}\n${processedLines.join('\n')}`;
-    })
-    // Clean up any remaining multiple spaces (but preserve indentation)
-    .replace(/[^\n]\s{2,}/g, ' ')
-    // Remove any trailing whitespace
-    .replace(/[ \t]+$/gm, '')
-    // Trim the entire thing
+  // Basic cleanup: remove excessive whitespace but preserve structure
+  validatedCode = validatedCode
+    .replace(/[ \t]+$/gm, '') // Remove trailing whitespace
+    .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
     .trim();
 
-  return processedCode;
+  return validatedCode;
 };
 
-// Helper function to post-process Mermaid ERD code and fix common formatting issues
-const postProcessMermaidERDCode = (code: string): string => {
+// Helper function to validate Mermaid ERD code (conservative approach)
+const validateMermaidERDCode = (code: string): string => {
   if (!code) return code;
 
-  let processedCode = code;
+  // Only perform minimal validation and basic cleanup
+  let validatedCode = code.trim();
 
-  // ERD-specific post-processing: REMOVE semicolons for multi-line format
-  // The ERD format requires multi-line with newlines, not semicolons
-  processedCode = processedCode
-    // Replace all semicolons in ERD context with newlines (except after 'erDiagram')
-    .replace(/erDiagram\s*;/g, 'erDiagram\n')
-    .replace(/;/g, '\n')
-    // Ensure proper indentation (4 spaces) for entity definitions
-    .replace(/^(\s*)(\w+\s*\{.*)$/gm, '$1    $2')
-    .replace(/^\s*(\w+)\s*\{\s*$/gm, '    $1 {')
-    .replace(/^\s*\}\s*$/gm, '    }')
-    // Ensure relationships are properly indented without semicolons
-    .replace(/^(\s*)(Entity\w+\s*\|\|.*)$/gm, '$1    $2')
-    // Clean up multiple spaces
-    .replace(/\s+/g, ' ')
-    // Normalize newlines and ensure proper line breaks
-    .replace(/\s*\n\s*/g, '\n')
+  // Convert escaped newlines to actual newlines
+  validatedCode = validatedCode.replace(/\\n/g, '\n');
+
+  // Ensure the code starts with erDiagram
+  if (!validatedCode.startsWith('erDiagram')) {
+    validatedCode = `erDiagram\n${validatedCode}`;
+  }
+
+  // Basic cleanup: remove excessive whitespace but preserve structure
+  validatedCode = validatedCode
+    .replace(/[ \t]+$/gm, '') // Remove trailing whitespace
+    .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
     .trim();
 
-  return processedCode;
+  return validatedCode;
 };
 
 export const fixMermaidCode = async (
@@ -930,8 +905,8 @@ export const fixMermaidCode = async (
     // Clean up potential markdown fences if the model adds them despite instructions
     let cleanedCode = response.text.trim().replace(/```mermaid/g, '').replace(/```/g, '').trim();
 
-    // Apply post-processing to fix common formatting issues
-    cleanedCode = postProcessMermaidCode(cleanedCode);
+    // Apply minimal validation instead of aggressive post-processing
+    cleanedCode = validateMermaidCode(cleanedCode);
 
     return cleanedCode;
   } catch (error) {

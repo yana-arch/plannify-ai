@@ -52,3 +52,4 @@ ehthumbs.db
 yarn.lock
 pnpm-lock.yaml
 plans/
+.unlighthouse/
