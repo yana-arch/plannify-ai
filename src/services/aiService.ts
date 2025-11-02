@@ -266,6 +266,21 @@ const sanitizeForJSON = (text: string): string => {
     .normalize('NFC'); // Normalize to composed form
 };
 
+// Helper function to clean markdown code blocks from AI responses
+const cleanMarkdownCodeBlocks = (text: string): string => {
+  if (!text) return text;
+
+  // Remove markdown code blocks that wrap JSON
+  // Pattern: ```json\n{content}\n```
+  let cleaned = text.replace(/^```(?:json|JSON)?\s*\n?/gm, '').replace(/\n?```\s*$/gm, '');
+
+  // Also handle cases where the AI might use different code block markers
+  cleaned = cleaned.replace(/^```\s*\n?/gm, '').replace(/\n?```\s*$/gm, '');
+
+  // Trim whitespace
+  return cleaned.trim();
+};
+
 const buildPrompt = (data: ProjectInputData): string => {
   const coreModulesSection = data.coreModules && data.coreModules.length > 0 ? `
     Core Modules:
@@ -479,6 +494,9 @@ export const generateProjectPlan = async (data: ProjectInputData, provider: APIP
       jsonText = response.text || response.content || '';
     }
 
+    // Clean markdown code blocks from the response
+    jsonText = cleanMarkdownCodeBlocks(jsonText);
+
     const plan: ProjectPlan = JSON.parse(jsonText);
 
     // Validate Mermaid diagrams (removed aggressive post-processing)
@@ -638,6 +656,9 @@ export const regenerateProjectPlan = async (
       jsonText = response.text || response.content || '';
     }
 
+    // Clean markdown code blocks from the response
+    jsonText = cleanMarkdownCodeBlocks(jsonText);
+
     const plan: ProjectPlan = JSON.parse(jsonText);
 
     // Validate Mermaid diagrams
@@ -719,6 +740,9 @@ export const enhanceFeatureSpecification = async (
       jsonText = response.text || response.content || '';
     }
 
+    // Clean markdown code blocks from the response
+    jsonText = cleanMarkdownCodeBlocks(jsonText);
+
     const newFeature: FeatureSpecification = JSON.parse(jsonText);
     return newFeature;
   } catch (error) {
@@ -788,6 +812,9 @@ export const optimizeDevelopmentPlan = async (
     } else {
       jsonText = response.text || response.content || '';
     }
+
+    // Clean markdown code blocks from the response
+    jsonText = cleanMarkdownCodeBlocks(jsonText);
 
     const result: { milestones: Milestone[] } = JSON.parse(jsonText);
     return result.milestones;
