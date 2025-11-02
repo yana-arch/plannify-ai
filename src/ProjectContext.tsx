@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode, useMemo, useCallback } from 'react';
 import type { SavedProject, ProjectInputData, ProjectPlan, PlanHistoryEntry, FeatureSpecification, Milestone, ProjectsContextType } from './types';
-import { generateProjectPlan } from './geminiService';
+import { generateProjectPlan } from './services/aiService';
+import { useSettings } from './SettingsContext';
 
 const ProjectsContext = createContext<ProjectsContextType | undefined>(undefined);
 
@@ -9,6 +10,8 @@ export const ProjectsProvider: React.FC<{ children: ReactNode }> = ({ children }
     const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+
+    const { activeProvider } = useSettings();
 
     useEffect(() => {
         try {
@@ -36,7 +39,10 @@ export const ProjectsProvider: React.FC<{ children: ReactNode }> = ({ children }
         setIsLoading(true);
         setError(null);
         try {
-            const plan = await generateProjectPlan(data);
+            if (!activeProvider) {
+                throw new Error("No active AI provider configured. Please check your settings.");
+            }
+            const plan = await generateProjectPlan(data, activeProvider);
             const newProject: SavedProject = {
                 id: Date.now().toString(),
                 projectName: data.projectName,
@@ -56,7 +62,7 @@ export const ProjectsProvider: React.FC<{ children: ReactNode }> = ({ children }
         } finally {
             setIsLoading(false);
         }
-    }, [projects]);
+    }, [projects, activeProvider]);
     
     const updateProject = useCallback((projectId: string, updates: Partial<SavedProject>) => {
         const updatedProjects = projects.map(p => p.id === projectId ? { ...p, ...updates } : p);

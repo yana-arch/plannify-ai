@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App.tsx';
 import { ProjectsProvider } from './ProjectContext.tsx';
+import { SettingsProvider } from './SettingsContext.tsx';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -11,7 +12,9 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 root.render(
-  <ProjectsProvider>
-    <App />
-  </ProjectsProvider>
+  <SettingsProvider>
+    <ProjectsProvider>
+      <App />
+    </ProjectsProvider>
+  </SettingsProvider>
 );

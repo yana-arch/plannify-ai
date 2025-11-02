@@ -156,8 +156,9 @@ class CacheService {
   }
 
   // Generate cache key for project plan requests
-  generateProjectPlanKey(data: any): string {
-    const hash = this.createSafeCacheKey(data);
+  generateProjectPlanKey(data: any, provider?: any): string {
+    const dataWithProvider = provider ? { ...data, provider: provider.id } : data;
+    const hash = this.createSafeCacheKey(dataWithProvider);
     return `project_plan_${hash}`;
   }
 

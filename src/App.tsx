@@ -1,6 +1,7 @@
 import React, { useState, Suspense, lazy } from 'react';
-import { Sidebar } from './components/layout/Sidebar';
+import { Sidebar } from './components/Sidebar';
 import { useProjects } from './ProjectContext';
+import { SettingsProvider } from './SettingsContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import type { Screen, TemplateData, ProjectInputData, SavedProject } from './types';
@@ -12,6 +13,7 @@ const ProjectPlanView = lazy(() => import('./components/ProjectPlanView').then(m
 const TemplatesView = lazy(() => import('./components/TemplatesView').then(module => ({ default: module.TemplatesView })));
 const MyProjectsView = lazy(() => import('./components/MyProjectsView').then(module => ({ default: module.MyProjectsView })));
 const DashboardView = lazy(() => import('./components/DashboardView').then(module => ({ default: module.DashboardView })));
+const SettingsView = lazy(() => import('./components/SettingsView').then(module => ({ default: module.SettingsView })));
 
 const App: React.FC = () => {
   const [screen, setScreen] = useState<Screen>('dashboard');
@@ -86,13 +88,16 @@ const App: React.FC = () => {
       case 'projects':
         return <MyProjectsView onViewProject={handleViewProject} onNewProject={startNewProject} />;
 
+      case 'settings':
+        return <SettingsView />;
+
       case 'wizard':
       default:
         return (
           <>
-            <NewProjectWizard 
-                onGenerate={handleGeneratePlan} 
-                isGenerating={isGenerating} 
+            <NewProjectWizard
+                onGenerate={handleGeneratePlan}
+                isGenerating={isGenerating}
                 initialData={wizardInitialData}
             />
             {error && <div className="mt-4 text-red-400 bg-red-500/10 p-3 rounded-md">{error}</div>}

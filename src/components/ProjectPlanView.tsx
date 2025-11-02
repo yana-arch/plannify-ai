@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { ProjectPlan, FeatureSpecification, ReportTemplate, ReportType, ProjectInputData, PlanHistoryEntry, Milestone, SavedProject } from '../types';
 import { Card, Button, Modal } from './ui';
 import { DownloadIcon, WandSparklesIcon, TerminalSquareIcon, LightbulbIcon, BriefcaseIcon, HistoryIcon } from './icons';
-import { enhanceFeatureSpecification, generateReport, regenerateProjectPlan, optimizeDevelopmentPlan, fixMermaidCode } from '../geminiService';
+import { enhanceFeatureSpecification, generateReport, regenerateProjectPlan, optimizeDevelopmentPlan, fixMermaidCode } from '../services/aiService';
 import { useProjects } from '../ProjectContext';
+import { useSettings } from '../SettingsContext';
 
 // Lazy load DOCX service only when needed
 const loadDocxService = () => import('../docxService');
@@ -106,10 +107,11 @@ const PlanSubNav: React.FC<{ activeTab: string; setActiveTab: (tab: string) => v
     );
 };
 
-const OverviewTab: React.FC<{ 
+const OverviewTab: React.FC<{
     plan: ProjectPlan;
     projectInput: ProjectInputData;
 }> = ({ plan, projectInput }) => {
+    const { activeProvider } = useSettings();
     const [isEvolving, setIsEvolving] = useState(false);
     const [evolvePrompt, setEvolvePrompt] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
@@ -124,10 +126,14 @@ const OverviewTab: React.FC<{
             setError("Please enter a prompt to evolve the plan.");
             return;
         }
+        if (!activeProvider) {
+            setError("No active AI provider configured. Please check your settings.");
+            return;
+        }
         setIsGenerating(true);
         setError(null);
         try {
-            const newPlan = await regenerateProjectPlan(plan, projectInput, evolvePrompt);
+            const newPlan = await regenerateProjectPlan(plan, projectInput, evolvePrompt, activeProvider);
             updateCurrentProjectPlan(newPlan);
             setIsEvolving(false);
             setEvolvePrompt('');
@@ -222,6 +228,7 @@ const FeatureCard: React.FC<{
   featureIndex: number;
   projectContext: { name: string; description: string };
 }> = ({ feature, featureIndex, projectContext }) => {
+  const { activeProvider } = useSettings();
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -240,10 +247,14 @@ const FeatureCard: React.FC<{
       setError("Please enter a prompt to enhance the feature.");
       return;
     }
+    if (!activeProvider) {
+      setError("No active AI provider configured. Please check your settings.");
+      return;
+    }
     setIsGenerating(true);
     setError(null);
     try {
-      const updatedFeature = await enhanceFeatureSpecification(feature, prompt, projectContext);
+      const updatedFeature = await enhanceFeatureSpecification(feature, prompt, projectContext, activeProvider);
       updateCurrentProjectFeatures(featureIndex, updatedFeature);
       setIsEnhancing(false);
       setPrompt('');
@@ -339,6 +350,7 @@ const DevelopmentTab: React.FC<{
   plan: ProjectPlan;
   projectContext: { name: string; description: string };
 }> = ({ plan, projectContext }) => {
+  const { activeProvider } = useSettings();
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizePrompt, setOptimizePrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -355,10 +367,14 @@ const DevelopmentTab: React.FC<{
       setError("Please enter a prompt to optimize the schedule.");
       return;
     }
+    if (!activeProvider) {
+      setError("No active AI provider configured. Please check your settings.");
+      return;
+    }
     setIsGenerating(true);
     setError(null);
     try {
-      const newMilestones = await optimizeDevelopmentPlan(milestones, optimizePrompt, projectContext);
+      const newMilestones = await optimizeDevelopmentPlan(milestones, optimizePrompt, projectContext, activeProvider);
       updateCurrentProjectDevPlan(newMilestones);
       setIsOptimizing(false);
       setOptimizePrompt('');
@@ -504,6 +520,7 @@ const EditableArchitectureTab: React.FC<{
   plan: ProjectPlan;
   projectContext: { name: string; description: string };
 }> = ({ plan, projectContext }) => {
+  const { activeProvider } = useSettings();
   const [isEditing, setIsEditing] = useState(false);
   const [editedCode, setEditedCode] = useState(plan.systemArchitectureMermaid);
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -555,10 +572,14 @@ const EditableArchitectureTab: React.FC<{
   };
 
   const handleFixWithAI = async () => {
+    if (!activeProvider) {
+      setFixError("No active AI provider configured. Please check your settings.");
+      return;
+    }
     setIsFixing(true);
     setFixError(null);
     try {
-      const fixedCode = await fixMermaidCode(editedCode, 'system architecture', projectContext);
+      const fixedCode = await fixMermaidCode(editedCode, 'database erd', projectContext, activeProvider);
       setEditedCode(fixedCode);
     } catch (err) {
       setFixError(err instanceof Error ? err.message : 'An unknown AI error occurred.');
@@ -630,6 +651,7 @@ const EditableERDTab: React.FC<{
   plan: ProjectPlan;
   projectContext: { name: string; description: string };
 }> = ({ plan, projectContext }) => {
+  const { activeProvider } = useSettings();
   const [isEditing, setIsEditing] = useState(false);
   const [editedCode, setEditedCode] = useState(plan.databaseERDMermaid);
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -681,10 +703,14 @@ const EditableERDTab: React.FC<{
   };
 
   const handleFixWithAI = async () => {
+    if (!activeProvider) {
+      setFixError("No active AI provider configured. Please check your settings.");
+      return;
+    }
     setIsFixing(true);
     setFixError(null);
     try {
-      const fixedCode = await fixMermaidCode(editedCode, 'system architecture', projectContext);
+      const fixedCode = await fixMermaidCode(editedCode, 'system architecture', projectContext, activeProvider);
       setEditedCode(fixedCode);
     } catch (err) {
       setFixError(err instanceof Error ? err.message : 'An unknown AI error occurred.');
@@ -761,6 +787,7 @@ const EditableWorkflowTab: React.FC<{
   plan: ProjectPlan;
   projectContext: { name: string; description: string };
 }> = ({ plan, projectContext }) => {
+  const { activeProvider } = useSettings();
   const [isEditing, setIsEditing] = useState(false);
   const [editedCode, setEditedCode] = useState(plan.userFlowMermaid);
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -812,10 +839,14 @@ const EditableWorkflowTab: React.FC<{
   };
 
   const handleFixWithAI = async () => {
+    if (!activeProvider) {
+      setFixError("No active AI provider configured. Please check your settings.");
+      return;
+    }
     setIsFixing(true);
     setFixError(null);
     try {
-      const fixedCode = await fixMermaidCode(editedCode, 'user flow', projectContext);
+      const fixedCode = await fixMermaidCode(editedCode, 'system architecture', projectContext, activeProvider); //old - user flow
       setEditedCode(fixedCode);
     } catch (err) {
       setFixError(err instanceof Error ? err.message : 'An unknown AI error occurred.');
@@ -913,14 +944,19 @@ const reportTemplates: ReportTemplate[] = [
 ];
 
 const ReportsTab: React.FC<{ plan: ProjectPlan; projectName: string }> = ({ plan, projectName }) => {
+  const { activeProvider } = useSettings();
   const [loadingReport, setLoadingReport] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerateReport = async (template: ReportTemplate, format: 'md' | 'docx') => {
+    if (!activeProvider) {
+      setError("No active AI provider configured. Please check your settings.");
+      return;
+    }
     setLoadingReport(`${template.id}_${format}`);
     setError(null);
     try {
-      const reportContent = await generateReport(plan, projectName, template.id);
+      const reportContent = await generateReport(plan, projectName, template.id, activeProvider);
 
       if (format === 'md') {
         const filename = `${projectName.replace(/\s+/g, '_')}_${template.id}.md`;

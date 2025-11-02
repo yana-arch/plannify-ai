@@ -113,7 +113,26 @@ export interface ReportTemplate {
   icon: React.FC<React.SVGProps<SVGSVGElement>>;
 }
 
-export type Screen = 'wizard' | 'templates' | 'plan' | 'projects' | 'dashboard';
+export type Screen = 'wizard' | 'templates' | 'plan' | 'projects' | 'dashboard' | 'settings';
+
+export type APIProviderType = 'openrouter' | 'gemini' | 'ollama' | 'anthropic' | 'custom';
+
+export interface APIProvider {
+  id: string;
+  name: string;
+  type: APIProviderType;
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  isActive: boolean;
+  createdAt: string;
+  lastUsed?: string;
+}
+
+export interface AppSettings {
+  activeProviderId: string | null;
+  providers: APIProvider[];
+}
 
 export interface PlanHistoryEntry {
   plan: ProjectPlan;
