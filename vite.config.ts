@@ -10,6 +10,9 @@ export default defineConfig(({ mode }) => {
         port: 3000,
         host: '0.0.0.0',
       },
+      css: {
+        postcss: './postcss.config.js',
+      },
       plugins: [
         react(),
         mode === 'analyze' && visualizer({
