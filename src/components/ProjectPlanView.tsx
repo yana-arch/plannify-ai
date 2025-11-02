@@ -3,8 +3,10 @@ import type { ProjectPlan, FeatureSpecification, ReportTemplate, ReportType, Pro
 import { Card, Button, Modal } from './ui';
 import { DownloadIcon, WandSparklesIcon, TerminalSquareIcon, LightbulbIcon, BriefcaseIcon, HistoryIcon } from './icons';
 import { enhanceFeatureSpecification, generateReport, regenerateProjectPlan, optimizeDevelopmentPlan, fixMermaidCode } from '../geminiService';
-import { exportPlanAsDocx, exportReportAsDocx } from '../docxService';
 import { useProjects } from '../ProjectContext';
+
+// Lazy load DOCX service only when needed
+const loadDocxService = () => import('../docxService');
 
 // --- Utility function to format plan for export ---
 const formatPlanToMarkdown = (plan: ProjectPlan, projectName: string): string => {
@@ -924,6 +926,8 @@ const ReportsTab: React.FC<{ plan: ProjectPlan; projectName: string }> = ({ plan
         const filename = `${projectName.replace(/\s+/g, '_')}_${template.id}.md`;
         downloadAsMarkdown(reportContent, filename);
       } else {
+        // Lazy load DOCX service only when needed
+        const { exportReportAsDocx } = await loadDocxService();
         await exportReportAsDocx(reportContent, projectName, template.title);
       }
     } catch (err) {
@@ -1053,6 +1057,8 @@ export const ProjectPlanView: React.FC<{ project: SavedProject }> = ({ project }
           const markdownContent = formatPlanToMarkdown(projectPlan, projectName);
           downloadAsMarkdown(markdownContent, `${projectName.replace(/\s+/g, '_')}_Plan.md`);
         } else {
+          // Lazy load DOCX service only when needed
+          const { exportPlanAsDocx } = await loadDocxService();
           await exportPlanAsDocx(projectPlan, projectName);
         }
       } catch (error) {
