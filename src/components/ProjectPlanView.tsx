@@ -1103,6 +1103,7 @@ export const ProjectPlanView: React.FC<{ project: SavedProject }> = ({ project }
                   <DownloadIcon className="h-4 w-4 mr-2" />
                   {isExporting ? 'Exporting...' : 'Export Plan'}
                 </Button>
+
               </div>
             </header>
             <div className="flex flex-grow">
