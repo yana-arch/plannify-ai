@@ -44,7 +44,7 @@ const PROVIDER_CONFIGS = {
   },
   openrouter: {
     name: 'OpenRouter',
-    baseUrl: 'https://openrouter.ai/api',
+    baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
     models: ['anthropic/claude-3.5-sonnet', 'openai/gpt-4o', 'meta-llama/llama-3.1-405b-instruct'],
     docsUrl: 'https://openrouter.ai/docs',
   },

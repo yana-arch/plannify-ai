@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { projectTemplates } from '../templates';
-import type { TemplateData } from '../types';
+import type { TemplateData, TemplateCategory, TemplateSize } from '../types';
 import { Card, Button, Tag } from './ui';
 import { WandSparklesIcon, DownloadIcon, UploadIcon } from './icons';
+import { useProjects } from '../ProjectContext';
 
 interface TemplateCardProps {
   template: TemplateData;
@@ -10,7 +11,7 @@ interface TemplateCardProps {
   onExport: (template: TemplateData) => void;
 }
 
-const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSelect, onExport, onImport }) => {
+const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSelect, onExport }) => {
   const allTech = [
     ...(template.techStack?.frontend ?? []),
     ...(template.techStack?.backend ?? []),
@@ -55,8 +56,48 @@ interface TemplatesViewProps {
 export const TemplatesView: React.FC<TemplatesViewProps> = ({ onSelectTemplate }) => {
   const [customTemplates, setCustomTemplates] = useState<TemplateData[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<TemplateCategory | 'all'>('all');
+  const [selectedSize, setSelectedSize] = useState<TemplateSize | 'all'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const { currentProject } = useProjects();
 
-  const allTemplates = [...projectTemplates, ...customTemplates];
+  const allTemplates = useMemo(
+    () => [...projectTemplates, ...customTemplates],
+    [customTemplates]
+  );
+
+  const filteredTemplates = useMemo(() => {
+    return allTemplates.filter((template) => {
+      const meta = template.meta || {};
+
+      if (selectedCategory !== 'all' && meta.category && meta.category !== selectedCategory) {
+        return false;
+      }
+
+      if (selectedSize !== 'all' && meta.size && meta.size !== selectedSize) {
+        return false;
+      }
+
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        const haystack = [
+          template.projectName,
+          template.shortDescription,
+          ...(template.targetUsers || []),
+          ...(meta.tags || []),
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        if (!haystack.includes(term)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [allTemplates, selectedCategory, selectedSize, searchTerm]);
 
   const handleExportTemplates = () => {
     try {
@@ -156,6 +197,43 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ onSelectTemplate }
     event.target.value = '';
   };
 
+  const handleSaveCurrentProjectAsTemplate = () => {
+    if (!currentProject) {
+      setError('No active project found. Open or generate a project plan first.');
+      return;
+    }
+
+    const baseTemplate: TemplateData = {
+      ...currentProject.inputData,
+      projectName: currentProject.projectName,
+      shortDescription: currentProject.shortDescription,
+    };
+
+    const existingNames = allTemplates.map((t) => t.projectName).filter(Boolean) as string[];
+    let newName = `${currentProject.projectName} Template`;
+    let suffix = 1;
+    while (existingNames.includes(newName)) {
+      newName = `${currentProject.projectName} Template ${suffix}`;
+      suffix += 1;
+    }
+
+    const size: TemplateSize = 'medium';
+
+    const newTemplate: TemplateData = {
+      ...baseTemplate,
+      projectName: newName,
+      meta: {
+        ...(baseTemplate.meta || {}),
+        size,
+        category: baseTemplate.meta?.category || 'other',
+        tags: [...new Set([...(baseTemplate.meta?.tags || []), 'from_project'])],
+      },
+    };
+
+    setCustomTemplates((prev) => [...prev, newTemplate]);
+    setError(null);
+  };
+
   return (
     <div className="w-full max-w-5xl mx-auto">
       <header className="mb-8 text-center">
@@ -199,14 +277,61 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ onSelectTemplate }
                 Import Single
               </Button>
             </div>
+            <Button
+              onClick={handleSaveCurrentProjectAsTemplate}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-white font-medium"
+            >
+              <WandSparklesIcon className="h-4 w-4" />
+              Save Current Project as Template
+            </Button>
           </div>
         </div>
         {error && (
           <p className="text-red-500 mt-4">{error}</p>
         )}
       </header>
+      <section className="mb-6 flex flex-wrap items-center gap-4 justify-between">
+        <div className="flex flex-wrap gap-3 items-center">
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value as TemplateCategory | 'all')}
+            className="bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-sm text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
+          >
+            <option value="all">All Domains</option>
+            <option value="web_app">Web App</option>
+            <option value="backend_service">Backend Service</option>
+            <option value="dashboard_analytics">Analytics/Dashboard</option>
+            <option value="ecommerce">E-commerce</option>
+            <option value="b2b_saas">B2B SaaS</option>
+            <option value="ai_api">AI / ML API</option>
+            <option value="education">Education</option>
+            <option value="healthcare">Healthcare</option>
+            <option value="real_estate">Real Estate</option>
+            <option value="other">Other</option>
+          </select>
+          <select
+            value={selectedSize}
+            onChange={(e) => setSelectedSize(e.target.value as TemplateSize | 'all')}
+            className="bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-sm text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
+          >
+            <option value="all">All Sizes</option>
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="large">Large</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by name, description, user..."
+            className="bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-sm text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary min-w-[220px]"
+          />
+        </div>
+      </section>
       <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {allTemplates.map((template, index) => (
+        {filteredTemplates.map((template, index) => (
           <TemplateCard
             key={index}
             template={template}

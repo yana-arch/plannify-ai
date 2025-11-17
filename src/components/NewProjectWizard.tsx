@@ -30,6 +30,8 @@ const defaultFormData: ProjectInputData = {
   successMetrics: [],
 };
 
+const WIZARD_DRAFT_STORAGE_KEY = 'plannifyai_wizard_draft';
+
 const TagInput: React.FC<{
     values: string[];
     onValuesChange: (values: string[]) => void;
@@ -969,9 +971,25 @@ export const NewProjectWizard: React.FC<{
 
   useEffect(() => {
       // If initialData is provided (from a template), use it.
-      // Otherwise, use the default blank form for a "new" project.
-      const startingData = initialData ? { ...defaultFormData, ...initialData } : defaultFormData;
-      setFormData(startingData as ProjectInputData);
+      // Otherwise, try to restore the last draft from localStorage,
+      // falling back to a blank form for a fresh project.
+      let startingData: ProjectInputData = defaultFormData;
+
+      if (initialData) {
+          startingData = { ...defaultFormData, ...initialData } as ProjectInputData;
+      } else {
+          try {
+              const storedDraft = localStorage.getItem(WIZARD_DRAFT_STORAGE_KEY);
+              if (storedDraft) {
+                  const parsedDraft = JSON.parse(storedDraft) as ProjectInputData;
+                  startingData = { ...defaultFormData, ...parsedDraft };
+              }
+          } catch (e) {
+              console.error('Failed to load wizard draft from localStorage', e);
+          }
+      }
+
+      setFormData(startingData);
       setCurrentStep(0); // Reset to first step when data changes
       setValidationResult({ isValid: true, errors: [], warnings: [] });
       setShowValidationPanel(false);
@@ -982,6 +1000,16 @@ export const NewProjectWizard: React.FC<{
       const result = validateStepData(currentStep, formData);
       setValidationResult(result);
   }, [currentStep, formData]);
+
+  // Auto-save draft to localStorage whenever the form data changes
+  useEffect(() => {
+      try {
+          const draftPayload = JSON.stringify(formData);
+          localStorage.setItem(WIZARD_DRAFT_STORAGE_KEY, draftPayload);
+      } catch (e) {
+          console.error('Failed to save wizard draft to localStorage', e);
+      }
+  }, [formData]);
 
   const updateFormData = (field: keyof ProjectInputData, value: any) => {
       setFormData(prev => ({ ...prev, [field]: value }));
@@ -1015,6 +1043,18 @@ export const NewProjectWizard: React.FC<{
   const handleConfirmGenerate = () => {
       setShowPreviewModal(false);
       onGenerate(formData);
+  };
+
+  const handleResetForm = () => {
+      setFormData(defaultFormData);
+      setCurrentStep(0);
+      setValidationResult({ isValid: true, errors: [], warnings: [] });
+      setShowValidationPanel(false);
+      try {
+          localStorage.removeItem(WIZARD_DRAFT_STORAGE_KEY);
+      } catch (e) {
+          console.error('Failed to clear wizard draft from localStorage', e);
+      }
   };
 
   const ValidationPanel: React.FC<{ result: ValidationResult }> = ({ result }) => {
@@ -1197,9 +1237,14 @@ export const NewProjectWizard: React.FC<{
             </main>
 
             <footer className="mt-8 pt-6 border-t border-brand-border flex justify-between items-center">
-                <Button variant="secondary" onClick={prevStep} disabled={currentStep === 0}>
-                    Back
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="secondary" onClick={prevStep} disabled={currentStep === 0}>
+                        Back
+                    </Button>
+                    <Button variant="secondary" onClick={handleResetForm}>
+                        Reset form
+                    </Button>
+                </div>
                 {currentStep < STEPS.length - 1 ? (
                     <Button onClick={nextStep} disabled={!validationResult.isValid}>
                         Next: {STEPS[currentStep + 1].title}

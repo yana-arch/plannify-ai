@@ -64,7 +64,29 @@ export interface ProjectInputData {
   successMetrics: SuccessMetric[];
 }
 
-export type TemplateData = Partial<ProjectInputData>;
+export type TemplateCategory =
+  | 'web_app'
+  | 'backend_service'
+  | 'dashboard_analytics'
+  | 'ecommerce'
+  | 'b2b_saas'
+  | 'ai_api'
+  | 'education'
+  | 'healthcare'
+  | 'real_estate'
+  | 'other';
+
+export type TemplateSize = 'small' | 'medium' | 'large';
+
+export interface TemplateMeta {
+  category?: TemplateCategory;
+  size?: TemplateSize;
+  tags?: string[];
+}
+
+export interface TemplateData extends Partial<ProjectInputData> {
+  meta?: TemplateMeta;
+}
 
 export interface FeatureSpecification {
   name: string;

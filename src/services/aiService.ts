@@ -131,6 +131,10 @@ class GeminiProvider extends AIProvider {
 // OpenRouter provider implementation
 class OpenRouterProvider extends AIProvider {
   async generateContent(prompt: string, options?: any) {
+    console.log('🚀 OpenRouter: Sending request to', `${this.provider.baseUrl}/chat/completions`);
+    console.log('📋 OpenRouter: Model:', this.provider.model);
+    console.log('🔑 OpenRouter: API Key prefix:', this.provider.apiKey.substring(0, 10) + '...');
+
     const response = await fetch(`${this.provider.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -146,11 +150,29 @@ class OpenRouterProvider extends AIProvider {
       }),
     });
 
+    console.log('📡 OpenRouter: Response status:', response.status);
+    console.log('📡 OpenRouter: Response headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
-      throw new Error(`OpenRouter API error: ${response.statusText}`);
+      let errorText: string;
+      const contentType = response.headers.get('content-type');
+
+      if (contentType?.includes('application/json')) {
+        const errorData = await response.json();
+        errorText = JSON.stringify(errorData, null, 2);
+        console.error('❌ OpenRouter: JSON error response:', errorText);
+      } else {
+        errorText = await response.text();
+        console.error('❌ OpenRouter: HTML/Text error response:', errorText.substring(0, 500));
+      }
+
+      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
-    return await response.json();
+    const responseData = await response.json();
+    console.log('📦 OpenRouter: Raw response structure:', JSON.stringify(responseData, null, 2));
+
+    return responseData;
   }
 
   getModelName(): string {
@@ -481,23 +503,64 @@ export const generateProjectPlan = async (data: ProjectInputData, provider: APIP
     }, "Project Plan Generation");
 
     console.log("📝 Processing AI response...");
+    console.log("🔍 Raw response from provider:", JSON.stringify(response, null, 2));
+
     let jsonText: string;
 
     // Handle different response formats based on provider
     if (provider.type === 'gemini') {
-      jsonText = response.text.trim();
+      jsonText = response.text?.trim() || '';
     } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
-      jsonText = response.choices?.[0]?.message?.content || response.content?.[0]?.text || '';
+      jsonText = response.choices?.[0]?.message?.content ||
+                 response.content?.[0]?.text ||
+                 response.choices?.[0]?.text ||
+                 '';
+
+      // Additional fallback for OpenRouter specific structure
+      if (!jsonText && response.choices?.[0]) {
+        jsonText = response.choices[0].message?.content ||
+                   response.choices[0].text ||
+                   '';
+      }
     } else if (provider.type === 'ollama') {
       jsonText = response.response || '';
     } else {
       jsonText = response.text || response.content || '';
     }
 
+    console.log("📄 Extracted jsonText:", jsonText.substring(0, 500) + (jsonText.length > 500 ? '...' : ''));
+
     // Clean markdown code blocks from the response
     jsonText = cleanMarkdownCodeBlocks(jsonText);
 
-    const plan: ProjectPlan = JSON.parse(jsonText);
+    console.log("🧹 After cleaning markdown:", jsonText.substring(0, 500) + (jsonText.length > 500 ? '...' : ''));
+
+    // Validate that we have content before parsing
+    if (!jsonText || jsonText.trim() === '') {
+      throw new Error(`Empty response from ${provider.type} provider. No content to parse.`);
+    }
+
+    let plan: ProjectPlan;
+    try {
+      plan = JSON.parse(jsonText);
+      console.log("✅ JSON parsing successful");
+    } catch (parseError) {
+      console.error("❌ JSON parsing failed:", parseError);
+      console.error("❌ Failed jsonText:", jsonText);
+
+      // Try to extract JSON from a larger text block if parsing failed
+      const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          plan = JSON.parse(jsonMatch[0]);
+          console.log("✅ JSON extracted and parsed from text block");
+        } catch (extractError) {
+          throw new Error(`Failed to parse JSON response from ${provider.type}: ${parseError.message}. Extracted content: ${jsonMatch[0].substring(0, 200)}...`);
+        }
+      } else {
+        throw new Error(`Invalid JSON response from ${provider.type}: ${parseError.message}. Response content: ${jsonText.substring(0, 200)}...`);
+      }
+    }
 
     // Validate Mermaid diagrams (removed aggressive post-processing)
     if (plan.systemArchitectureMermaid) {

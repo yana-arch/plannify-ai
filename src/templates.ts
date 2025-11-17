@@ -63,6 +63,11 @@ export const projectTemplates: TemplateData[] = [
         timeframe: "6 months"
       }
     ],
+    meta: {
+      category: 'web_app',
+      size: 'medium',
+      tags: ['standard', 'web', 'auth'],
+    },
   },
   {
     projectName: "Mobile App Backend",
@@ -123,6 +128,11 @@ export const projectTemplates: TemplateData[] = [
         timeframe: "Ongoing"
       }
     ],
+    meta: {
+      category: 'backend_service',
+      size: 'large',
+      tags: ['mobile', 'api', 'backend'],
+    },
   },
   {
     projectName: "Data Analytics Dashboard",
@@ -288,6 +298,11 @@ export const projectTemplates: TemplateData[] = [
     ],
     marketAnalysis: "Internal tools market is focused on increasing efficiency. Key selling points are ease of use, powerful features, and seamless integration with existing company data stacks.",
     competitors: ["Tableau", "PowerBI", "Looker", "Metabase"],
+    meta: {
+      category: 'dashboard_analytics',
+      size: 'large',
+      tags: ['bi', 'analytics', 'internal'],
+    },
   },
   {
     projectName: "E-commerce Platform",
@@ -444,6 +459,11 @@ export const projectTemplates: TemplateData[] = [
     ],
     marketAnalysis: "The e-commerce market is highly competitive. Differentiation can be achieved through niche products, superior user experience, or building a strong brand community.",
     competitors: ["Shopify", "BigCommerce", "WooCommerce", "Magento"],
+    meta: {
+      category: 'ecommerce',
+      size: 'large',
+      tags: ['store', 'checkout', 'payments'],
+    },
   },
   {
     projectName: "B2B SaaS Platform",
@@ -605,6 +625,11 @@ export const projectTemplates: TemplateData[] = [
     ],
     marketAnalysis: "B2B SaaS is about solving a specific business problem more efficiently than existing solutions. Customer support and reliability are paramount. The sales cycle is longer, but customer lifetime value is higher.",
     competitors: ["Salesforce", "Atlassian Jira", "HubSpot", "Various niche competitors"],
+    meta: {
+      category: 'b2b_saas',
+      size: 'large',
+      tags: ['subscription', 'multi-tenant', 'rbac'],
+    },
   },
   {
     projectName: "AI/ML Model API Service",
@@ -759,6 +784,11 @@ export const projectTemplates: TemplateData[] = [
     ],
     marketAnalysis: "The AI API market is rapidly growing. Success hinges on the quality and uniqueness of the underlying model, as well as the reliability and ease of use of the API.",
     competitors: ["OpenAI API", "Hugging Face Inference API", "Google Cloud AI", "AWS AI Services"],
+    meta: {
+      category: 'ai_api',
+      size: 'medium',
+      tags: ['ml', 'api', 'inference'],
+    },
   },
   {
     projectName: "School Management System",
@@ -1032,6 +1062,11 @@ export const projectTemplates: TemplateData[] = [
       "EduAdmin",
       "CampusCare"
     ],
+    meta: {
+      category: 'education',
+      size: 'large',
+      tags: ['school', 'management', 'vietnamese'],
+    },
   },
   {
     projectName: "Healthcare Management System",
@@ -1231,6 +1266,11 @@ export const projectTemplates: TemplateData[] = [
       "Meditech",
       "Allscripts"
     ],
+    meta: {
+      category: 'healthcare',
+      size: 'large',
+      tags: ['hospital', 'ehr', 'hipaa'],
+    },
   },
   {
     projectName: "Real Estate Management Platform",
@@ -1420,5 +1460,10 @@ export const projectTemplates: TemplateData[] = [
       "Rent Manager",
       "Yardi"
     ],
+    meta: {
+      category: 'real_estate',
+      size: 'medium',
+      tags: ['property', 'rental', 'management'],
+    },
   },
 ];
