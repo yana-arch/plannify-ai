@@ -7,7 +7,8 @@ import { useProjects } from '../ProjectContext';
 import { useSettings } from '../SettingsContext';
 
 // Lazy load DOCX service only when needed
-const loadDocxService = () => import('../docxService');
+const loadDocxService = () => import('../services/docxService');
+const loadPdfService = () => import('../services/pdfService');
 
 // --- Utility function to format plan for export ---
 const formatPlanToMarkdown = (plan: ProjectPlan, projectName: string): string => {
@@ -1081,10 +1082,10 @@ export const ProjectPlanView: React.FC<{ project: SavedProject }> = ({ project }
         setActiveTab('Overview');
     }, [project.id]);
 
-    const [exportFormat, setExportFormat] = useState<'md' | 'docx'>('md');
+    const [exportFormat, setExportFormat] = useState<'md' | 'docx' | 'pdf'>('md');
     const [isExporting, setIsExporting] = useState(false);
 
-    const handleExport = async (format?: 'md' | 'docx') => {
+    const handleExport = async (format?: 'md' | 'docx' | 'pdf') => {
       const selectedFormat = format || exportFormat;
       setIsExporting(true);
 
@@ -1092,6 +1093,9 @@ export const ProjectPlanView: React.FC<{ project: SavedProject }> = ({ project }
         if (selectedFormat === 'md') {
           const markdownContent = formatPlanToMarkdown(projectPlan, projectName);
           downloadAsMarkdown(markdownContent, `${projectName.replace(/\s+/g, '_')}_Plan.md`);
+        } else if (selectedFormat === 'pdf') {
+          const { exportPlanAsPdf } = await loadPdfService();
+          await exportPlanAsPdf(projectName);
         } else {
           // Lazy load DOCX service only when needed
           const { exportPlanAsDocx } = await loadDocxService();
@@ -1135,11 +1139,12 @@ export const ProjectPlanView: React.FC<{ project: SavedProject }> = ({ project }
               <div className="flex items-center gap-3">
                 <select
                   value={exportFormat}
-                  onChange={(e) => setExportFormat(e.target.value as 'md' | 'docx')}
+                  onChange={(e) => setExportFormat(e.target.value as 'md' | 'docx' | 'pdf')}
                   className="bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-sm text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
                 >
                   <option value="md">Markdown (.md)</option>
                   <option value="docx">Word (.docx)</option>
+                  <option value="pdf">PDF (.pdf)</option>
                 </select>
                 <Button variant="secondary" onClick={() => handleExport()} isLoading={isExporting}>
                   <DownloadIcon className="h-4 w-4 mr-2" />
@@ -1151,7 +1156,9 @@ export const ProjectPlanView: React.FC<{ project: SavedProject }> = ({ project }
             <div className="flex flex-grow">
                 <PlanSubNav activeTab={activeTab} setActiveTab={setActiveTab} />
                 <main className="flex-grow p-6 overflow-y-auto max-h-[calc(100vh-14rem)]">
-                    {renderContent()}
+                    <div id="project-plan-content">
+                        {renderContent()}
+                    </div>
                 </main>
             </div>
         </div>
