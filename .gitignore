@@ -53,3 +53,8 @@ yarn.lock
 pnpm-lock.yaml
 plans/
 .unlighthouse/
+.claude/
+.clinerules/
+.gemini/
+.opencode/
+.kilocodemodes
