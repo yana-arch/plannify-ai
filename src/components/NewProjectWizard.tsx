@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import type { ProjectInputData, CoreRequirement, Priority, TemplateData } from '../types';
 import { Button, Input, Textarea, Tag, Card, Modal } from './ui';
 import { PlusCircleIcon, XIcon, WandSparklesIcon, InfoIcon, AlertTriangleIcon, CheckCircleIcon } from './icons';
-import { generateCoreRequirements } from '../geminiService';
+import { generateCoreRequirements } from '../services/aiService';
 import { validateStepData, validateCompleteForm, getFieldTooltip } from '../utils/validation';
 import type { ValidationResult, ValidationError } from '../utils/validation';
+import { useSettings } from '../SettingsContext';
 
 const defaultFormData: ProjectInputData = {
   projectName: "",
@@ -140,7 +141,7 @@ const ValidatedInput: React.FC<{
 };
 
 // Step 1 Component
-const Step1BasicInfo: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void; validation?: ValidationResult }> = ({ data, update, validation }) => {
+const Step1BasicInfo: React.FC<{ data: ProjectInputData; update: (field: keyof ProjectInputData, value: unknown) => void; validation?: ValidationResult }> = ({ data, update, validation }) => {
     return (
         <div className="space-y-6">
             <ValidatedInput
@@ -230,14 +231,19 @@ const Step1BasicInfo: React.FC<{ data: ProjectInputData; update: (field: string,
 };
 
 // Step 2 Component
-const Step2CoreRequirements: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
+const Step2CoreRequirements: React.FC<{ data: ProjectInputData; update: (field: keyof ProjectInputData, value: unknown) => void }> = ({ data, update }) => {
     const [newReq, setNewReq] = useState('');
     const [newReqPriority, setNewReqPriority] = useState<Priority>('Medium');
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationError, setGenerationError] = useState<string | null>(null);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+    const { activeProvider } = useSettings();
     const handleConfirmGeneration = async () => {
+        if (!activeProvider) {
+            setGenerationError("No active AI provider configured.");
+            return;
+        }
         setIsGenerating(true);
         setGenerationError(null);
         try {
@@ -249,7 +255,7 @@ const Step2CoreRequirements: React.FC<{ data: ProjectInputData; update: (field: 
                 numberOfFeatures: data.numberOfFeatures,
                 userFeatureRequests: data.userFeatureRequests,
             };
-            const generatedReqs = await generateCoreRequirements(projectInfo);
+            const generatedReqs = await generateCoreRequirements(projectInfo, activeProvider);
             const newCoreRequirements: CoreRequirement[] = generatedReqs.map(req => ({
                 id: `${Date.now()}-${Math.random()}`,
                 description: req.description,
@@ -345,7 +351,7 @@ const Step2CoreRequirements: React.FC<{ data: ProjectInputData; update: (field: 
 };
 
 // Step 3 Component
-const Step3TechStack: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
+const Step3TechStack: React.FC<{ data: ProjectInputData; update: (field: keyof ProjectInputData, value: unknown) => void }> = ({ data, update }) => {
     const updateStack = (category: keyof ProjectInputData['techStack'], value: string[]) => {
         update('techStack', { ...data.techStack, [category]: value });
     };
@@ -373,7 +379,7 @@ const Step3TechStack: React.FC<{ data: ProjectInputData; update: (field: string,
 };
 
 // Step 4 Component - Core Modules
-const Step4CoreModules: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
+const Step4CoreModules: React.FC<{ data: ProjectInputData; update: (field: keyof ProjectInputData, value: unknown) => void }> = ({ data, update }) => {
     const [newModule, setNewModule] = useState({ name: '', description: '', flows: [''] });
 
     const addModule = () => {
@@ -493,7 +499,7 @@ const Step4CoreModules: React.FC<{ data: ProjectInputData; update: (field: strin
 };
 
 // Step 5 Component - Role Permissions
-const Step5RolePermissions: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
+const Step5RolePermissions: React.FC<{ data: ProjectInputData; update: (field: keyof ProjectInputData, value: unknown) => void }> = ({ data, update }) => {
     const [newRole, setNewRole] = useState({ role: '', permissions: [''] });
 
     const addRole = () => {
@@ -600,7 +606,7 @@ const Step5RolePermissions: React.FC<{ data: ProjectInputData; update: (field: s
 };
 
 // Step 6 Component - Standard Flows
-const Step6StandardFlows: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
+const Step6StandardFlows: React.FC<{ data: ProjectInputData; update: (field: keyof ProjectInputData, value: unknown) => void }> = ({ data, update }) => {
     const [newFlow, setNewFlow] = useState({ name: '', steps: [''] });
 
     const addFlow = () => {
@@ -708,7 +714,7 @@ const Step6StandardFlows: React.FC<{ data: ProjectInputData; update: (field: str
 };
 
 // Step 7 Component - Risk Assessment & Success Metrics
-const Step7RiskAssessmentAndMetrics: React.FC<{ data: ProjectInputData; update: (field: string, value: any) => void }> = ({ data, update }) => {
+const Step7RiskAssessmentAndMetrics: React.FC<{ data: ProjectInputData; update: (field: keyof ProjectInputData, value: unknown) => void }> = ({ data, update }) => {
     const [newRisk, setNewRisk] = useState({ risk: '', impact: 'Medium' as const, probability: 'Medium' as const, mitigation: '' });
     const [newMetric, setNewMetric] = useState({ metric: '', target: '', timeframe: '' });
 
@@ -1011,7 +1017,7 @@ export const NewProjectWizard: React.FC<{
       }
   }, [formData]);
 
-  const updateFormData = (field: keyof ProjectInputData, value: any) => {
+  const updateFormData = (field: keyof ProjectInputData, value: unknown) => {
       setFormData(prev => ({ ...prev, [field]: value }));
       // Re-validate the current step after changes
       setTimeout(() => {

@@ -1,59 +1,86 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import type { ProjectInputData, ProjectPlan, FeatureSpecification, ReportType, Milestone, Priority, CoreRequirement } from '../types';
-import type { APIProvider } from '../types';
-import { cacheService } from './cacheService';
-import { retryService } from './retryService';
+import type {
+  ProjectInputData,
+  ProjectPlan,
+  FeatureSpecification,
+  ReportType,
+  Milestone,
+  Priority,
+  CoreRequirement,
+} from "../types";
+import type { APIProvider } from "../types";
+import { cacheService } from "./cacheService";
+import { retryService } from "./retryService";
 
 const featureSpecificationSchema = {
-    type: Type.OBJECT,
-    properties: {
-        name: { type: Type.STRING },
-        description: { type: Type.STRING },
-        targetUsers: { type: Type.ARRAY, items: { type: Type.STRING } },
-        mainFunctions: { type: Type.ARRAY, items: { type: Type.STRING } },
-        subFeatures: { type: Type.ARRAY, items: { type: Type.STRING } },
-        preConditions: { type: Type.ARRAY, items: { type: Type.STRING } }
-    },
-    required: ['name', 'description', 'targetUsers', 'mainFunctions', 'subFeatures', 'preConditions']
+  type: Type.OBJECT,
+  properties: {
+    name: { type: Type.STRING },
+    description: { type: Type.STRING },
+    targetUsers: { type: Type.ARRAY, items: { type: Type.STRING } },
+    mainFunctions: { type: Type.ARRAY, items: { type: Type.STRING } },
+    subFeatures: { type: Type.ARRAY, items: { type: Type.STRING } },
+    preConditions: { type: Type.ARRAY, items: { type: Type.STRING } },
+  },
+  required: [
+    "name",
+    "description",
+    "targetUsers",
+    "mainFunctions",
+    "subFeatures",
+    "preConditions",
+  ],
 };
 
 const milestoneSchema = {
-    type: Type.OBJECT,
-    properties: {
-        name: { type: Type.STRING },
-        description: { type: Type.STRING },
-        tasks: { type: Type.ARRAY, items: { type: Type.STRING } },
-        estimatedStartDate: {
-            type: Type.STRING,
-            description: 'The estimated start week for the milestone, formatted as "Week X". For example: "Week 1".'
-        },
-        estimatedDurationWeeks: {
-            type: Type.NUMBER,
-            description: 'The estimated duration of the milestone in number of weeks.'
-        }
+  type: Type.OBJECT,
+  properties: {
+    name: { type: Type.STRING },
+    description: { type: Type.STRING },
+    tasks: { type: Type.ARRAY, items: { type: Type.STRING } },
+    estimatedStartDate: {
+      type: Type.STRING,
+      description:
+        'The estimated start week for the milestone, formatted as "Week X". For example: "Week 1".',
     },
-    required: ['name', 'description', 'tasks', 'estimatedStartDate', 'estimatedDurationWeeks']
+    estimatedDurationWeeks: {
+      type: Type.NUMBER,
+      description:
+        "The estimated duration of the milestone in number of weeks.",
+    },
+  },
+  required: [
+    "name",
+    "description",
+    "tasks",
+    "estimatedStartDate",
+    "estimatedDurationWeeks",
+  ],
 };
 
 const developmentPlanSchema = {
-    type: Type.OBJECT,
-    properties: {
-        milestones: {
-          type: Type.ARRAY,
-          items: milestoneSchema
-        }
+  type: Type.OBJECT,
+  properties: {
+    milestones: {
+      type: Type.ARRAY,
+      items: milestoneSchema,
     },
-    description: 'A high-level development plan with milestones and associated tasks, including start dates and durations for a Gantt chart.'
+  },
+  description:
+    "A high-level development plan with milestones and associated tasks, including start dates and durations for a Gantt chart.",
 };
 
 const planSchema = {
   type: Type.OBJECT,
   properties: {
-    summary: { type: Type.STRING, description: 'A concise, AI-generated summary of the project.' },
+    summary: {
+      type: Type.STRING,
+      description: "A concise, AI-generated summary of the project.",
+    },
     keyComponents: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
-      description: 'A list of the main functional or architectural components.'
+      description: "A list of the main functional or architectural components.",
     },
     recommendedTechStack: {
       type: Type.OBJECT,
@@ -61,40 +88,68 @@ const planSchema = {
         frontend: { type: Type.ARRAY, items: { type: Type.STRING } },
         backend: { type: Type.ARRAY, items: { type: Type.STRING } },
         database: { type: Type.ARRAY, items: { type: Type.STRING } },
-        other: { type: Type.ARRAY, items: { type: Type.STRING } }
+        other: { type: Type.ARRAY, items: { type: Type.STRING } },
       },
-      description: 'A refined and detailed technology stack recommendation.'
+      description: "A refined and detailed technology stack recommendation.",
     },
     potentialChallenges: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
-      description: 'Potential technical or business challenges.'
+      description: "Potential technical or business challenges.",
     },
     potentialOpportunities: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
-      description: 'Potential opportunities for growth, expansion, or unique value propositions.'
+      description:
+        "Potential opportunities for growth, expansion, or unique value propositions.",
     },
     detailedFeatures: {
       type: Type.ARRAY,
       items: featureSpecificationSchema,
-      description: 'A detailed breakdown of each core requirement into a feature specification.'
+      description:
+        "A detailed breakdown of each core requirement into a feature specification.",
     },
     developmentPlan: developmentPlanSchema,
     systemArchitectureMermaid: {
-        type: Type.STRING,
-        description: 'A Mermaid.js syntax string for a top-down (graph TD) system architecture diagram. It should visualize the key components and their interactions.'
+      type: Type.STRING,
+      description:
+        "A Mermaid.js syntax string for a top-down (graph TD) system architecture diagram. It should visualize the key components and their interactions.",
     },
     userFlowMermaid: {
-        type: Type.STRING,
-        description: "A Mermaid.js syntax string for a user flow diagram (using 'flowchart LR' or 'graph LR'). It should visualize a primary user journey, like registration and onboarding, or a core interaction loop."
+      type: Type.STRING,
+      description:
+        "A Mermaid.js syntax string for a user flow diagram (using 'flowchart LR' or 'graph LR'). It should visualize a primary user journey, like registration and onboarding, or a core interaction loop.",
     },
     databaseERDMermaid: {
-        type: Type.STRING,
-        description: "A Mermaid.js syntax string for an Entity-Relationship Diagram (ERD) showing the database schema. Use 'erDiagram' syntax to illustrate tables, their columns, and relationships with proper cardinality."
-    }
+      type: Type.STRING,
+      description:
+        "A Mermaid.js syntax string for an Entity-Relationship Diagram (ERD) showing the database schema. Use 'erDiagram' syntax to illustrate tables, their columns, and relationships with proper cardinality.",
+    },
   },
-  required: ['summary', 'keyComponents', 'recommendedTechStack', 'potentialChallenges', 'potentialOpportunities', 'detailedFeatures', 'developmentPlan', 'systemArchitectureMermaid', 'userFlowMermaid', 'databaseERDMermaid']
+  required: [
+    "summary",
+    "keyComponents",
+    "recommendedTechStack",
+    "potentialChallenges",
+    "potentialOpportunities",
+    "detailedFeatures",
+    "developmentPlan",
+    "systemArchitectureMermaid",
+    "userFlowMermaid",
+    "databaseERDMermaid",
+  ],
+};
+
+const coreRequirementSchema = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      description: { type: Type.STRING },
+      priority: { type: Type.STRING, enum: ["High", "Medium", "Low"] },
+    },
+    required: ["description", "priority"],
+  },
 };
 
 // Abstract base class for AI providers
@@ -131,46 +186,63 @@ class GeminiProvider extends AIProvider {
 // OpenRouter provider implementation
 class OpenRouterProvider extends AIProvider {
   async generateContent(prompt: string, options?: any) {
-    console.log('🚀 OpenRouter: Sending request to', `${this.provider.baseUrl}/chat/completions`);
-    console.log('📋 OpenRouter: Model:', this.provider.model);
-    console.log('🔑 OpenRouter: API Key prefix:', this.provider.apiKey.substring(0, 10) + '...');
+    console.log(
+      "🚀 OpenRouter: Sending request to",
+      `${this.provider.baseUrl}/chat/completions`,
+    );
+    console.log("📋 OpenRouter: Model:", this.provider.model);
+    console.log(
+      "🔑 OpenRouter: API Key prefix:",
+      this.provider.apiKey.substring(0, 10) + "...",
+    );
 
     const response = await fetch(`${this.provider.baseUrl}/chat/completions`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.provider.apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': window.location.origin,
-        'X-Title': 'PlannifyAI',
+        Authorization: `Bearer ${this.provider.apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": window.location.origin,
+        "X-Title": "PlannifyAI",
       },
       body: JSON.stringify({
         model: this.provider.model,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: "user", content: prompt }],
         ...options,
       }),
     });
 
-    console.log('📡 OpenRouter: Response status:', response.status);
-    console.log('📡 OpenRouter: Response headers:', Object.fromEntries(response.headers.entries()));
+    console.log("📡 OpenRouter: Response status:", response.status);
+    console.log(
+      "📡 OpenRouter: Response headers:",
+      Object.fromEntries(response.headers.entries()),
+    );
 
     if (!response.ok) {
       let errorText: string;
-      const contentType = response.headers.get('content-type');
+      const contentType = response.headers.get("content-type");
 
-      if (contentType?.includes('application/json')) {
+      if (contentType?.includes("application/json")) {
         const errorData = await response.json();
         errorText = JSON.stringify(errorData, null, 2);
-        console.error('❌ OpenRouter: JSON error response:', errorText);
+        console.error("❌ OpenRouter: JSON error response:", errorText);
       } else {
         errorText = await response.text();
-        console.error('❌ OpenRouter: HTML/Text error response:', errorText.substring(0, 500));
+        console.error(
+          "❌ OpenRouter: HTML/Text error response:",
+          errorText.substring(0, 500),
+        );
       }
 
-      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(
+        `OpenRouter API error: ${response.status} ${response.statusText} - ${errorText}`,
+      );
     }
 
     const responseData = await response.json();
-    console.log('📦 OpenRouter: Raw response structure:', JSON.stringify(responseData, null, 2));
+    console.log(
+      "📦 OpenRouter: Raw response structure:",
+      JSON.stringify(responseData, null, 2),
+    );
 
     return responseData;
   }
@@ -184,9 +256,9 @@ class OpenRouterProvider extends AIProvider {
 class OllamaProvider extends AIProvider {
   async generateContent(prompt: string, options?: any) {
     const response = await fetch(`${this.provider.baseUrl}/api/generate`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: this.provider.model,
@@ -212,16 +284,16 @@ class OllamaProvider extends AIProvider {
 class AnthropicProvider extends AIProvider {
   async generateContent(prompt: string, options?: any) {
     const response = await fetch(`${this.provider.baseUrl}/messages`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'x-api-key': this.provider.apiKey,
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01',
+        "x-api-key": this.provider.apiKey,
+        "Content-Type": "application/json",
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
         model: this.provider.model,
         max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: "user", content: prompt }],
         ...options,
       }),
     });
@@ -242,15 +314,15 @@ class AnthropicProvider extends AIProvider {
 class AIProviderFactory {
   static createProvider(provider: APIProvider): AIProvider {
     switch (provider.type) {
-      case 'gemini':
+      case "gemini":
         return new GeminiProvider(provider);
-      case 'openrouter':
+      case "openrouter":
         return new OpenRouterProvider(provider);
-      case 'ollama':
+      case "ollama":
         return new OllamaProvider(provider);
-      case 'anthropic':
+      case "anthropic":
         return new AnthropicProvider(provider);
-      case 'custom':
+      case "custom":
         // For custom providers, default to OpenRouter-like API
         return new OpenRouterProvider(provider);
       default:
@@ -278,14 +350,14 @@ class AIService {
 
 // Helper function to safely handle Vietnamese characters in JSON
 const sanitizeForJSON = (text: string): string => {
-  if (!text) return '';
+  if (!text) return "";
   return text
     .replace(/\u201C/g, '"') // Left double quotation mark
     .replace(/\u201D/g, '"') // Right double quotation mark
     .replace(/\u2018/g, "'") // Left single quotation mark
     .replace(/\u2019/g, "'") // Right single quotation mark
-    .replace(/\u2026/g, '...') // Horizontal ellipsis
-    .normalize('NFC'); // Normalize to composed form
+    .replace(/\u2026/g, "...") // Horizontal ellipsis
+    .normalize("NFC"); // Normalize to composed form
 };
 
 // Helper function to clean markdown code blocks from AI responses
@@ -294,40 +366,63 @@ const cleanMarkdownCodeBlocks = (text: string): string => {
 
   // Remove markdown code blocks that wrap JSON
   // Pattern: ```json\n{content}\n```
-  let cleaned = text.replace(/^```(?:json|JSON)?\s*\n?/gm, '').replace(/\n?```\s*$/gm, '');
+  let cleaned = text
+    .replace(/^```(?:json|JSON)?\s*\n?/gm, "")
+    .replace(/\n?```\s*$/gm, "");
 
   // Also handle cases where the AI might use different code block markers
-  cleaned = cleaned.replace(/^```\s*\n?/gm, '').replace(/\n?```\s*$/gm, '');
+  cleaned = cleaned.replace(/^```\s*\n?/gm, "").replace(/\n?```\s*$/gm, "");
 
   // Trim whitespace
   return cleaned.trim();
 };
 
 const buildPrompt = (data: ProjectInputData): string => {
-  const coreModulesSection = data.coreModules && data.coreModules.length > 0 ? `
+  const coreModulesSection =
+    data.coreModules && data.coreModules.length > 0
+      ? `
     Core Modules:
-    ${data.coreModules.map(module => `
+    ${data.coreModules
+      .map(
+        (module) => `
       - Module: ${sanitizeForJSON(module.moduleName)}
         Description: ${sanitizeForJSON(module.description)}
-        Flows: ${module.flows.map(flow => sanitizeForJSON(flow)).join(', ')}
-    `).join('')}
-  ` : '';
+        Flows: ${module.flows.map((flow) => sanitizeForJSON(flow)).join(", ")}
+    `,
+      )
+      .join("")}
+  `
+      : "";
 
-  const rolePermissionsSection = data.rolePermissions && data.rolePermissions.length > 0 ? `
+  const rolePermissionsSection =
+    data.rolePermissions && data.rolePermissions.length > 0
+      ? `
     Role & Permissions:
-    ${data.rolePermissions.map(role => `
+    ${data.rolePermissions
+      .map(
+        (role) => `
       - Role: ${role.role}
-        Permissions: ${role.permissions.join(', ')}
-    `).join('')}
-  ` : '';
+        Permissions: ${role.permissions.join(", ")}
+    `,
+      )
+      .join("")}
+  `
+      : "";
 
-  const standardFlowsSection = data.standardFlows && data.standardFlows.length > 0 ? `
+  const standardFlowsSection =
+    data.standardFlows && data.standardFlows.length > 0
+      ? `
     Standard Flows:
-    ${data.standardFlows.map(flow => `
+    ${data.standardFlows
+      .map(
+        (flow) => `
       - Flow: ${flow.flowName}
-        Steps: ${flow.steps.join(' → ')}
-    `).join('')}
-  ` : '';
+        Steps: ${flow.steps.join(" → ")}
+    `,
+      )
+      .join("")}
+  `
+      : "";
 
   return `
     You are an expert Software Architect and Project Planner AI. Your task is to analyze the following comprehensive project details and generate a detailed, structured project plan.
@@ -337,13 +432,13 @@ const buildPrompt = (data: ProjectInputData): string => {
     - Short Description: ${data.shortDescription}
     - Business Goals: ${data.businessGoals}
     - Technical Goals: ${data.technicalGoals}
-    - Target Users: ${data.targetUsers.join(', ')}
+    - Target Users: ${data.targetUsers.join(", ")}
     - Number of Features: ${data.numberOfFeatures}
     - Estimated Scale: ${data.estimatedScale}
     - Timeline: ${data.timeline}
 
     Core Requirements:
-    ${data.coreRequirements.map(req => `- ${req.description} (Priority: ${req.priority})`).join('\n    ')}
+    ${data.coreRequirements.map((req) => `- ${req.description} (Priority: ${req.priority})`).join("\n    ")}
 
     ${coreModulesSection}
 
@@ -352,13 +447,13 @@ const buildPrompt = (data: ProjectInputData): string => {
     ${standardFlowsSection}
 
     Anticipated Technology Stack:
-    - Frontend: ${data.techStack.frontend.join(', ')}
-    - Backend: ${data.techStack.backend.join(', ')}
-    - Database: ${data.techStack.database.join(', ')}
-    - Other Tools/Libraries: ${data.techStack.otherTools.join(', ')}
+    - Frontend: ${data.techStack.frontend.join(", ")}
+    - Backend: ${data.techStack.backend.join(", ")}
+    - Database: ${data.techStack.database.join(", ")}
+    - Other Tools/Libraries: ${data.techStack.otherTools.join(", ")}
 
-    Market Analysis: ${data.marketAnalysis || 'Not provided.'}
-    Known Competitors: ${data.competitors.join(', ') || 'Not provided.'}
+    Market Analysis: ${data.marketAnalysis || "Not provided."}
+    Known Competitors: ${data.competitors.join(", ") || "Not provided."}
 
     Please generate a project plan based on this comprehensive information. The plan should be detailed, realistic, and provide actionable insights.
 
@@ -480,7 +575,10 @@ const buildPrompt = (data: ProjectInputData): string => {
   `;
 };
 
-export const generateProjectPlan = async (data: ProjectInputData, provider: APIProvider): Promise<ProjectPlan> => {
+export const generateProjectPlan = async (
+  data: ProjectInputData,
+  provider: APIProvider,
+): Promise<ProjectPlan> => {
   // Check cache first
   const cacheKey = cacheService.generateProjectPlanKey(data, provider);
   const cachedResult = cacheService.get<ProjectPlan>(cacheKey);
@@ -503,41 +601,57 @@ export const generateProjectPlan = async (data: ProjectInputData, provider: APIP
     }, "Project Plan Generation");
 
     console.log("📝 Processing AI response...");
-    console.log("🔍 Raw response from provider:", JSON.stringify(response, null, 2));
+    console.log(
+      "🔍 Raw response from provider:",
+      JSON.stringify(response, null, 2),
+    );
 
     let jsonText: string;
 
     // Handle different response formats based on provider
-    if (provider.type === 'gemini') {
-      jsonText = response.text?.trim() || '';
-    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
-      jsonText = response.choices?.[0]?.message?.content ||
-                 response.content?.[0]?.text ||
-                 response.choices?.[0]?.text ||
-                 '';
+    if (provider.type === "gemini") {
+      jsonText = response.text?.trim() || "";
+    } else if (
+      provider.type === "openrouter" ||
+      provider.type === "anthropic"
+    ) {
+      jsonText =
+        response.choices?.[0]?.message?.content ||
+        response.content?.[0]?.text ||
+        response.choices?.[0]?.text ||
+        "";
 
       // Additional fallback for OpenRouter specific structure
       if (!jsonText && response.choices?.[0]) {
-        jsonText = response.choices[0].message?.content ||
-                   response.choices[0].text ||
-                   '';
+        jsonText =
+          response.choices[0].message?.content ||
+          response.choices[0].text ||
+          "";
       }
-    } else if (provider.type === 'ollama') {
-      jsonText = response.response || '';
+    } else if (provider.type === "ollama") {
+      jsonText = response.response || "";
     } else {
-      jsonText = response.text || response.content || '';
+      jsonText = response.text || response.content || "";
     }
 
-    console.log("📄 Extracted jsonText:", jsonText.substring(0, 500) + (jsonText.length > 500 ? '...' : ''));
+    console.log(
+      "📄 Extracted jsonText:",
+      jsonText.substring(0, 500) + (jsonText.length > 500 ? "..." : ""),
+    );
 
     // Clean markdown code blocks from the response
     jsonText = cleanMarkdownCodeBlocks(jsonText);
 
-    console.log("🧹 After cleaning markdown:", jsonText.substring(0, 500) + (jsonText.length > 500 ? '...' : ''));
+    console.log(
+      "🧹 After cleaning markdown:",
+      jsonText.substring(0, 500) + (jsonText.length > 500 ? "..." : ""),
+    );
 
     // Validate that we have content before parsing
-    if (!jsonText || jsonText.trim() === '') {
-      throw new Error(`Empty response from ${provider.type} provider. No content to parse.`);
+    if (!jsonText || jsonText.trim() === "") {
+      throw new Error(
+        `Empty response from ${provider.type} provider. No content to parse.`,
+      );
     }
 
     let plan: ProjectPlan;
@@ -555,17 +669,23 @@ export const generateProjectPlan = async (data: ProjectInputData, provider: APIP
           plan = JSON.parse(jsonMatch[0]);
           console.log("✅ JSON extracted and parsed from text block");
         } catch (extractError) {
-          throw new Error(`Failed to parse JSON response from ${provider.type}: ${parseError.message}. Extracted content: ${jsonMatch[0].substring(0, 200)}...`);
+          throw new Error(
+            `Failed to parse JSON response from ${provider.type}: ${parseError.message}. Extracted content: ${jsonMatch[0].substring(0, 200)}...`,
+          );
         }
       } else {
-        throw new Error(`Invalid JSON response from ${provider.type}: ${parseError.message}. Response content: ${jsonText.substring(0, 200)}...`);
+        throw new Error(
+          `Invalid JSON response from ${provider.type}: ${parseError.message}. Response content: ${jsonText.substring(0, 200)}...`,
+        );
       }
     }
 
     // Validate Mermaid diagrams (removed aggressive post-processing)
     if (plan.systemArchitectureMermaid) {
       console.log("🔍 Validating architecture diagram...");
-      plan.systemArchitectureMermaid = validateMermaidCode(plan.systemArchitectureMermaid);
+      plan.systemArchitectureMermaid = validateMermaidCode(
+        plan.systemArchitectureMermaid,
+      );
     }
     if (plan.userFlowMermaid) {
       console.log("🔍 Validating user flow diagram...");
@@ -586,17 +706,23 @@ export const generateProjectPlan = async (data: ProjectInputData, provider: APIP
     console.error("❌ Error generating project plan:", error);
 
     // Provide more helpful error messages
-    if (error.name === 'AIRetryError') {
+    if (error.name === "AIRetryError") {
       const originalError = (error as any).originalError;
-      if (originalError?.message?.includes('quota')) {
-        throw new Error("AI service quota exceeded. Please try again later or contact support.");
+      if (originalError?.message?.includes("quota")) {
+        throw new Error(
+          "AI service quota exceeded. Please try again later or contact support.",
+        );
       }
-      if (originalError?.message?.includes('rate limit')) {
-        throw new Error("AI service is temporarily overloaded. Please wait a moment and try again.");
+      if (originalError?.message?.includes("rate limit")) {
+        throw new Error(
+          "AI service is temporarily overloaded. Please wait a moment and try again.",
+        );
       }
     }
 
-    throw new Error(`Failed to generate project plan: ${error.message}. Please check your input data and try again.`);
+    throw new Error(
+      `Failed to generate project plan: ${error.message}. Please check your input data and try again.`,
+    );
   }
 };
 
@@ -610,14 +736,14 @@ const validateMermaidCode = (code: string): string => {
   let validatedCode = code.trim();
 
   // Convert escaped newlines to actual newlines
-  validatedCode = validatedCode.replace(/\\n/g, '\n');
+  validatedCode = validatedCode.replace(/\\n/g, "\n");
 
   // Ensure the code starts with proper diagram declaration
   if (!validatedCode.match(/^(graph|flowchart)\s+(TD|LR|TB|BT|RL)/m)) {
     // If it doesn't start with proper declaration, try to add one
-    if (validatedCode.includes('-->') || validatedCode.includes('->')) {
+    if (validatedCode.includes("-->") || validatedCode.includes("->")) {
       validatedCode = `graph TD\n${validatedCode}`;
-    } else if (validatedCode.includes('flowchart')) {
+    } else if (validatedCode.includes("flowchart")) {
       // Already has flowchart, keep as is
     } else {
       validatedCode = `flowchart LR\n${validatedCode}`;
@@ -626,8 +752,8 @@ const validateMermaidCode = (code: string): string => {
 
   // Basic cleanup: remove excessive whitespace but preserve structure
   validatedCode = validatedCode
-    .replace(/[ \t]+$/gm, '') // Remove trailing whitespace
-    .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
+    .replace(/[ \t]+$/gm, "") // Remove trailing whitespace
+    .replace(/\n{3,}/g, "\n\n") // Max 2 consecutive newlines
     .trim();
 
   return validatedCode;
@@ -640,23 +766,27 @@ const validateMermaidERDCode = (code: string): string => {
   let validatedCode = code.trim();
 
   // Convert escaped newlines to actual newlines
-  validatedCode = validatedCode.replace(/\\n/g, '\n');
+  validatedCode = validatedCode.replace(/\\n/g, "\n");
 
   // Ensure the code starts with erDiagram
-  if (!validatedCode.startsWith('erDiagram')) {
+  if (!validatedCode.startsWith("erDiagram")) {
     validatedCode = `erDiagram\n${validatedCode}`;
   }
 
   // Basic cleanup: remove excessive whitespace but preserve structure
   validatedCode = validatedCode
-    .replace(/[ \t]+$/gm, '') // Remove trailing whitespace
-    .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
+    .replace(/[ \t]+$/gm, "") // Remove trailing whitespace
+    .replace(/\n{3,}/g, "\n\n") // Max 2 consecutive newlines
     .trim();
 
   return validatedCode;
 };
 
-const buildRegeneratePrompt = (currentPlan: ProjectPlan, originalInput: ProjectInputData, userPrompt: string): string => {
+const buildRegeneratePrompt = (
+  currentPlan: ProjectPlan,
+  originalInput: ProjectInputData,
+  userPrompt: string,
+): string => {
   const originalRequestPrompt = buildPrompt(originalInput);
 
   return `
@@ -690,7 +820,7 @@ export const regenerateProjectPlan = async (
   currentPlan: ProjectPlan,
   originalInput: ProjectInputData,
   userPrompt: string,
-  provider: APIProvider
+  provider: APIProvider,
 ): Promise<ProjectPlan> => {
   const aiService = new AIService(provider);
   const prompt = buildRegeneratePrompt(currentPlan, originalInput, userPrompt);
@@ -709,14 +839,20 @@ export const regenerateProjectPlan = async (
     let jsonText: string;
 
     // Handle different response formats based on provider
-    if (provider.type === 'gemini') {
+    if (provider.type === "gemini") {
       jsonText = response.text.trim();
-    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
-      jsonText = response.choices?.[0]?.message?.content || response.content?.[0]?.text || '';
-    } else if (provider.type === 'ollama') {
-      jsonText = response.response || '';
+    } else if (
+      provider.type === "openrouter" ||
+      provider.type === "anthropic"
+    ) {
+      jsonText =
+        response.choices?.[0]?.message?.content ||
+        response.content?.[0]?.text ||
+        "";
+    } else if (provider.type === "ollama") {
+      jsonText = response.response || "";
     } else {
-      jsonText = response.text || response.content || '';
+      jsonText = response.text || response.content || "";
     }
 
     // Clean markdown code blocks from the response
@@ -726,7 +862,9 @@ export const regenerateProjectPlan = async (
 
     // Validate Mermaid diagrams
     if (plan.systemArchitectureMermaid) {
-      plan.systemArchitectureMermaid = validateMermaidCode(plan.systemArchitectureMermaid);
+      plan.systemArchitectureMermaid = validateMermaidCode(
+        plan.systemArchitectureMermaid,
+      );
     }
     if (plan.userFlowMermaid) {
       plan.userFlowMermaid = validateMermaidCode(plan.userFlowMermaid);
@@ -739,14 +877,16 @@ export const regenerateProjectPlan = async (
     return plan;
   } catch (error) {
     console.error("❌ Error regenerating project plan:", error);
-    throw new Error(`Failed to regenerate project plan: ${error.message}. Please check your input data and try again.`);
+    throw new Error(
+      `Failed to regenerate project plan: ${error.message}. Please check your input data and try again.`,
+    );
   }
 };
 
 const buildEnhanceFeaturePrompt = (
   feature: FeatureSpecification,
   userPrompt: string,
-  projectContext: { name: string; description: string }
+  projectContext: { name: string; description: string },
 ): string => {
   return `
     You are an expert Software Product Manager. Your task is to enhance a feature specification based on a user's request.
@@ -758,10 +898,10 @@ const buildEnhanceFeaturePrompt = (
     Current Feature Specification:
     - Name: ${feature.name}
     - Description: ${feature.description}
-    - Target Users: ${feature.targetUsers.join(', ')}
-    - Main Functions: ${feature.mainFunctions.join('\n      - ')}
-    - Sub-Features: ${feature.subFeatures.join('\n      - ')}
-    - Pre-Conditions: ${feature.preConditions.join('\n      - ')}
+    - Target Users: ${feature.targetUsers.join(", ")}
+    - Main Functions: ${feature.mainFunctions.join("\n      - ")}
+    - Sub-Features: ${feature.subFeatures.join("\n      - ")}
+    - Pre-Conditions: ${feature.preConditions.join("\n      - ")}
 
     User's Enhancement Request: "${userPrompt}"
 
@@ -779,7 +919,7 @@ export const enhanceFeatureSpecification = async (
   feature: FeatureSpecification,
   userPrompt: string,
   projectContext: { name: string; description: string },
-  provider: APIProvider
+  provider: APIProvider,
 ): Promise<FeatureSpecification> => {
   const aiService = new AIService(provider);
   const prompt = buildEnhanceFeaturePrompt(feature, userPrompt, projectContext);
@@ -793,14 +933,20 @@ export const enhanceFeatureSpecification = async (
     let jsonText: string;
 
     // Handle different response formats based on provider
-    if (provider.type === 'gemini') {
+    if (provider.type === "gemini") {
       jsonText = response.text.trim();
-    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
-      jsonText = response.choices?.[0]?.message?.content || response.content?.[0]?.text || '';
-    } else if (provider.type === 'ollama') {
-      jsonText = response.response || '';
+    } else if (
+      provider.type === "openrouter" ||
+      provider.type === "anthropic"
+    ) {
+      jsonText =
+        response.choices?.[0]?.message?.content ||
+        response.content?.[0]?.text ||
+        "";
+    } else if (provider.type === "ollama") {
+      jsonText = response.response || "";
     } else {
-      jsonText = response.text || response.content || '';
+      jsonText = response.text || response.content || "";
     }
 
     // Clean markdown code blocks from the response
@@ -817,7 +963,7 @@ export const enhanceFeatureSpecification = async (
 const buildOptimizeDevPlanPrompt = (
   milestones: Milestone[],
   userPrompt: string,
-  projectContext: { name: string; description: string }
+  projectContext: { name: string; description: string },
 ): string => {
   return `
     You are an expert Project Manager AI. Your task is to optimize a project's development plan based on a user's request.
@@ -844,36 +990,46 @@ export const optimizeDevelopmentPlan = async (
   milestones: Milestone[],
   userPrompt: string,
   projectContext: { name: string; description: string },
-  provider: APIProvider
+  provider: APIProvider,
 ): Promise<Milestone[]> => {
   const aiService = new AIService(provider);
-  const prompt = buildOptimizeDevPlanPrompt(milestones, userPrompt, projectContext);
+  const prompt = buildOptimizeDevPlanPrompt(
+    milestones,
+    userPrompt,
+    projectContext,
+  );
 
   try {
     const response = await aiService.generateContent(prompt, {
       responseMimeType: "application/json",
       responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-              milestones: {
-                type: Type.ARRAY,
-                items: milestoneSchema
-              }
-          }
+        type: Type.OBJECT,
+        properties: {
+          milestones: {
+            type: Type.ARRAY,
+            items: milestoneSchema,
+          },
         },
+      },
     });
 
     let jsonText: string;
 
     // Handle different response formats based on provider
-    if (provider.type === 'gemini') {
+    if (provider.type === "gemini") {
       jsonText = response.text.trim();
-    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
-      jsonText = response.choices?.[0]?.message?.content || response.content?.[0]?.text || '';
-    } else if (provider.type === 'ollama') {
-      jsonText = response.response || '';
+    } else if (
+      provider.type === "openrouter" ||
+      provider.type === "anthropic"
+    ) {
+      jsonText =
+        response.choices?.[0]?.message?.content ||
+        response.content?.[0]?.text ||
+        "";
+    } else if (provider.type === "ollama") {
+      jsonText = response.response || "";
     } else {
-      jsonText = response.text || response.content || '';
+      jsonText = response.text || response.content || "";
     }
 
     // Clean markdown code blocks from the response
@@ -890,36 +1046,44 @@ export const optimizeDevelopmentPlan = async (
 const buildReportPrompt = (
   plan: ProjectPlan,
   projectName: string,
-  reportType: ReportType
+  reportType: ReportType,
 ): string => {
   const planContext = `
     Here is the full project plan for "${projectName}":
 
     Summary: ${plan.summary}
-    Key Components: ${plan.keyComponents.join(', ')}
+    Key Components: ${plan.keyComponents.join(", ")}
     Recommended Tech Stack:
-      - Frontend: ${plan.recommendedTechStack.frontend.join(', ')}
-      - Backend: ${plan.recommendedTechStack.backend.join(', ')}
-      - Database: ${plan.recommendedTechStack.database.join(', ')}
-      - Other: ${plan.recommendedTechStack.other.join(', ')}
-    Potential Challenges: ${plan.potentialChallenges.join(', ')}
-    Potential Opportunities: ${plan.potentialOpportunities.join(', ')}
+      - Frontend: ${plan.recommendedTechStack.frontend.join(", ")}
+      - Backend: ${plan.recommendedTechStack.backend.join(", ")}
+      - Database: ${plan.recommendedTechStack.database.join(", ")}
+      - Other: ${plan.recommendedTechStack.other.join(", ")}
+    Potential Challenges: ${plan.potentialChallenges.join(", ")}
+    Potential Opportunities: ${plan.potentialOpportunities.join(", ")}
     Features:
-    ${plan.detailedFeatures.map(f => `
+    ${plan.detailedFeatures
+      .map(
+        (f) => `
       - Feature: ${f.name}
         Description: ${f.description}
-        Main Functions: ${f.mainFunctions.join(', ')}
-    `).join('')}
+        Main Functions: ${f.mainFunctions.join(", ")}
+    `,
+      )
+      .join("")}
     Development Milestones:
-    ${plan.developmentPlan.milestones.map(m => `
+    ${plan.developmentPlan.milestones
+      .map(
+        (m) => `
       - Milestone: ${m.name}
         Description: ${m.description}
-        Tasks: ${m.tasks.join(', ')}
-    `).join('')}
+        Tasks: ${m.tasks.join(", ")}
+    `,
+      )
+      .join("")}
   `;
 
   switch (reportType) {
-    case 'technical_spec':
+    case "technical_spec":
       return `
         You are a Principal Software Engineer. Based on the following project plan, write a detailed technical specification document.
         The document should be well-structured, written in Markdown, and focus on technical implementation details, architecture choices, data models, and API design considerations.
@@ -927,7 +1091,7 @@ const buildReportPrompt = (
 
         ${planContext}
       `;
-    case 'product_brief':
+    case "product_brief":
       return `
         You are a Senior Product Manager. Based on the following project plan, write a concise product brief.
         The brief should be written in Markdown and target stakeholders like marketing, sales, and leadership.
@@ -935,7 +1099,7 @@ const buildReportPrompt = (
 
         ${planContext}
       `;
-    case 'executive_summary':
+    case "executive_summary":
       return `
         You are a C-level Executive (CEO/CTO). Based on the following project plan, write a high-level executive summary.
         The summary must be brief, written in Markdown, and suitable for a board meeting or for investors.
@@ -950,7 +1114,7 @@ export const generateReport = async (
   plan: ProjectPlan,
   projectName: string,
   reportType: ReportType,
-  provider: APIProvider
+  provider: APIProvider,
 ): Promise<string> => {
   const aiService = new AIService(provider);
   const prompt = buildReportPrompt(plan, projectName, reportType);
@@ -961,14 +1125,20 @@ export const generateReport = async (
     let text: string;
 
     // Handle different response formats based on provider
-    if (provider.type === 'gemini') {
+    if (provider.type === "gemini") {
       text = response.text.trim();
-    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
-      text = response.choices?.[0]?.message?.content || response.content?.[0]?.text || '';
-    } else if (provider.type === 'ollama') {
-      text = response.response || '';
+    } else if (
+      provider.type === "openrouter" ||
+      provider.type === "anthropic"
+    ) {
+      text =
+        response.choices?.[0]?.message?.content ||
+        response.content?.[0]?.text ||
+        "";
+    } else if (provider.type === "ollama") {
+      text = response.response || "";
     } else {
-      text = response.text || response.content || '';
+      text = response.text || response.content || "";
     }
 
     return text.trim();
@@ -981,7 +1151,7 @@ export const generateReport = async (
 const buildFixMermaidPrompt = (
   faultyCode: string,
   diagramType: string,
-  projectContext: { name: string; description: string }
+  projectContext: { name: string; description: string },
 ): string => {
   return `
     You are an expert in Mermaid.js syntax. The following Mermaid code, which is intended to be a ${diagramType} diagram for the project "${projectContext.name}", has a syntax error.
@@ -1055,7 +1225,7 @@ export const fixMermaidCode = async (
   faultyCode: string,
   diagramType: string,
   projectContext: { name: string; description: string },
-  provider: APIProvider
+  provider: APIProvider,
 ): Promise<string> => {
   const aiService = new AIService(provider);
   const prompt = buildFixMermaidPrompt(faultyCode, diagramType, projectContext);
@@ -1064,13 +1234,26 @@ export const fixMermaidCode = async (
     const response = await aiService.generateContent(prompt);
 
     // Clean up potential markdown fences if the model adds them despite instructions
-    let cleanedCode = response.text?.trim().replace(/```mermaid/g, '').replace(/```/g, '').trim() || '';
+    let cleanedCode =
+      response.text
+        ?.trim()
+        .replace(/```mermaid/g, "")
+        .replace(/```/g, "")
+        .trim() || "";
 
     // Handle different response formats based on provider
-    if (provider.type === 'openrouter' || provider.type === 'anthropic') {
-      cleanedCode = response.choices?.[0]?.message?.content?.replace(/```mermaid/g, '').replace(/```/g, '').trim() || '';
-    } else if (provider.type === 'ollama') {
-      cleanedCode = response.response?.replace(/```mermaid/g, '').replace(/```/g, '').trim() || '';
+    if (provider.type === "openrouter" || provider.type === "anthropic") {
+      cleanedCode =
+        response.choices?.[0]?.message?.content
+          ?.replace(/```mermaid/g, "")
+          .replace(/```/g, "")
+          .trim() || "";
+    } else if (provider.type === "ollama") {
+      cleanedCode =
+        response.response
+          ?.replace(/```mermaid/g, "")
+          .replace(/```/g, "")
+          .trim() || "";
     }
 
     // Apply minimal validation instead of aggressive post-processing
@@ -1080,5 +1263,68 @@ export const fixMermaidCode = async (
   } catch (error) {
     console.error("Error fixing Mermaid code:", error);
     throw new Error("Failed to fix diagram with AI.");
+  }
+};
+
+export const generateCoreRequirements = async (
+  projectInfo: Partial<ProjectInputData>,
+  provider?: APIProvider,
+): Promise<{ description: string; priority: Priority }[]> => {
+  // Use generic prompt for requirements
+  const prompt = `
+    You are a Business Analyst AI. Generate a list of 5-10 core functional requirements for the following project:
+    Project Name: ${projectInfo.projectName}
+    Description: ${projectInfo.shortDescription}
+    Goals: ${projectInfo.businessGoals}
+    Target Users: ${projectInfo.targetUsers?.join(", ")}
+
+    Return the response as a JSON array of objects, each with 'description' and 'priority' (High, Medium, Low).
+  `;
+
+  // We need a provider. If not passed, we might fail or need a default.
+  // For NewProjectWizard, we might not have a provider selected yet if it comes from settings?
+  // Actually, NewProjectWizard usually relies on activeProvider from SettingsContext.
+  // But wait, the generateCoreRequirements call in NewProjectWizard.tsx uses:
+  // const generatedReqs = await generateCoreRequirements(projectInfo);
+  // It doesn't pass a provider!
+
+  // I need to update NewProjectWizard to pass the provider, OR handle it here.
+  // But aiService usually takes a provider.
+  // Let's assume for now I will update NewProjectWizard to pass the provider.
+
+  if (!provider) {
+    throw new Error("No AI provider specified.");
+  }
+
+  const aiService = new AIService(provider);
+
+  try {
+    const response = await aiService.generateContent(prompt, {
+      responseMimeType: "application/json",
+      responseSchema: coreRequirementSchema,
+    });
+
+    let jsonText: string;
+    if (provider.type === "gemini") {
+      jsonText = response.text.trim();
+    } else if (
+      provider.type === "openrouter" ||
+      provider.type === "anthropic"
+    ) {
+      jsonText =
+        response.choices?.[0]?.message?.content ||
+        response.content?.[0]?.text ||
+        "";
+    } else if (provider.type === "ollama") {
+      jsonText = response.response || "";
+    } else {
+      jsonText = response.text || response.content || "";
+    }
+
+    jsonText = cleanMarkdownCodeBlocks(jsonText);
+    return JSON.parse(jsonText);
+  } catch (error) {
+    console.error("Error generating requirements:", error);
+    throw error;
   }
 };
