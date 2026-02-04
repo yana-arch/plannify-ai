@@ -12,7 +12,7 @@ const sizeClasses = {
   sm: 'h-4 w-4',
   md: 'h-8 w-8',
   lg: 'h-12 w-12',
-  xl: 'h-16 w-16'
+  xl: 'h-16 w-16',
 };
 
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
@@ -20,7 +20,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   message,
   fullScreen = false,
   overlay = false,
-  className = ''
+  className = '',
 }) => {
   const spinner = (
     <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
@@ -29,11 +29,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         role="status"
         aria-label="Loading"
       />
-      {message && (
-        <p className="text-sm text-brand-text-secondary animate-pulse">
-          {message}
-        </p>
-      )}
+      {message && <p className="text-sm text-brand-text-secondary animate-pulse">{message}</p>}
     </div>
   );
 

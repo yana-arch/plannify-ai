@@ -5,6 +5,7 @@ This document provides essential information for AI agents and developers workin
 ## 1. Environment & Commands
 
 ### Build & Run
+
 - **Install Dependencies:** `npm install`
 - **Start Dev Server:** `npm run dev` (Runs on `http://localhost:3000`)
 - **Build for Production:** `npm run build` (Output in `dist/`)
@@ -12,13 +13,15 @@ This document provides essential information for AI agents and developers workin
 - **Type Check:** `npx tsc --noEmit`
 
 ### Testing (Jest + React Testing Library)
+
 - **Run All Tests:** `npm test`
 - **Run a Single Test:** `npm test -t "test name pattern"`
-  - *Example:* `npm test -t "renders dashboard"`
+  - _Example:_ `npm test -t "renders dashboard"`
 - **Run Tests in Watch Mode:** `npm run test:watch`
 - **Run with Coverage:** `npm run test:coverage`
 
 ### Linting
+
 - **Type Checking:** Run `npx tsc --noEmit` to verify type safety.
 - **Formatting:** Adhere to existing code style (2 spaces indentation, single quotes).
 
@@ -38,23 +41,27 @@ This document provides essential information for AI agents and developers workin
 ## 3. Code Style Guidelines
 
 ### General
+
 - **Indentation:** 2 spaces.
 - **Quotes:** Single quotes (`'`) for string literals and imports.
 - **Semicolons:** Always use semicolons.
 - **Trailing Commas:** ES5 trailing commas where appropriate.
 
 ### Naming Conventions
+
 - **Components/Files:** PascalCase (e.g., `NewProjectWizard.tsx`, `App.tsx`).
 - **Functions/Variables:** camelCase (e.g., `handleGeneratePlan`, `isLoading`).
 - **Interfaces/Types:** PascalCase (e.g., `ProjectInputData`, `Screen`).
 - **Constants:** UPPER_SNAKE_CASE (if global/static).
 
 ### TypeScript
+
 - **Strictness:** Avoid `any`. Define interfaces/types for props and state.
 - **Props:** Use `interface` for component props (e.g., `interface Props { ... }`).
 - **Components:** `React.FC` is used (e.g., `const App: React.FC = () => ...`).
 
 ### Component Structure
+
 - **Functional Components:** Use functional components with hooks.
 - **Lazy Loading:** Use `React.lazy` and `Suspense` for route-level or heavy components.
 - **Imports:**
@@ -65,11 +72,13 @@ This document provides essential information for AI agents and developers workin
   5. Styles/Icons.
 
 ### Error Handling
+
 - Use `try/catch` blocks for async operations (especially API calls).
 - UI errors should be caught by `ErrorBoundary` components.
 - Display user-friendly error messages (e.g., using `error` state).
 
 ### Styling (Tailwind CSS)
+
 - Use utility classes directly in `className`.
 - Group related classes (layout, spacing, typography, colors).
 - Use `brand-*` custom colors defined in `tailwind.config.ts` (e.g., `bg-brand-bg`, `text-brand-primary`).

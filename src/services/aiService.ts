@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type } from '@google/genai';
 import type {
   ProjectInputData,
   ProjectPlan,
@@ -7,10 +7,10 @@ import type {
   Milestone,
   Priority,
   CoreRequirement,
-} from "../types";
-import type { APIProvider } from "../types";
-import { cacheService } from "./cacheService";
-import { retryService } from "./retryService";
+} from '../types';
+import type { APIProvider } from '../types';
+import { cacheService } from './cacheService';
+import { retryService } from './retryService';
 
 const featureSpecificationSchema = {
   type: Type.OBJECT,
@@ -22,14 +22,7 @@ const featureSpecificationSchema = {
     subFeatures: { type: Type.ARRAY, items: { type: Type.STRING } },
     preConditions: { type: Type.ARRAY, items: { type: Type.STRING } },
   },
-  required: [
-    "name",
-    "description",
-    "targetUsers",
-    "mainFunctions",
-    "subFeatures",
-    "preConditions",
-  ],
+  required: ['name', 'description', 'targetUsers', 'mainFunctions', 'subFeatures', 'preConditions'],
 };
 
 const milestoneSchema = {
@@ -45,17 +38,10 @@ const milestoneSchema = {
     },
     estimatedDurationWeeks: {
       type: Type.NUMBER,
-      description:
-        "The estimated duration of the milestone in number of weeks.",
+      description: 'The estimated duration of the milestone in number of weeks.',
     },
   },
-  required: [
-    "name",
-    "description",
-    "tasks",
-    "estimatedStartDate",
-    "estimatedDurationWeeks",
-  ],
+  required: ['name', 'description', 'tasks', 'estimatedStartDate', 'estimatedDurationWeeks'],
 };
 
 const developmentPlanSchema = {
@@ -67,7 +53,7 @@ const developmentPlanSchema = {
     },
   },
   description:
-    "A high-level development plan with milestones and associated tasks, including start dates and durations for a Gantt chart.",
+    'A high-level development plan with milestones and associated tasks, including start dates and durations for a Gantt chart.',
 };
 
 const planSchema = {
@@ -75,12 +61,12 @@ const planSchema = {
   properties: {
     summary: {
       type: Type.STRING,
-      description: "A concise, AI-generated summary of the project.",
+      description: 'A concise, AI-generated summary of the project.',
     },
     keyComponents: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
-      description: "A list of the main functional or architectural components.",
+      description: 'A list of the main functional or architectural components.',
     },
     recommendedTechStack: {
       type: Type.OBJECT,
@@ -90,30 +76,28 @@ const planSchema = {
         database: { type: Type.ARRAY, items: { type: Type.STRING } },
         other: { type: Type.ARRAY, items: { type: Type.STRING } },
       },
-      description: "A refined and detailed technology stack recommendation.",
+      description: 'A refined and detailed technology stack recommendation.',
     },
     potentialChallenges: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
-      description: "Potential technical or business challenges.",
+      description: 'Potential technical or business challenges.',
     },
     potentialOpportunities: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
-      description:
-        "Potential opportunities for growth, expansion, or unique value propositions.",
+      description: 'Potential opportunities for growth, expansion, or unique value propositions.',
     },
     detailedFeatures: {
       type: Type.ARRAY,
       items: featureSpecificationSchema,
-      description:
-        "A detailed breakdown of each core requirement into a feature specification.",
+      description: 'A detailed breakdown of each core requirement into a feature specification.',
     },
     developmentPlan: developmentPlanSchema,
     systemArchitectureMermaid: {
       type: Type.STRING,
       description:
-        "A Mermaid.js syntax string for a top-down (graph TD) system architecture diagram. It should visualize the key components and their interactions.",
+        'A Mermaid.js syntax string for a top-down (graph TD) system architecture diagram. It should visualize the key components and their interactions.',
     },
     userFlowMermaid: {
       type: Type.STRING,
@@ -127,16 +111,16 @@ const planSchema = {
     },
   },
   required: [
-    "summary",
-    "keyComponents",
-    "recommendedTechStack",
-    "potentialChallenges",
-    "potentialOpportunities",
-    "detailedFeatures",
-    "developmentPlan",
-    "systemArchitectureMermaid",
-    "userFlowMermaid",
-    "databaseERDMermaid",
+    'summary',
+    'keyComponents',
+    'recommendedTechStack',
+    'potentialChallenges',
+    'potentialOpportunities',
+    'detailedFeatures',
+    'developmentPlan',
+    'systemArchitectureMermaid',
+    'userFlowMermaid',
+    'databaseERDMermaid',
   ],
 };
 
@@ -146,9 +130,9 @@ const coreRequirementSchema = {
     type: Type.OBJECT,
     properties: {
       description: { type: Type.STRING },
-      priority: { type: Type.STRING, enum: ["High", "Medium", "Low"] },
+      priority: { type: Type.STRING, enum: ['High', 'Medium', 'Low'] },
     },
-    required: ["description", "priority"],
+    required: ['description', 'priority'],
   },
 };
 
@@ -186,51 +170,39 @@ class GeminiProvider extends AIProvider {
 // OpenRouter provider implementation
 class OpenRouterProvider extends AIProvider {
   async generateContent(prompt: string, options?: any) {
-    console.log(
-      "🚀 OpenRouter: Sending request to",
-      `${this.provider.baseUrl}/chat/completions`,
-    );
-    console.log("📋 OpenRouter: Model:", this.provider.model);
-    console.log(
-      "🔑 OpenRouter: API Key prefix:",
-      this.provider.apiKey.substring(0, 10) + "...",
-    );
+    console.log('🚀 OpenRouter: Sending request to', `${this.provider.baseUrl}/chat/completions`);
+    console.log('📋 OpenRouter: Model:', this.provider.model);
+    console.log('🔑 OpenRouter: API Key prefix:', this.provider.apiKey.substring(0, 10) + '...');
 
     const response = await fetch(`${this.provider.baseUrl}/chat/completions`, {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${this.provider.apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": window.location.origin,
-        "X-Title": "PlannifyAI",
+        'Content-Type': 'application/json',
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'PlannifyAI',
       },
       body: JSON.stringify({
         model: this.provider.model,
-        messages: [{ role: "user", content: prompt }],
+        messages: [{ role: 'user', content: prompt }],
         ...options,
       }),
     });
 
-    console.log("📡 OpenRouter: Response status:", response.status);
-    console.log(
-      "📡 OpenRouter: Response headers:",
-      Object.fromEntries(response.headers.entries()),
-    );
+    console.log('📡 OpenRouter: Response status:', response.status);
+    console.log('📡 OpenRouter: Response headers:', Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
       let errorText: string;
-      const contentType = response.headers.get("content-type");
+      const contentType = response.headers.get('content-type');
 
-      if (contentType?.includes("application/json")) {
+      if (contentType?.includes('application/json')) {
         const errorData = await response.json();
         errorText = JSON.stringify(errorData, null, 2);
-        console.error("❌ OpenRouter: JSON error response:", errorText);
+        console.error('❌ OpenRouter: JSON error response:', errorText);
       } else {
         errorText = await response.text();
-        console.error(
-          "❌ OpenRouter: HTML/Text error response:",
-          errorText.substring(0, 500),
-        );
+        console.error('❌ OpenRouter: HTML/Text error response:', errorText.substring(0, 500));
       }
 
       throw new Error(
@@ -239,10 +211,7 @@ class OpenRouterProvider extends AIProvider {
     }
 
     const responseData = await response.json();
-    console.log(
-      "📦 OpenRouter: Raw response structure:",
-      JSON.stringify(responseData, null, 2),
-    );
+    console.log('📦 OpenRouter: Raw response structure:', JSON.stringify(responseData, null, 2));
 
     return responseData;
   }
@@ -256,9 +225,9 @@ class OpenRouterProvider extends AIProvider {
 class OllamaProvider extends AIProvider {
   async generateContent(prompt: string, options?: any) {
     const response = await fetch(`${this.provider.baseUrl}/api/generate`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: this.provider.model,
@@ -284,16 +253,16 @@ class OllamaProvider extends AIProvider {
 class AnthropicProvider extends AIProvider {
   async generateContent(prompt: string, options?: any) {
     const response = await fetch(`${this.provider.baseUrl}/messages`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "x-api-key": this.provider.apiKey,
-        "Content-Type": "application/json",
-        "anthropic-version": "2023-06-01",
+        'x-api-key': this.provider.apiKey,
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
         model: this.provider.model,
         max_tokens: 4096,
-        messages: [{ role: "user", content: prompt }],
+        messages: [{ role: 'user', content: prompt }],
         ...options,
       }),
     });
@@ -314,15 +283,15 @@ class AnthropicProvider extends AIProvider {
 class AIProviderFactory {
   static createProvider(provider: APIProvider): AIProvider {
     switch (provider.type) {
-      case "gemini":
+      case 'gemini':
         return new GeminiProvider(provider);
-      case "openrouter":
+      case 'openrouter':
         return new OpenRouterProvider(provider);
-      case "ollama":
+      case 'ollama':
         return new OllamaProvider(provider);
-      case "anthropic":
+      case 'anthropic':
         return new AnthropicProvider(provider);
-      case "custom":
+      case 'custom':
         // For custom providers, default to OpenRouter-like API
         return new OpenRouterProvider(provider);
       default:
@@ -350,14 +319,14 @@ class AIService {
 
 // Helper function to safely handle Vietnamese characters in JSON
 const sanitizeForJSON = (text: string): string => {
-  if (!text) return "";
+  if (!text) return '';
   return text
     .replace(/\u201C/g, '"') // Left double quotation mark
     .replace(/\u201D/g, '"') // Right double quotation mark
     .replace(/\u2018/g, "'") // Left single quotation mark
     .replace(/\u2019/g, "'") // Right single quotation mark
-    .replace(/\u2026/g, "...") // Horizontal ellipsis
-    .normalize("NFC"); // Normalize to composed form
+    .replace(/\u2026/g, '...') // Horizontal ellipsis
+    .normalize('NFC'); // Normalize to composed form
 };
 
 // Helper function to clean markdown code blocks from AI responses
@@ -366,12 +335,10 @@ const cleanMarkdownCodeBlocks = (text: string): string => {
 
   // Remove markdown code blocks that wrap JSON
   // Pattern: ```json\n{content}\n```
-  let cleaned = text
-    .replace(/^```(?:json|JSON)?\s*\n?/gm, "")
-    .replace(/\n?```\s*$/gm, "");
+  let cleaned = text.replace(/^```(?:json|JSON)?\s*\n?/gm, '').replace(/\n?```\s*$/gm, '');
 
   // Also handle cases where the AI might use different code block markers
-  cleaned = cleaned.replace(/^```\s*\n?/gm, "").replace(/\n?```\s*$/gm, "");
+  cleaned = cleaned.replace(/^```\s*\n?/gm, '').replace(/\n?```\s*$/gm, '');
 
   // Trim whitespace
   return cleaned.trim();
@@ -387,12 +354,12 @@ const buildPrompt = (data: ProjectInputData): string => {
         (module) => `
       - Module: ${sanitizeForJSON(module.moduleName)}
         Description: ${sanitizeForJSON(module.description)}
-        Flows: ${module.flows.map((flow) => sanitizeForJSON(flow)).join(", ")}
+        Flows: ${module.flows.map((flow) => sanitizeForJSON(flow)).join(', ')}
     `,
       )
-      .join("")}
+      .join('')}
   `
-      : "";
+      : '';
 
   const rolePermissionsSection =
     data.rolePermissions && data.rolePermissions.length > 0
@@ -402,12 +369,12 @@ const buildPrompt = (data: ProjectInputData): string => {
       .map(
         (role) => `
       - Role: ${role.role}
-        Permissions: ${role.permissions.join(", ")}
+        Permissions: ${role.permissions.join(', ')}
     `,
       )
-      .join("")}
+      .join('')}
   `
-      : "";
+      : '';
 
   const standardFlowsSection =
     data.standardFlows && data.standardFlows.length > 0
@@ -417,12 +384,12 @@ const buildPrompt = (data: ProjectInputData): string => {
       .map(
         (flow) => `
       - Flow: ${flow.flowName}
-        Steps: ${flow.steps.join(" → ")}
+        Steps: ${flow.steps.join(' → ')}
     `,
       )
-      .join("")}
+      .join('')}
   `
-      : "";
+      : '';
 
   return `
     You are an expert Software Architect and Project Planner AI. Your task is to analyze the following comprehensive project details and generate a detailed, structured project plan.
@@ -432,13 +399,13 @@ const buildPrompt = (data: ProjectInputData): string => {
     - Short Description: ${data.shortDescription}
     - Business Goals: ${data.businessGoals}
     - Technical Goals: ${data.technicalGoals}
-    - Target Users: ${data.targetUsers.join(", ")}
+    - Target Users: ${data.targetUsers.join(', ')}
     - Number of Features: ${data.numberOfFeatures}
     - Estimated Scale: ${data.estimatedScale}
     - Timeline: ${data.timeline}
 
     Core Requirements:
-    ${data.coreRequirements.map((req) => `- ${req.description} (Priority: ${req.priority})`).join("\n    ")}
+    ${data.coreRequirements.map((req) => `- ${req.description} (Priority: ${req.priority})`).join('\n    ')}
 
     ${coreModulesSection}
 
@@ -447,13 +414,13 @@ const buildPrompt = (data: ProjectInputData): string => {
     ${standardFlowsSection}
 
     Anticipated Technology Stack:
-    - Frontend: ${data.techStack.frontend.join(", ")}
-    - Backend: ${data.techStack.backend.join(", ")}
-    - Database: ${data.techStack.database.join(", ")}
-    - Other Tools/Libraries: ${data.techStack.otherTools.join(", ")}
+    - Frontend: ${data.techStack.frontend.join(', ')}
+    - Backend: ${data.techStack.backend.join(', ')}
+    - Database: ${data.techStack.database.join(', ')}
+    - Other Tools/Libraries: ${data.techStack.otherTools.join(', ')}
 
-    Market Analysis: ${data.marketAnalysis || "Not provided."}
-    Known Competitors: ${data.competitors.join(", ") || "Not provided."}
+    Market Analysis: ${data.marketAnalysis || 'Not provided.'}
+    Known Competitors: ${data.competitors.join(', ') || 'Not provided.'}
 
     Please generate a project plan based on this comprehensive information. The plan should be detailed, realistic, and provide actionable insights.
 
@@ -583,7 +550,7 @@ export const generateProjectPlan = async (
   const cacheKey = cacheService.generateProjectPlanKey(data, provider);
   const cachedResult = cacheService.get<ProjectPlan>(cacheKey);
   if (cachedResult) {
-    console.log("✅ Returning cached project plan");
+    console.log('✅ Returning cached project plan');
     return cachedResult;
   }
 
@@ -592,82 +559,71 @@ export const generateProjectPlan = async (
 
   try {
     const response = await retryService.executeAIOperation(async () => {
-      console.log("🧠 Sending request to AI for plan generation...");
+      console.log('🧠 Sending request to AI for plan generation...');
       const result = await aiService.generateContent(prompt, {
-        responseMimeType: "application/json",
+        responseMimeType: 'application/json',
         responseSchema: planSchema,
       });
       return result;
-    }, "Project Plan Generation");
+    }, 'Project Plan Generation');
 
-    console.log("📝 Processing AI response...");
-    console.log(
-      "🔍 Raw response from provider:",
-      JSON.stringify(response, null, 2),
-    );
+    console.log('📝 Processing AI response...');
+    console.log('🔍 Raw response from provider:', JSON.stringify(response, null, 2));
 
     let jsonText: string;
 
     // Handle different response formats based on provider
-    if (provider.type === "gemini") {
-      jsonText = response.text?.trim() || "";
-    } else if (
-      provider.type === "openrouter" ||
-      provider.type === "anthropic"
-    ) {
+    if (provider.type === 'gemini') {
+      jsonText = response.text?.trim() || '';
+    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
       jsonText =
         response.choices?.[0]?.message?.content ||
         response.content?.[0]?.text ||
         response.choices?.[0]?.text ||
-        "";
+        '';
 
       // Additional fallback for OpenRouter specific structure
       if (!jsonText && response.choices?.[0]) {
-        jsonText =
-          response.choices[0].message?.content ||
-          response.choices[0].text ||
-          "";
+        jsonText = response.choices[0].message?.content || response.choices[0].text || '';
       }
-    } else if (provider.type === "ollama") {
-      jsonText = response.response || "";
+    } else if (provider.type === 'ollama') {
+      jsonText = response.response || '';
     } else {
-      jsonText = response.text || response.content || "";
+      jsonText = response.text || response.content || '';
     }
 
     console.log(
-      "📄 Extracted jsonText:",
-      jsonText.substring(0, 500) + (jsonText.length > 500 ? "..." : ""),
+      '📄 Extracted jsonText:',
+      jsonText.substring(0, 500) + (jsonText.length > 500 ? '...' : ''),
     );
 
     // Clean markdown code blocks from the response
     jsonText = cleanMarkdownCodeBlocks(jsonText);
 
     console.log(
-      "🧹 After cleaning markdown:",
-      jsonText.substring(0, 500) + (jsonText.length > 500 ? "..." : ""),
+      '🧹 After cleaning markdown:',
+      jsonText.substring(0, 500) + (jsonText.length > 500 ? '...' : ''),
     );
 
     // Validate that we have content before parsing
-    if (!jsonText || jsonText.trim() === "") {
-      throw new Error(
-        `Empty response from ${provider.type} provider. No content to parse.`,
-      );
+    if (!jsonText || jsonText.trim() === '') {
+      throw new Error(`Empty response from ${provider.type} provider. No content to parse.`);
     }
 
     let plan: ProjectPlan;
     try {
       plan = JSON.parse(jsonText);
-      console.log("✅ JSON parsing successful");
+      console.log('✅ JSON parsing successful');
     } catch (parseError) {
-      console.error("❌ JSON parsing failed:", parseError);
-      console.error("❌ Failed jsonText:", jsonText);
+      console.error('❌ JSON parsing failed:', parseError);
+      console.error('❌ Failed jsonText:', jsonText);
 
       // Try to extract JSON from a larger text block if parsing failed
       const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
           plan = JSON.parse(jsonMatch[0]);
-          console.log("✅ JSON extracted and parsed from text block");
+          console.log('✅ JSON extracted and parsed from text block');
         } catch (extractError) {
           throw new Error(
             `Failed to parse JSON response from ${provider.type}: ${parseError.message}. Extracted content: ${jsonMatch[0].substring(0, 200)}...`,
@@ -682,40 +638,36 @@ export const generateProjectPlan = async (
 
     // Validate Mermaid diagrams (removed aggressive post-processing)
     if (plan.systemArchitectureMermaid) {
-      console.log("🔍 Validating architecture diagram...");
-      plan.systemArchitectureMermaid = validateMermaidCode(
-        plan.systemArchitectureMermaid,
-      );
+      console.log('🔍 Validating architecture diagram...');
+      plan.systemArchitectureMermaid = validateMermaidCode(plan.systemArchitectureMermaid);
     }
     if (plan.userFlowMermaid) {
-      console.log("🔍 Validating user flow diagram...");
+      console.log('🔍 Validating user flow diagram...');
       plan.userFlowMermaid = validateMermaidCode(plan.userFlowMermaid);
     }
     if (plan.databaseERDMermaid) {
-      console.log("🔍 Validating database ERD diagram...");
+      console.log('🔍 Validating database ERD diagram...');
       plan.databaseERDMermaid = validateMermaidERDCode(plan.databaseERDMermaid);
     }
 
     // Cache the result with longer TTL for complex operations
     cacheService.set(cacheKey, plan, 1000 * 60 * 60); // 1 hour TTL for plans
-    console.log("💾 Plan cached successfully");
+    console.log('💾 Plan cached successfully');
 
-    console.log("🎉 Project plan generation completed successfully!");
+    console.log('🎉 Project plan generation completed successfully!');
     return plan;
   } catch (error) {
-    console.error("❌ Error generating project plan:", error);
+    console.error('❌ Error generating project plan:', error);
 
     // Provide more helpful error messages
-    if (error.name === "AIRetryError") {
+    if (error.name === 'AIRetryError') {
       const originalError = (error as any).originalError;
-      if (originalError?.message?.includes("quota")) {
-        throw new Error(
-          "AI service quota exceeded. Please try again later or contact support.",
-        );
+      if (originalError?.message?.includes('quota')) {
+        throw new Error('AI service quota exceeded. Please try again later or contact support.');
       }
-      if (originalError?.message?.includes("rate limit")) {
+      if (originalError?.message?.includes('rate limit')) {
         throw new Error(
-          "AI service is temporarily overloaded. Please wait a moment and try again.",
+          'AI service is temporarily overloaded. Please wait a moment and try again.',
         );
       }
     }
@@ -736,14 +688,14 @@ const validateMermaidCode = (code: string): string => {
   let validatedCode = code.trim();
 
   // Convert escaped newlines to actual newlines
-  validatedCode = validatedCode.replace(/\\n/g, "\n");
+  validatedCode = validatedCode.replace(/\\n/g, '\n');
 
   // Ensure the code starts with proper diagram declaration
   if (!validatedCode.match(/^(graph|flowchart)\s+(TD|LR|TB|BT|RL)/m)) {
     // If it doesn't start with proper declaration, try to add one
-    if (validatedCode.includes("-->") || validatedCode.includes("->")) {
+    if (validatedCode.includes('-->') || validatedCode.includes('->')) {
       validatedCode = `graph TD\n${validatedCode}`;
-    } else if (validatedCode.includes("flowchart")) {
+    } else if (validatedCode.includes('flowchart')) {
       // Already has flowchart, keep as is
     } else {
       validatedCode = `flowchart LR\n${validatedCode}`;
@@ -752,8 +704,8 @@ const validateMermaidCode = (code: string): string => {
 
   // Basic cleanup: remove excessive whitespace but preserve structure
   validatedCode = validatedCode
-    .replace(/[ \t]+$/gm, "") // Remove trailing whitespace
-    .replace(/\n{3,}/g, "\n\n") // Max 2 consecutive newlines
+    .replace(/[ \t]+$/gm, '') // Remove trailing whitespace
+    .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
     .trim();
 
   return validatedCode;
@@ -766,17 +718,17 @@ const validateMermaidERDCode = (code: string): string => {
   let validatedCode = code.trim();
 
   // Convert escaped newlines to actual newlines
-  validatedCode = validatedCode.replace(/\\n/g, "\n");
+  validatedCode = validatedCode.replace(/\\n/g, '\n');
 
   // Ensure the code starts with erDiagram
-  if (!validatedCode.startsWith("erDiagram")) {
+  if (!validatedCode.startsWith('erDiagram')) {
     validatedCode = `erDiagram\n${validatedCode}`;
   }
 
   // Basic cleanup: remove excessive whitespace but preserve structure
   validatedCode = validatedCode
-    .replace(/[ \t]+$/gm, "") // Remove trailing whitespace
-    .replace(/\n{3,}/g, "\n\n") // Max 2 consecutive newlines
+    .replace(/[ \t]+$/gm, '') // Remove trailing whitespace
+    .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
     .trim();
 
   return validatedCode;
@@ -827,32 +779,26 @@ export const regenerateProjectPlan = async (
 
   try {
     const response = await retryService.executeAIOperation(async () => {
-      console.log("🧠 Sending request to AI for plan regeneration...");
+      console.log('🧠 Sending request to AI for plan regeneration...');
       const result = await aiService.generateContent(prompt, {
-        responseMimeType: "application/json",
+        responseMimeType: 'application/json',
         responseSchema: planSchema,
       });
       return result;
-    }, "Project Plan Regeneration");
+    }, 'Project Plan Regeneration');
 
-    console.log("📝 Processing AI response...");
+    console.log('📝 Processing AI response...');
     let jsonText: string;
 
     // Handle different response formats based on provider
-    if (provider.type === "gemini") {
+    if (provider.type === 'gemini') {
       jsonText = response.text.trim();
-    } else if (
-      provider.type === "openrouter" ||
-      provider.type === "anthropic"
-    ) {
-      jsonText =
-        response.choices?.[0]?.message?.content ||
-        response.content?.[0]?.text ||
-        "";
-    } else if (provider.type === "ollama") {
-      jsonText = response.response || "";
+    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
+      jsonText = response.choices?.[0]?.message?.content || response.content?.[0]?.text || '';
+    } else if (provider.type === 'ollama') {
+      jsonText = response.response || '';
     } else {
-      jsonText = response.text || response.content || "";
+      jsonText = response.text || response.content || '';
     }
 
     // Clean markdown code blocks from the response
@@ -862,9 +808,7 @@ export const regenerateProjectPlan = async (
 
     // Validate Mermaid diagrams
     if (plan.systemArchitectureMermaid) {
-      plan.systemArchitectureMermaid = validateMermaidCode(
-        plan.systemArchitectureMermaid,
-      );
+      plan.systemArchitectureMermaid = validateMermaidCode(plan.systemArchitectureMermaid);
     }
     if (plan.userFlowMermaid) {
       plan.userFlowMermaid = validateMermaidCode(plan.userFlowMermaid);
@@ -873,10 +817,10 @@ export const regenerateProjectPlan = async (
       plan.databaseERDMermaid = validateMermaidERDCode(plan.databaseERDMermaid);
     }
 
-    console.log("🎉 Project plan regeneration completed successfully!");
+    console.log('🎉 Project plan regeneration completed successfully!');
     return plan;
   } catch (error) {
-    console.error("❌ Error regenerating project plan:", error);
+    console.error('❌ Error regenerating project plan:', error);
     throw new Error(
       `Failed to regenerate project plan: ${error.message}. Please check your input data and try again.`,
     );
@@ -898,10 +842,10 @@ const buildEnhanceFeaturePrompt = (
     Current Feature Specification:
     - Name: ${feature.name}
     - Description: ${feature.description}
-    - Target Users: ${feature.targetUsers.join(", ")}
-    - Main Functions: ${feature.mainFunctions.join("\n      - ")}
-    - Sub-Features: ${feature.subFeatures.join("\n      - ")}
-    - Pre-Conditions: ${feature.preConditions.join("\n      - ")}
+    - Target Users: ${feature.targetUsers.join(', ')}
+    - Main Functions: ${feature.mainFunctions.join('\n      - ')}
+    - Sub-Features: ${feature.subFeatures.join('\n      - ')}
+    - Pre-Conditions: ${feature.preConditions.join('\n      - ')}
 
     User's Enhancement Request: "${userPrompt}"
 
@@ -926,27 +870,21 @@ export const enhanceFeatureSpecification = async (
 
   try {
     const response = await aiService.generateContent(prompt, {
-      responseMimeType: "application/json",
+      responseMimeType: 'application/json',
       responseSchema: featureSpecificationSchema,
     });
 
     let jsonText: string;
 
     // Handle different response formats based on provider
-    if (provider.type === "gemini") {
+    if (provider.type === 'gemini') {
       jsonText = response.text.trim();
-    } else if (
-      provider.type === "openrouter" ||
-      provider.type === "anthropic"
-    ) {
-      jsonText =
-        response.choices?.[0]?.message?.content ||
-        response.content?.[0]?.text ||
-        "";
-    } else if (provider.type === "ollama") {
-      jsonText = response.response || "";
+    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
+      jsonText = response.choices?.[0]?.message?.content || response.content?.[0]?.text || '';
+    } else if (provider.type === 'ollama') {
+      jsonText = response.response || '';
     } else {
-      jsonText = response.text || response.content || "";
+      jsonText = response.text || response.content || '';
     }
 
     // Clean markdown code blocks from the response
@@ -955,8 +893,8 @@ export const enhanceFeatureSpecification = async (
     const newFeature: FeatureSpecification = JSON.parse(jsonText);
     return newFeature;
   } catch (error) {
-    console.error("Error enhancing feature:", error);
-    throw new Error("Failed to enhance feature with AI.");
+    console.error('Error enhancing feature:', error);
+    throw new Error('Failed to enhance feature with AI.');
   }
 };
 
@@ -993,15 +931,11 @@ export const optimizeDevelopmentPlan = async (
   provider: APIProvider,
 ): Promise<Milestone[]> => {
   const aiService = new AIService(provider);
-  const prompt = buildOptimizeDevPlanPrompt(
-    milestones,
-    userPrompt,
-    projectContext,
-  );
+  const prompt = buildOptimizeDevPlanPrompt(milestones, userPrompt, projectContext);
 
   try {
     const response = await aiService.generateContent(prompt, {
-      responseMimeType: "application/json",
+      responseMimeType: 'application/json',
       responseSchema: {
         type: Type.OBJECT,
         properties: {
@@ -1016,20 +950,14 @@ export const optimizeDevelopmentPlan = async (
     let jsonText: string;
 
     // Handle different response formats based on provider
-    if (provider.type === "gemini") {
+    if (provider.type === 'gemini') {
       jsonText = response.text.trim();
-    } else if (
-      provider.type === "openrouter" ||
-      provider.type === "anthropic"
-    ) {
-      jsonText =
-        response.choices?.[0]?.message?.content ||
-        response.content?.[0]?.text ||
-        "";
-    } else if (provider.type === "ollama") {
-      jsonText = response.response || "";
+    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
+      jsonText = response.choices?.[0]?.message?.content || response.content?.[0]?.text || '';
+    } else if (provider.type === 'ollama') {
+      jsonText = response.response || '';
     } else {
-      jsonText = response.text || response.content || "";
+      jsonText = response.text || response.content || '';
     }
 
     // Clean markdown code blocks from the response
@@ -1038,8 +966,8 @@ export const optimizeDevelopmentPlan = async (
     const result: { milestones: Milestone[] } = JSON.parse(jsonText);
     return result.milestones;
   } catch (error) {
-    console.error("Error optimizing development plan:", error);
-    throw new Error("Failed to optimize development plan with AI.");
+    console.error('Error optimizing development plan:', error);
+    throw new Error('Failed to optimize development plan with AI.');
   }
 };
 
@@ -1052,38 +980,38 @@ const buildReportPrompt = (
     Here is the full project plan for "${projectName}":
 
     Summary: ${plan.summary}
-    Key Components: ${plan.keyComponents.join(", ")}
+    Key Components: ${plan.keyComponents.join(', ')}
     Recommended Tech Stack:
-      - Frontend: ${plan.recommendedTechStack.frontend.join(", ")}
-      - Backend: ${plan.recommendedTechStack.backend.join(", ")}
-      - Database: ${plan.recommendedTechStack.database.join(", ")}
-      - Other: ${plan.recommendedTechStack.other.join(", ")}
-    Potential Challenges: ${plan.potentialChallenges.join(", ")}
-    Potential Opportunities: ${plan.potentialOpportunities.join(", ")}
+      - Frontend: ${plan.recommendedTechStack.frontend.join(', ')}
+      - Backend: ${plan.recommendedTechStack.backend.join(', ')}
+      - Database: ${plan.recommendedTechStack.database.join(', ')}
+      - Other: ${plan.recommendedTechStack.other.join(', ')}
+    Potential Challenges: ${plan.potentialChallenges.join(', ')}
+    Potential Opportunities: ${plan.potentialOpportunities.join(', ')}
     Features:
     ${plan.detailedFeatures
       .map(
         (f) => `
       - Feature: ${f.name}
         Description: ${f.description}
-        Main Functions: ${f.mainFunctions.join(", ")}
+        Main Functions: ${f.mainFunctions.join(', ')}
     `,
       )
-      .join("")}
+      .join('')}
     Development Milestones:
     ${plan.developmentPlan.milestones
       .map(
         (m) => `
       - Milestone: ${m.name}
         Description: ${m.description}
-        Tasks: ${m.tasks.join(", ")}
+        Tasks: ${m.tasks.join(', ')}
     `,
       )
-      .join("")}
+      .join('')}
   `;
 
   switch (reportType) {
-    case "technical_spec":
+    case 'technical_spec':
       return `
         You are a Principal Software Engineer. Based on the following project plan, write a detailed technical specification document.
         The document should be well-structured, written in Markdown, and focus on technical implementation details, architecture choices, data models, and API design considerations.
@@ -1091,7 +1019,7 @@ const buildReportPrompt = (
 
         ${planContext}
       `;
-    case "product_brief":
+    case 'product_brief':
       return `
         You are a Senior Product Manager. Based on the following project plan, write a concise product brief.
         The brief should be written in Markdown and target stakeholders like marketing, sales, and leadership.
@@ -1099,7 +1027,7 @@ const buildReportPrompt = (
 
         ${planContext}
       `;
-    case "executive_summary":
+    case 'executive_summary':
       return `
         You are a C-level Executive (CEO/CTO). Based on the following project plan, write a high-level executive summary.
         The summary must be brief, written in Markdown, and suitable for a board meeting or for investors.
@@ -1125,20 +1053,14 @@ export const generateReport = async (
     let text: string;
 
     // Handle different response formats based on provider
-    if (provider.type === "gemini") {
+    if (provider.type === 'gemini') {
       text = response.text.trim();
-    } else if (
-      provider.type === "openrouter" ||
-      provider.type === "anthropic"
-    ) {
-      text =
-        response.choices?.[0]?.message?.content ||
-        response.content?.[0]?.text ||
-        "";
-    } else if (provider.type === "ollama") {
-      text = response.response || "";
+    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
+      text = response.choices?.[0]?.message?.content || response.content?.[0]?.text || '';
+    } else if (provider.type === 'ollama') {
+      text = response.response || '';
     } else {
-      text = response.text || response.content || "";
+      text = response.text || response.content || '';
     }
 
     return text.trim();
@@ -1237,23 +1159,23 @@ export const fixMermaidCode = async (
     let cleanedCode =
       response.text
         ?.trim()
-        .replace(/```mermaid/g, "")
-        .replace(/```/g, "")
-        .trim() || "";
+        .replace(/```mermaid/g, '')
+        .replace(/```/g, '')
+        .trim() || '';
 
     // Handle different response formats based on provider
-    if (provider.type === "openrouter" || provider.type === "anthropic") {
+    if (provider.type === 'openrouter' || provider.type === 'anthropic') {
       cleanedCode =
         response.choices?.[0]?.message?.content
-          ?.replace(/```mermaid/g, "")
-          .replace(/```/g, "")
-          .trim() || "";
-    } else if (provider.type === "ollama") {
+          ?.replace(/```mermaid/g, '')
+          .replace(/```/g, '')
+          .trim() || '';
+    } else if (provider.type === 'ollama') {
       cleanedCode =
         response.response
-          ?.replace(/```mermaid/g, "")
-          .replace(/```/g, "")
-          .trim() || "";
+          ?.replace(/```mermaid/g, '')
+          .replace(/```/g, '')
+          .trim() || '';
     }
 
     // Apply minimal validation instead of aggressive post-processing
@@ -1261,8 +1183,8 @@ export const fixMermaidCode = async (
 
     return cleanedCode;
   } catch (error) {
-    console.error("Error fixing Mermaid code:", error);
-    throw new Error("Failed to fix diagram with AI.");
+    console.error('Error fixing Mermaid code:', error);
+    throw new Error('Failed to fix diagram with AI.');
   }
 };
 
@@ -1276,7 +1198,7 @@ export const generateCoreRequirements = async (
     Project Name: ${projectInfo.projectName}
     Description: ${projectInfo.shortDescription}
     Goals: ${projectInfo.businessGoals}
-    Target Users: ${projectInfo.targetUsers?.join(", ")}
+    Target Users: ${projectInfo.targetUsers?.join(', ')}
 
     Return the response as a JSON array of objects, each with 'description' and 'priority' (High, Medium, Low).
   `;
@@ -1293,38 +1215,32 @@ export const generateCoreRequirements = async (
   // Let's assume for now I will update NewProjectWizard to pass the provider.
 
   if (!provider) {
-    throw new Error("No AI provider specified.");
+    throw new Error('No AI provider specified.');
   }
 
   const aiService = new AIService(provider);
 
   try {
     const response = await aiService.generateContent(prompt, {
-      responseMimeType: "application/json",
+      responseMimeType: 'application/json',
       responseSchema: coreRequirementSchema,
     });
 
     let jsonText: string;
-    if (provider.type === "gemini") {
+    if (provider.type === 'gemini') {
       jsonText = response.text.trim();
-    } else if (
-      provider.type === "openrouter" ||
-      provider.type === "anthropic"
-    ) {
-      jsonText =
-        response.choices?.[0]?.message?.content ||
-        response.content?.[0]?.text ||
-        "";
-    } else if (provider.type === "ollama") {
-      jsonText = response.response || "";
+    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
+      jsonText = response.choices?.[0]?.message?.content || response.content?.[0]?.text || '';
+    } else if (provider.type === 'ollama') {
+      jsonText = response.response || '';
     } else {
-      jsonText = response.text || response.content || "";
+      jsonText = response.text || response.content || '';
     }
 
     jsonText = cleanMarkdownCodeBlocks(jsonText);
     return JSON.parse(jsonText);
   } catch (error) {
-    console.error("Error generating requirements:", error);
+    console.error('Error generating requirements:', error);
     throw error;
   }
 };

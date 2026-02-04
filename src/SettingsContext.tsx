@@ -1,4 +1,11 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  ReactNode,
+  useCallback,
+} from 'react';
 import type { AppSettings, APIProvider, APIProviderType } from './types';
 
 interface SettingsContextType {
@@ -45,15 +52,20 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
       if (storedSettings) {
         const parsedSettings = JSON.parse(storedSettings);
         // Ensure default provider exists for backward compatibility
-        const hasDefaultProvider = parsedSettings.providers?.some((p: APIProvider) => p.id === 'default-gemini');
+        const hasDefaultProvider = parsedSettings.providers?.some(
+          (p: APIProvider) => p.id === 'default-gemini',
+        );
         if (!hasDefaultProvider) {
-          parsedSettings.providers = [createDefaultGeminiProvider(), ...(parsedSettings.providers || [])];
+          parsedSettings.providers = [
+            createDefaultGeminiProvider(),
+            ...(parsedSettings.providers || []),
+          ];
         }
         setSettings(parsedSettings);
       }
     } catch (e) {
-      console.error("Failed to load settings from localStorage", e);
-      setError("Could not load settings from local storage.");
+      console.error('Failed to load settings from localStorage', e);
+      setError('Could not load settings from local storage.');
     }
   }, []);
 
@@ -63,81 +75,93 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
       localStorage.setItem('plannifyai_settings', JSON.stringify(newSettings));
       setSettings(newSettings);
     } catch (e) {
-      console.error("Failed to save settings to localStorage", e);
-      setError("Could not save settings. Your changes might not persist.");
+      console.error('Failed to save settings to localStorage', e);
+      setError('Could not save settings. Your changes might not persist.');
     }
   }, []);
 
-  const addProvider = useCallback((providerData: Omit<APIProvider, 'id' | 'createdAt' | 'isActive'>) => {
-    const newProvider: APIProvider = {
-      ...providerData,
-      id: Date.now().toString(),
-      isActive: false,
-      createdAt: new Date().toISOString(),
-    };
+  const addProvider = useCallback(
+    (providerData: Omit<APIProvider, 'id' | 'createdAt' | 'isActive'>) => {
+      const newProvider: APIProvider = {
+        ...providerData,
+        id: Date.now().toString(),
+        isActive: false,
+        createdAt: new Date().toISOString(),
+      };
 
-    const newSettings = {
-      ...settings,
-      providers: [...settings.providers, newProvider],
-    };
+      const newSettings = {
+        ...settings,
+        providers: [...settings.providers, newProvider],
+      };
 
-    saveSettingsToStorage(newSettings);
-  }, [settings, saveSettingsToStorage]);
+      saveSettingsToStorage(newSettings);
+    },
+    [settings, saveSettingsToStorage],
+  );
 
-  const updateProvider = useCallback((id: string, updates: Partial<APIProvider>) => {
-    const newSettings = {
-      ...settings,
-      providers: settings.providers.map(provider =>
-        provider.id === id ? { ...provider, ...updates } : provider
-      ),
-    };
+  const updateProvider = useCallback(
+    (id: string, updates: Partial<APIProvider>) => {
+      const newSettings = {
+        ...settings,
+        providers: settings.providers.map((provider) =>
+          provider.id === id ? { ...provider, ...updates } : provider,
+        ),
+      };
 
-    saveSettingsToStorage(newSettings);
-  }, [settings, saveSettingsToStorage]);
+      saveSettingsToStorage(newSettings);
+    },
+    [settings, saveSettingsToStorage],
+  );
 
-  const deleteProvider = useCallback((id: string) => {
-    // Don't allow deleting the default provider
-    if (id === 'default-gemini') {
-      setError("Cannot delete the default Gemini provider.");
-      return;
-    }
+  const deleteProvider = useCallback(
+    (id: string) => {
+      // Don't allow deleting the default provider
+      if (id === 'default-gemini') {
+        setError('Cannot delete the default Gemini provider.');
+        return;
+      }
 
-    const newProviders = settings.providers.filter(provider => provider.id !== id);
-    let newActiveProviderId = settings.activeProviderId;
+      const newProviders = settings.providers.filter((provider) => provider.id !== id);
+      let newActiveProviderId = settings.activeProviderId;
 
-    // If we're deleting the active provider, switch to default
-    if (settings.activeProviderId === id) {
-      newActiveProviderId = 'default-gemini';
-    }
+      // If we're deleting the active provider, switch to default
+      if (settings.activeProviderId === id) {
+        newActiveProviderId = 'default-gemini';
+      }
 
-    const newSettings = {
-      activeProviderId: newActiveProviderId,
-      providers: newProviders,
-    };
+      const newSettings = {
+        activeProviderId: newActiveProviderId,
+        providers: newProviders,
+      };
 
-    saveSettingsToStorage(newSettings);
-  }, [settings, saveSettingsToStorage]);
+      saveSettingsToStorage(newSettings);
+    },
+    [settings, saveSettingsToStorage],
+  );
 
-  const setActiveProvider = useCallback((id: string) => {
-    const provider = settings.providers.find(p => p.id === id);
-    if (!provider) {
-      setError("Provider not found.");
-      return;
-    }
+  const setActiveProvider = useCallback(
+    (id: string) => {
+      const provider = settings.providers.find((p) => p.id === id);
+      if (!provider) {
+        setError('Provider not found.');
+        return;
+      }
 
-    // Update all providers to set only the selected one as active
-    const newSettings = {
-      ...settings,
-      activeProviderId: id,
-      providers: settings.providers.map(p => ({
-        ...p,
-        isActive: p.id === id,
-        lastUsed: p.id === id ? new Date().toISOString() : p.lastUsed,
-      })),
-    };
+      // Update all providers to set only the selected one as active
+      const newSettings = {
+        ...settings,
+        activeProviderId: id,
+        providers: settings.providers.map((p) => ({
+          ...p,
+          isActive: p.id === id,
+          lastUsed: p.id === id ? new Date().toISOString() : p.lastUsed,
+        })),
+      };
 
-    saveSettingsToStorage(newSettings);
-  }, [settings, saveSettingsToStorage]);
+      saveSettingsToStorage(newSettings);
+    },
+    [settings, saveSettingsToStorage],
+  );
 
   const testProviderConnection = useCallback(async (provider: APIProvider): Promise<boolean> => {
     setIsLoading(true);
@@ -145,14 +169,15 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     try {
       // Simple test request - just check if we can reach the API
-      const testUrl = provider.type === 'ollama'
-        ? `${provider.baseUrl}/api/tags`
-        : `${provider.baseUrl}/v1/models`;
+      const testUrl =
+        provider.type === 'ollama'
+          ? `${provider.baseUrl}/api/tags`
+          : `${provider.baseUrl}/v1/models`;
 
       const response = await fetch(testUrl, {
         method: 'GET',
         headers: {
-          'Authorization': provider.apiKey ? `Bearer ${provider.apiKey}` : undefined,
+          Authorization: provider.apiKey ? `Bearer ${provider.apiKey}` : undefined,
           'Content-Type': 'application/json',
         },
         signal: AbortSignal.timeout(10000), // 10 second timeout
@@ -172,7 +197,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     setError(null);
   }, []);
 
-  const activeProvider = settings.providers.find(p => p.id === settings.activeProviderId) || null;
+  const activeProvider = settings.providers.find((p) => p.id === settings.activeProviderId) || null;
 
   const value: SettingsContextType = {
     settings,
@@ -187,11 +212,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     clearError,
   };
 
-  return (
-    <SettingsContext.Provider value={value}>
-      {children}
-    </SettingsContext.Provider>
-  );
+  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 };
 
 export const useSettings = (): SettingsContextType => {

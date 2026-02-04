@@ -1,5 +1,11 @@
 import React from 'react';
-import { GridIcon, LayoutDashboardIcon, FolderKanbanIcon, CopyIcon, PlusCircleIcon } from '../icons';
+import {
+  GridIcon,
+  LayoutDashboardIcon,
+  FolderKanbanIcon,
+  CopyIcon,
+  PlusCircleIcon,
+} from '../icons';
 import type { Screen } from '../../types';
 
 const navigation = [
@@ -10,18 +16,19 @@ const navigation = [
 ];
 
 interface NavItemProps {
-    item: typeof navigation[0];
-    isActive: boolean;
-    onClick: () => void;
+  item: (typeof navigation)[0];
+  isActive: boolean;
+  onClick: () => void;
 }
 
 const NavItem: React.FC<NavItemProps> = ({ item, isActive, onClick }) => (
   <button
     onClick={onClick}
     className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
-      ${isActive
-        ? 'bg-brand-primary/10 text-brand-primary-hover shadow-[inset_0_0_0_1px_rgba(47,129,247,0.4),inset_2px_0_0_rgba(47,129,247,1)]'
-        : 'text-brand-text-secondary hover:bg-brand-surface hover:text-brand-text-primary'
+      ${
+        isActive
+          ? 'bg-brand-primary/10 text-brand-primary-hover shadow-[inset_0_0_0_1px_rgba(47,129,247,0.4),inset_2px_0_0_rgba(47,129,247,1)]'
+          : 'text-brand-text-secondary hover:bg-brand-surface hover:text-brand-text-primary'
       }`}
   >
     <item.icon className="h-5 w-5 mr-3" />
@@ -30,8 +37,8 @@ const NavItem: React.FC<NavItemProps> = ({ item, isActive, onClick }) => (
 );
 
 interface SidebarProps {
-    activeScreen: Screen;
-    onScreenChange: (screen: Screen) => void;
+  activeScreen: Screen;
+  onScreenChange: (screen: Screen) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeScreen, onScreenChange }) => {
@@ -45,10 +52,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeScreen, onScreenChange }
       </div>
       <nav className="space-y-1">
         {navigation.map((item) => (
-          <NavItem 
-            key={item.id} 
-            item={item} 
-            isActive={activeScreen === item.id} 
+          <NavItem
+            key={item.id}
+            item={item}
+            isActive={activeScreen === item.id}
             onClick={() => onScreenChange(item.id as Screen)}
           />
         ))}

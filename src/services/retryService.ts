@@ -24,10 +24,15 @@ class RetryService {
         return true;
       }
       return false;
-    }
+    },
   };
 
-  private calculateDelay(baseDelay: number, multiplier: number, maxDelay: number, jitter: boolean): number {
+  private calculateDelay(
+    baseDelay: number,
+    multiplier: number,
+    maxDelay: number,
+    jitter: boolean,
+  ): number {
     const delay = Math.min(baseDelay, maxDelay);
     const jitteredDelay = jitter ? delay * (0.5 + Math.random() * 0.5) : delay;
     return Math.floor(jitteredDelay);
@@ -35,7 +40,7 @@ class RetryService {
 
   async executeWithRetry<T>(
     operation: () => Promise<T>,
-    options: Partial<RetryOptions> = {}
+    options: Partial<RetryOptions> = {},
   ): Promise<T> {
     const opts = { ...this.defaultOptions, ...options };
     let lastError: any;
@@ -61,7 +66,7 @@ class RetryService {
           opts.baseDelay * Math.pow(opts.backoffMultiplier, attempt - 1),
           opts.backoffMultiplier,
           opts.maxDelay,
-          opts.jitter!
+          opts.jitter!,
         );
 
         // Call onRetry callback if provided
@@ -72,7 +77,7 @@ class RetryService {
         console.warn(`Attempt ${attempt} failed, retrying in ${delay}ms...`, error);
 
         // Wait before retrying
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
 
@@ -82,7 +87,7 @@ class RetryService {
   // Specialized method for API calls with default retry logic
   async executeApiCall<T>(
     apiCall: () => Promise<T>,
-    customOptions: Partial<RetryOptions> = {}
+    customOptions: Partial<RetryOptions> = {},
   ): Promise<T> {
     const options: RetryOptions = {
       maxAttempts: 3,
@@ -96,8 +101,12 @@ class RetryService {
         const status = error?.status || error?.code;
 
         // Network and timeout errors
-        if (error?.code === 'NETWORK_ERROR' || error?.code === 'TIMEOUT' ||
-            message.includes('network') || message.includes('timeout')) {
+        if (
+          error?.code === 'NETWORK_ERROR' ||
+          error?.code === 'TIMEOUT' ||
+          message.includes('network') ||
+          message.includes('timeout')
+        ) {
           return true;
         }
 
@@ -114,9 +123,11 @@ class RetryService {
         return false;
       },
       onRetry: (attempt, error, delay) => {
-        console.log(`🔄 API Call Retry: ${attempt}/${options.maxAttempts} in ${delay}ms - ${error.message}`);
+        console.log(
+          `🔄 API Call Retry: ${attempt}/${options.maxAttempts} in ${delay}ms - ${error.message}`,
+        );
       },
-      ...customOptions
+      ...customOptions,
     };
 
     return this.executeWithRetry(apiCall, options);
@@ -125,7 +136,7 @@ class RetryService {
   // Specialized method for AI operations with enhanced retry
   async executeAIOperation<T>(
     aiOperation: () => Promise<T>,
-    operationName: string = 'AI Operation'
+    operationName: string = 'AI Operation',
   ): Promise<T> {
     const options: RetryOptions = {
       maxAttempts: 5, // More attempts for AI operations
@@ -157,7 +168,7 @@ class RetryService {
       onRetry: (attempt, error, delay) => {
         console.log(`🤖 ${operationName}: Attempt ${attempt}/5 failed, retrying in ${delay}ms`);
         console.warn(`   Error: ${error.message}`);
-      }
+      },
     };
 
     try {
@@ -166,7 +177,9 @@ class RetryService {
       console.log(`✅ ${operationName} completed successfully`);
       return result;
     } catch (error) {
-      const finalError = new Error(`${operationName} failed after all retry attempts: ${error.message}`);
+      const finalError = new Error(
+        `${operationName} failed after all retry attempts: ${error.message}`,
+      );
       finalError.name = 'AIRetryError';
       (finalError as any).originalError = error;
       throw finalError;

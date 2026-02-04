@@ -6,21 +6,54 @@ import { PlusCircleIcon, CheckCircleIcon, XIcon, Trash2Icon } from './icons';
 
 // Simple icons for missing ones
 const PencilIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
     <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z" />
   </svg>
 );
 
 const CogIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
     <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1m16.24-3.76a3 3 0 0 0-4.24 0l-1.42 1.42a3 3 0 0 1-4.24 0L7.76 4.24a3 3 0 0 0 0 4.24l1.42 1.42a3 3 0 0 1 0 4.24l-1.42 1.42a3 3 0 0 0 0 4.24l2.83 2.83a3 3 0 0 0 4.24 0l1.42-1.42a3 3 0 0 1 4.24 0l1.42 1.42a3 3 0 0 0 4.24 0l2.83-2.83a3 3 0 0 0 0-4.24l-1.42-1.42a3 3 0 0 1 0-4.24l1.42-1.42a3 3 0 0 0 0-4.24L19.07 2.93a3 3 0 0 0-4.24 0z" />
     <circle cx="12" cy="12" r="3" />
   </svg>
 );
 
 const ExternalLinkIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
     <polyline points="15,3 21,3 21,9" />
     <line x1="10" y1="14" x2="21" y2="3" />
@@ -136,9 +169,7 @@ const ProviderForm: React.FC<{
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-brand-text-primary mb-1">
-            Base URL
-          </label>
+          <label className="block text-sm font-medium text-brand-text-primary mb-1">Base URL</label>
           <input
             type="url"
             value={formData.baseUrl}
@@ -162,22 +193,25 @@ const ProviderForm: React.FC<{
 
         <div>
           <label className="block text-sm font-medium text-brand-text-primary mb-1">
-            API Key {formData.type === 'ollama' && <span className="text-xs text-brand-text-secondary">(not required for local Ollama)</span>}
+            API Key{' '}
+            {formData.type === 'ollama' && (
+              <span className="text-xs text-brand-text-secondary">
+                (not required for local Ollama)
+              </span>
+            )}
           </label>
           <input
             type="password"
             value={formData.apiKey}
             onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
             className="w-full px-3 py-2 border border-brand-border rounded-md bg-brand-surface text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
-            placeholder={formData.type === 'ollama' ? "Leave empty for local Ollama" : "sk-..."}
+            placeholder={formData.type === 'ollama' ? 'Leave empty for local Ollama' : 'sk-...'}
             required={formData.type !== 'ollama'}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-brand-text-primary mb-1">
-            Model
-          </label>
+          <label className="block text-sm font-medium text-brand-text-primary mb-1">Model</label>
           <input
             type="text"
             value={formData.model}
@@ -194,9 +228,7 @@ const ProviderForm: React.FC<{
         </div>
 
         <div className="flex gap-3 pt-4">
-          <Button type="submit">
-            {provider ? 'Update Provider' : 'Add Provider'}
-          </Button>
+          <Button type="submit">{provider ? 'Update Provider' : 'Add Provider'}</Button>
           <Button type="button" variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
@@ -246,9 +278,7 @@ const ProviderCard: React.FC<{
             )}
           </div>
           <p className="text-sm text-brand-text-secondary">{config.name}</p>
-          <p className="text-xs text-brand-text-secondary mt-1">
-            Model: {provider.model}
-          </p>
+          <p className="text-xs text-brand-text-secondary mt-1">Model: {provider.model}</p>
           <p className="text-xs text-brand-text-secondary">
             Added: {new Date(provider.createdAt).toLocaleDateString()}
           </p>
@@ -309,7 +339,16 @@ const ProviderCard: React.FC<{
 };
 
 export const SettingsView: React.FC = () => {
-  const { settings, activeProvider, addProvider, updateProvider, deleteProvider, setActiveProvider, error, clearError } = useSettings();
+  const {
+    settings,
+    activeProvider,
+    addProvider,
+    updateProvider,
+    deleteProvider,
+    setActiveProvider,
+    error,
+    clearError,
+  } = useSettings();
   const [showForm, setShowForm] = useState(false);
   const [editingProvider, setEditingProvider] = useState<APIProvider | undefined>();
 
@@ -354,10 +393,7 @@ export const SettingsView: React.FC = () => {
       {error && (
         <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-md">
           <p className="text-red-400 text-sm">{error}</p>
-          <button
-            onClick={clearError}
-            className="mt-2 text-xs text-red-300 hover:text-red-200"
-          >
+          <button onClick={clearError} className="mt-2 text-xs text-red-300 hover:text-red-200">
             Dismiss
           </button>
         </div>

@@ -25,12 +25,18 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSelect, onExpor
 
   return (
     <Card className="flex flex-col h-full">
-      <h3 className="text-lg font-semibold text-brand-primary-hover mb-2">{template.projectName}</h3>
-      <p className="text-sm text-brand-text-secondary flex-grow mb-4">{template.shortDescription}</p>
+      <h3 className="text-lg font-semibold text-brand-primary-hover mb-2">
+        {template.projectName}
+      </h3>
+      <p className="text-sm text-brand-text-secondary flex-grow mb-4">
+        {template.shortDescription}
+      </p>
       <div className="mb-4">
-        <h4 className="text-xs font-semibold text-brand-text-secondary uppercase tracking-wider mb-2">Key Technologies</h4>
+        <h4 className="text-xs font-semibold text-brand-text-secondary uppercase tracking-wider mb-2">
+          Key Technologies
+        </h4>
         <div className="flex flex-wrap gap-2">
-          {allTech.slice(0, 4).map(tech => (
+          {allTech.slice(0, 4).map((tech) => (
             <Tag key={tech}>{tech}</Tag>
           ))}
           {allTech.length > 4 && <Tag>+{allTech.length - 4} more</Tag>}
@@ -61,10 +67,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ onSelectTemplate }
   const [searchTerm, setSearchTerm] = useState('');
   const { currentProject } = useProjects();
 
-  const allTemplates = useMemo(
-    () => [...projectTemplates, ...customTemplates],
-    [customTemplates]
-  );
+  const allTemplates = useMemo(() => [...projectTemplates, ...customTemplates], [customTemplates]);
 
   const filteredTemplates = useMemo(() => {
     return allTemplates.filter((template) => {
@@ -140,7 +143,9 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ onSelectTemplate }
         setCustomTemplates(importedTemplates);
         setError(null);
       } catch (err) {
-        setError(`Failed to import templates: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        setError(
+          `Failed to import templates: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        );
       }
     };
     reader.readAsText(file);
@@ -181,15 +186,17 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ onSelectTemplate }
         }
 
         // Check if template with same name already exists
-        const existingNames = allTemplates.map(t => t.projectName);
+        const existingNames = allTemplates.map((t) => t.projectName);
         if (existingNames.includes(importedTemplate.projectName)) {
           throw new Error(`Template with name "${importedTemplate.projectName}" already exists`);
         }
 
-        setCustomTemplates(prev => [...prev, importedTemplate]);
+        setCustomTemplates((prev) => [...prev, importedTemplate]);
         setError(null);
       } catch (err) {
-        setError(`Failed to import template: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        setError(
+          `Failed to import template: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        );
       }
     };
     reader.readAsText(file);
@@ -239,15 +246,23 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ onSelectTemplate }
       <header className="mb-8 text-center">
         <h2 className="text-3xl font-bold text-brand-text-primary">Project Templates</h2>
         <p className="text-brand-text-secondary mt-2 max-w-2xl mx-auto">
-          Kickstart your planning process with a predefined template. Select a foundation that best fits your project, then customize it before generating your AI-powered plan.
+          Kickstart your planning process with a predefined template. Select a foundation that best
+          fits your project, then customize it before generating your AI-powered plan.
         </p>
         <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 rounded-xl border-2 border-dashed border-blue-200 dark:border-blue-700">
           <div className="text-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Template Management</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Export/import templates individually or in bulk</p>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
+              Template Management
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Export/import templates individually or in bulk
+            </p>
           </div>
           <div className="flex justify-center gap-4 flex-wrap">
-            <Button onClick={handleExportTemplates} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 text-white font-medium">
+            <Button
+              onClick={handleExportTemplates}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 text-white font-medium"
+            >
               <DownloadIcon className="h-4 w-4" />
               Export All
             </Button>
@@ -259,7 +274,11 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ onSelectTemplate }
                 className="absolute inset-0 opacity-0 cursor-pointer"
                 id="import-templates"
               />
-              <Button as="label" htmlFor="import-templates" className="flex items-center gap-2 cursor-pointer bg-green-600 hover:bg-green-700 px-4 py-2 text-white font-medium">
+              <Button
+                as="label"
+                htmlFor="import-templates"
+                className="flex items-center gap-2 cursor-pointer bg-green-600 hover:bg-green-700 px-4 py-2 text-white font-medium"
+              >
                 <UploadIcon className="h-4 w-4" />
                 Import Multiple
               </Button>
@@ -272,7 +291,11 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ onSelectTemplate }
                 className="absolute inset-0 opacity-0 cursor-pointer"
                 id="import-single-template"
               />
-              <Button as="label" htmlFor="import-single-template" className="flex items-center gap-2 cursor-pointer bg-purple-600 hover:bg-purple-700 px-4 py-2 text-white font-medium">
+              <Button
+                as="label"
+                htmlFor="import-single-template"
+                className="flex items-center gap-2 cursor-pointer bg-purple-600 hover:bg-purple-700 px-4 py-2 text-white font-medium"
+              >
                 <UploadIcon className="h-4 w-4" />
                 Import Single
               </Button>
@@ -286,9 +309,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ onSelectTemplate }
             </Button>
           </div>
         </div>
-        {error && (
-          <p className="text-red-500 mt-4">{error}</p>
-        )}
+        {error && <p className="text-red-500 mt-4">{error}</p>}
       </header>
       <section className="mb-6 flex flex-wrap items-center gap-4 justify-between">
         <div className="flex flex-wrap gap-3 items-center">

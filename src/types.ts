@@ -180,7 +180,10 @@ export interface ProjectsContextType {
   loadProject: (projectId: string) => void;
   deleteProject: (projectId: string) => void;
   updateCurrentProjectPlan: (newPlan: ProjectPlan) => void;
-  updateCurrentProjectFeatures: (featureIndex: number, updatedFeature: FeatureSpecification) => void;
+  updateCurrentProjectFeatures: (
+    featureIndex: number,
+    updatedFeature: FeatureSpecification,
+  ) => void;
   updateCurrentProjectDevPlan: (newMilestones: Milestone[]) => void;
   restoreProjectVersion: (entry: PlanHistoryEntry) => void;
   clearCurrentProject: () => void;

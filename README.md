@@ -31,29 +31,34 @@ An AI-powered web platform that transforms project ideas into comprehensive, act
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+ and npm
 - Gemini API key from Google AI Studio
 
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/yana-arch/plannify-ai.git
    cd plannify-ai
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp .env.local.example .env.local
    # Edit .env.local and add your Gemini API key
    ```
 
 4. **Start development server**
+
    ```bash
    npm run dev
    ```
@@ -92,16 +97,19 @@ src/
 ## 🔧 Development
 
 ### Code Quality
+
 - **TypeScript** for type safety
 - **ESLint** for code linting (when available)
 - **Prettier** for code formatting (when available)
 
 ### Testing
+
 - **Jest** with **React Testing Library** for unit and integration tests
 - **jsdom** for DOM environment in tests
 - **Test coverage** reports generated automatically
 
 ### Performance Optimizations
+
 - **Code splitting** with React.lazy()
 - **Caching** for AI API responses
 - **Retry logic** with exponential backoff

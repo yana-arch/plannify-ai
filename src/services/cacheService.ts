@@ -27,7 +27,7 @@ class CacheService {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
         const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
+        hash = (hash << 5) - hash + char;
         hash = hash & hash; // Convert to 32-bit integer
       }
       return Math.abs(hash).toString(36).slice(0, 16);
@@ -50,8 +50,9 @@ class CacheService {
 
     // If still too large, remove oldest entries (LRU)
     if (this.cache.size > this.MAX_CACHE_SIZE) {
-      const entries = Array.from(this.cache.entries())
-        .sort(([,a], [,b]) => (b.accessCount || 0) - (a.accessCount || 0));
+      const entries = Array.from(this.cache.entries()).sort(
+        ([, a], [, b]) => (b.accessCount || 0) - (a.accessCount || 0),
+      );
 
       while (this.cache.size > this.MAX_CACHE_SIZE) {
         const [oldestKey] = entries.pop()!;
@@ -75,7 +76,7 @@ class CacheService {
       timestamp,
       expiresAt,
       size: sizeEstimate,
-      accessCount: 0
+      accessCount: 0,
     });
   }
 
@@ -148,7 +149,7 @@ class CacheService {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
         const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
+        hash = (hash << 5) - hash + char;
         hash = hash & hash; // Convert to 32-bit integer
       }
       return Math.abs(hash).toString(36).slice(0, 32);
