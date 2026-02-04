@@ -10,6 +10,7 @@ import type {
   SavedProject,
 } from '../types';
 import { Card, Button, Modal } from './ui';
+import { AIReviewTab } from './AIReviewTab';
 import {
   DownloadIcon,
   WandSparklesIcon,
@@ -118,6 +119,7 @@ const PlanSubNav: React.FC<{ activeTab: string; setActiveTab: (tab: string) => v
     'Database',
     'Workflow',
     'Reports',
+    'Review',
     'History',
   ];
   return (
@@ -1312,7 +1314,9 @@ export const ProjectPlanView: React.FC<{ project: SavedProject }> = ({ project }
       case 'Workflow':
         return <EditableWorkflowTab plan={projectPlan} projectContext={projectContext} />;
       case 'Reports':
-        return <ReportsTab plan={projectPlan} projectName={projectName} />;
+        return <ReportsTab plan={project.projectPlan} projectName={project.projectName} />;
+      case 'Review':
+        return <AIReviewTab plan={project.projectPlan} projectName={project.projectName} />;
       case 'History':
         return <HistoryTab history={history || []} />;
       default:

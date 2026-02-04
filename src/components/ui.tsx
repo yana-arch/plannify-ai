@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 // Input Component
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
+  label?: string;
   error?: boolean;
   loading?: boolean;
 }
@@ -15,9 +15,11 @@ export const Input: React.FC<InputProps> = ({
   ...props
 }) => (
   <div>
-    <label htmlFor={id} className="block text-sm font-medium text-brand-text-secondary mb-1">
-      {label}
-    </label>
+    {label && (
+      <label htmlFor={id} className="block text-sm font-medium text-brand-text-secondary mb-1">
+        {label}
+      </label>
+    )}
     <div className="relative">
       <input
         id={id}
@@ -39,7 +41,7 @@ export const Input: React.FC<InputProps> = ({
 
 // Textarea Component
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  label: string;
+  label?: string;
   error?: boolean;
   loading?: boolean;
 }
@@ -52,9 +54,11 @@ export const Textarea: React.FC<TextareaProps> = ({
   ...props
 }) => (
   <div>
-    <label htmlFor={id} className="block text-sm font-medium text-brand-text-secondary mb-1">
-      {label}
-    </label>
+    {label && (
+      <label htmlFor={id} className="block text-sm font-medium text-brand-text-secondary mb-1">
+        {label}
+      </label>
+    )}
     <div className="relative">
       <textarea
         id={id}
@@ -158,6 +162,28 @@ export const Tag: React.FC<{
     )}
   </span>
 );
+
+// Badge Component
+export const Badge: React.FC<{
+  children: React.ReactNode;
+  variant?: 'default' | 'success' | 'warning' | 'danger';
+  className?: string;
+}> = ({ children, variant = 'default', className }) => {
+  const variants = {
+    default: 'bg-brand-primary/10 text-brand-primary',
+    success: 'bg-green-500/10 text-green-500',
+    warning: 'bg-yellow-500/10 text-yellow-500',
+    danger: 'bg-red-500/10 text-red-500',
+  };
+  
+  return (
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variants[variant]} ${className}`}
+    >
+      {children}
+    </span>
+  );
+};
 
 // Modal Component
 interface ModalProps {

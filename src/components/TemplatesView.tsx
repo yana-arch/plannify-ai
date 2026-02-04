@@ -274,14 +274,13 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ onSelectTemplate }
                 className="absolute inset-0 opacity-0 cursor-pointer"
                 id="import-templates"
               />
-              <Button
-                as="label"
+        <label
                 htmlFor="import-templates"
-                className="flex items-center gap-2 cursor-pointer bg-green-600 hover:bg-green-700 px-4 py-2 text-white font-medium"
+                className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-brand-bg disabled:opacity-50 disabled:pointer-events-none gap-2 cursor-pointer bg-green-600 hover:bg-green-700 text-white"
               >
                 <UploadIcon className="h-4 w-4" />
                 Import Multiple
-              </Button>
+              </label>
             </div>
             <div className="relative">
               <input
@@ -291,14 +290,13 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ onSelectTemplate }
                 className="absolute inset-0 opacity-0 cursor-pointer"
                 id="import-single-template"
               />
-              <Button
-                as="label"
+        <label
                 htmlFor="import-single-template"
-                className="flex items-center gap-2 cursor-pointer bg-purple-600 hover:bg-purple-700 px-4 py-2 text-white font-medium"
+                className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-brand-bg disabled:opacity-50 disabled:pointer-events-none gap-2 cursor-pointer bg-purple-600 hover:bg-purple-700 text-white"
               >
                 <UploadIcon className="h-4 w-4" />
                 Import Single
-              </Button>
+              </label>
             </div>
             <Button
               onClick={handleSaveCurrentProjectAsTemplate}

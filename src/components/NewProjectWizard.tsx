@@ -888,10 +888,15 @@ const Step7RiskAssessmentAndMetrics: React.FC<{
   data: ProjectInputData;
   update: (field: keyof ProjectInputData, value: unknown) => void;
 }> = ({ data, update }) => {
-  const [newRisk, setNewRisk] = useState({
+  const [newRisk, setNewRisk] = useState<{
+    risk: string;
+    impact: 'Low' | 'Medium' | 'High';
+    probability: 'Low' | 'Medium' | 'High';
+    mitigation: string;
+  }>({
     risk: '',
-    impact: 'Medium' as const,
-    probability: 'Medium' as const,
+    impact: 'Medium',
+    probability: 'Medium',
     mitigation: '',
   });
   const [newMetric, setNewMetric] = useState({ metric: '', target: '', timeframe: '' });

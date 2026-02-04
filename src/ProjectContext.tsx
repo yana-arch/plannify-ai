@@ -173,6 +173,29 @@ export const ProjectsProvider: React.FC<{ children: ReactNode }> = ({ children }
     setCurrentProjectId(null);
   };
 
+  const importProject = (project: SavedProject) => {
+    // Validate project structure (basic check)
+    if (!project.id || !project.projectName || !project.projectPlan) {
+      setError('Invalid project file format.');
+      return;
+    }
+
+    // Check if project already exists to avoid duplicates (optional, or overwrite)
+    // For now, let's treat it as a new import or update if ID matches
+    const existingIndex = projects.findIndex(p => p.id === project.id);
+    let updatedProjects: SavedProject[];
+
+    if (existingIndex >= 0) {
+      updatedProjects = [...projects];
+      updatedProjects[existingIndex] = project;
+    } else {
+      updatedProjects = [...projects, project];
+    }
+    
+    saveProjectsToStorage(updatedProjects);
+    setCurrentProjectId(project.id);
+  };
+
   const currentProject = useMemo(() => {
     return projects.find((p) => p.id === currentProjectId) || null;
   }, [currentProjectId, projects]);
@@ -190,6 +213,7 @@ export const ProjectsProvider: React.FC<{ children: ReactNode }> = ({ children }
     updateCurrentProjectDevPlan,
     restoreProjectVersion,
     clearCurrentProject,
+    importProject,
   };
 
   return <ProjectsContext.Provider value={value}>{children}</ProjectsContext.Provider>;

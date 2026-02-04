@@ -1143,6 +1143,78 @@ const buildFixMermaidPrompt = (
   `;
 };
 
+export const critiqueSchema = {
+  type: Type.OBJECT,
+  properties: {
+    strengths: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: 'List of strong points in the plan',
+    },
+    weaknesses: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: 'List of weak points or risks',
+    },
+    suggestions: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: 'Actionable suggestions for improvement',
+    },
+    score: {
+      type: Type.NUMBER,
+      description: 'Overall score out of 100',
+    },
+  },
+  required: ['strengths', 'weaknesses', 'suggestions', 'score'],
+};
+
+export const generateCritique = async (
+  plan: ProjectPlan,
+  projectName: string,
+  persona: string,
+  provider: APIProvider,
+): Promise<{ strengths: string[]; weaknesses: string[]; suggestions: string[]; score: number }> => {
+  const aiService = new AIService(provider);
+
+  const prompt = `
+    You are acting as a ${persona}. Review the following project plan critically.
+    
+    Project Name: ${projectName}
+    Summary: ${plan.summary}
+    Key Components: ${plan.keyComponents.join(', ')}
+    Tech Stack: ${JSON.stringify(plan.recommendedTechStack)}
+    
+    Identify strengths, weaknesses, and provide actionable suggestions. Give an overall score (0-100).
+    Be specific to your persona.
+  `;
+
+  try {
+    const result = await aiService.generateContent(prompt, {
+      responseMimeType: 'application/json',
+      responseSchema: critiqueSchema,
+    });
+
+    // Parse result similarly to other functions
+    let jsonText: string;
+    if (provider.type === 'gemini') {
+      jsonText = result.text.trim();
+    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
+      jsonText = result.choices?.[0]?.message?.content || result.content?.[0]?.text || '';
+    } else if (provider.type === 'ollama') {
+      jsonText = result.response || '';
+    } else {
+      jsonText = result.text || result.content || '';
+    }
+
+    jsonText = cleanMarkdownCodeBlocks(jsonText);
+    return JSON.parse(jsonText);
+  } catch (error) {
+    console.error('Critique generation failed:', error);
+    throw error;
+  }
+};
+
 export const fixMermaidCode = async (
   faultyCode: string,
   diagramType: string,

@@ -168,7 +168,14 @@ export interface SavedProject {
   createdAt: string;
   inputData: ProjectInputData;
   projectPlan: ProjectPlan;
-  history: PlanHistoryEntry[];
+  history?: PlanHistoryEntry[];
+}
+
+export interface CritiqueResult {
+  strengths: string[];
+  weaknesses: string[];
+  suggestions: string[];
+  score: number;
 }
 
 export interface ProjectsContextType {
@@ -179,6 +186,7 @@ export interface ProjectsContextType {
   createNewProject: (data: ProjectInputData) => Promise<string | null>;
   loadProject: (projectId: string) => void;
   deleteProject: (projectId: string) => void;
+  importProject: (project: SavedProject) => void;
   updateCurrentProjectPlan: (newPlan: ProjectPlan) => void;
   updateCurrentProjectFeatures: (
     featureIndex: number,

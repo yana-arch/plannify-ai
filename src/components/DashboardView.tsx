@@ -40,8 +40,36 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onNewProject,
   onScreenChange,
 }) => {
-  const { projects } = useProjects();
+  const { projects, importProject } = useProjects();
   const [insight, setInsight] = useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const project = JSON.parse(content);
+        importProject(project);
+        // Refresh view or show success? importProject sets current project so we could nav to plan
+        // But dashboard usually stays on dashboard. New project will appear in list.
+        alert('Project imported successfully!');
+      } catch (error) {
+        console.error('Import failed:', error);
+        alert('Failed to import project. Invalid file format.');
+      }
+    };
+    reader.readAsText(file);
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   useEffect(() => {
     setInsight(insights[Math.floor(Math.random() * insights.length)]);
@@ -78,6 +106,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* Quick Actions */}
         <div className="flex flex-col gap-6">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept=".json"
+            className="hidden"
+          />
+          <Card className="flex items-center gap-4 hover:border-brand-primary/50 transition-colors">
+            <div className="p-3 bg-brand-border rounded-lg">
+              <CopyIcon className="h-6 w-6 text-brand-primary-hover" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-brand-text-primary">Import Project</h3>
+              <button
+                onClick={handleImportClick}
+                className="text-sm text-brand-primary hover:underline"
+              >
+                Restore from JSON
+              </button>
+            </div>
+          </Card>
           <Card className="flex items-center gap-4 hover:border-brand-primary/50 transition-colors">
             <div className="p-3 bg-brand-border rounded-lg">
               <CopyIcon className="h-6 w-6 text-brand-primary-hover" />
