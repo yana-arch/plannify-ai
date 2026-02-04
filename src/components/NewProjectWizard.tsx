@@ -497,25 +497,35 @@ const Step4CoreModules: React.FC<{
   data: ProjectInputData;
   update: (field: keyof ProjectInputData, value: unknown) => void;
 }> = ({ data, update }) => {
-  const [newModule, setNewModule] = useState({ name: '', description: '', flows: [''] });
+  const [activeTab, setActiveTab] = useState(0);
+
+  // Ensure activeTab is valid when modules change
+  useEffect(() => {
+    if (data.coreModules && data.coreModules.length > 0) {
+      if (activeTab >= data.coreModules.length) {
+        setActiveTab(Math.max(0, data.coreModules.length - 1));
+      }
+    }
+  }, [data.coreModules?.length, activeTab]);
 
   const addModule = () => {
-    if (!newModule.name.trim()) return;
-    const module = {
-      moduleName: newModule.name.trim(),
-      description: newModule.description.trim(),
-      flows: newModule.flows.filter((f) => f.trim()),
+    const newMod = {
+      moduleName: 'New Module',
+      description: '',
+      flows: [],
     };
-    update('coreModules', [...(data.coreModules || []), module]);
-    setNewModule({ name: '', description: '', flows: [''] });
+    const newModules = [...(data.coreModules || []), newMod];
+    update('coreModules', newModules);
+    setActiveTab(newModules.length - 1);
   };
 
   const removeModule = (index: number) => {
     const modules = data.coreModules || [];
-    update(
-      'coreModules',
-      modules.filter((_, i) => i !== index),
-    );
+    const newModules = modules.filter((_, i) => i !== index);
+    update('coreModules', newModules);
+    if (activeTab >= newModules.length) {
+      setActiveTab(Math.max(0, newModules.length - 1));
+    }
   };
 
   const updateModule = (index: number, field: string, value: string) => {
@@ -526,6 +536,7 @@ const Step4CoreModules: React.FC<{
 
   const addFlow = (moduleIndex: number) => {
     const modules = data.coreModules || [];
+    if (!modules[moduleIndex].flows) modules[moduleIndex].flows = [];
     modules[moduleIndex].flows.push('');
     update('coreModules', [...modules]);
   };
@@ -542,93 +553,106 @@ const Step4CoreModules: React.FC<{
     update('coreModules', [...modules]);
   };
 
+  const currentModule = data.coreModules?.[activeTab];
+
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-brand-text-primary mb-2">Core Modules</h3>
-        <p className="text-sm text-brand-text-secondary mb-4">
-          Define the main modules/components of your system
-        </p>
+        {/* Tabs Header */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-brand-border mb-4">
+          {(data.coreModules || []).map((module, index) => (
+            <button
+              key={index}
+              onClick={() => setActiveTab(index)}
+              className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                activeTab === index
+                  ? 'bg-brand-primary/10 text-brand-primary border-b-2 border-brand-primary'
+                  : 'text-brand-text-secondary hover:text-brand-text-primary hover:bg-brand-surface'
+              }`}
+            >
+              {module.moduleName || `Module ${index + 1}`}
+            </button>
+          ))}
+          <Button variant="secondary" onClick={addModule} className="!p-2 flex-shrink-0">
+            <PlusCircleIcon className="h-4 w-4 mr-1" />
+            Add
+          </Button>
+        </div>
 
-        {(data.coreModules || []).map((module, moduleIndex) => (
-          <Card key={moduleIndex} className="mb-4">
-            <div className="flex justify-between items-start mb-3">
-              <h4 className="font-medium text-brand-text-primary">Module {moduleIndex + 1}</h4>
+        {/* Active Tab Content */}
+        {currentModule ? (
+          <Card key={activeTab} className="animate-fadeIn">
+            <div className="flex justify-between items-start mb-4">
+              <h4 className="font-medium text-brand-text-primary">
+                Editing: {currentModule.moduleName || 'Untitled Module'}
+              </h4>
               <Button
-                variant="secondary"
-                onClick={() => removeModule(moduleIndex)}
-                className="!p-2"
+                variant="danger"
+                onClick={() => removeModule(activeTab)}
+                className="!py-1 !px-3 text-xs"
               >
-                <XIcon className="h-4 w-4" />
+                Delete Module
               </Button>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Input
                 label="Module Name"
-                value={module.moduleName}
-                onChange={(e) => updateModule(moduleIndex, 'moduleName', e.target.value)}
+                value={currentModule.moduleName}
+                onChange={(e) => updateModule(activeTab, 'moduleName', e.target.value)}
+                placeholder="e.g., User Authentication"
               />
               <Textarea
                 label="Description"
-                value={module.description}
-                onChange={(e) => updateModule(moduleIndex, 'description', e.target.value)}
-                rows={2}
+                value={currentModule.description}
+                onChange={(e) => updateModule(activeTab, 'description', e.target.value)}
+                rows={3}
+                placeholder="Describe what this module does..."
               />
               <div>
                 <label className="block text-sm font-medium text-brand-text-secondary mb-2">
-                  Flows
+                  Key Flows
                 </label>
-                {module.flows.map((flow, flowIndex) => (
-                  <div key={flowIndex} className="flex gap-2 mb-2">
-                    <Input
-                      label=""
-                      value={flow}
-                      onChange={(e) => updateFlow(moduleIndex, flowIndex, e.target.value)}
-                      placeholder="Flow name"
-                      className="flex-grow"
-                    />
-                    <Button
-                      variant="secondary"
-                      onClick={() => removeFlow(moduleIndex, flowIndex)}
-                      className="!p-2"
-                    >
-                      <XIcon className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                <div className="space-y-2">
+                  {(currentModule.flows || []).map((flow, flowIndex) => (
+                    <div key={flowIndex} className="flex gap-2">
+                      <div className="flex-grow">
+                        <Input
+                          label=""
+                          value={flow}
+                          onChange={(e) => updateFlow(activeTab, flowIndex, e.target.value)}
+                          placeholder="e.g., User Login Flow"
+                        />
+                      </div>
+                      <Button
+                        variant="secondary"
+                        onClick={() => removeFlow(activeTab, flowIndex)}
+                        className="!p-2"
+                      >
+                        <XIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
                 <Button
                   variant="secondary"
-                  onClick={() => addFlow(moduleIndex)}
-                  className="text-sm"
+                  onClick={() => addFlow(activeTab)}
+                  className="text-sm mt-2"
                 >
+                  <PlusCircleIcon className="h-4 w-4 mr-2" />
                   Add Flow
                 </Button>
               </div>
             </div>
           </Card>
-        ))}
-
-        <Card className="bg-brand-bg/50">
-          <h4 className="font-medium text-brand-text-primary mb-3">Add New Module</h4>
-          <div className="space-y-3">
-            <Input
-              label="Module Name"
-              value={newModule.name}
-              onChange={(e) => setNewModule((prev) => ({ ...prev, name: e.target.value }))}
-            />
-            <Textarea
-              label="Description"
-              value={newModule.description}
-              onChange={(e) => setNewModule((prev) => ({ ...prev, description: e.target.value }))}
-              rows={2}
-            />
-            <div className="flex justify-end">
-              <Button onClick={addModule} disabled={!newModule.name.trim()}>
-                Add Module
-              </Button>
-            </div>
+        ) : (
+          <div className="text-center py-10 bg-brand-surface/30 rounded-lg border border-dashed border-brand-border">
+            <p className="text-brand-text-secondary mb-4">No modules defined yet.</p>
+            <Button onClick={addModule}>
+              <PlusCircleIcon className="h-5 w-5 mr-2" />
+              Create First Module
+            </Button>
           </div>
-        </Card>
+        )}
       </div>
     </div>
   );
@@ -639,24 +663,34 @@ const Step5RolePermissions: React.FC<{
   data: ProjectInputData;
   update: (field: keyof ProjectInputData, value: unknown) => void;
 }> = ({ data, update }) => {
-  const [newRole, setNewRole] = useState({ role: '', permissions: [''] });
+  const [activeTab, setActiveTab] = useState(0);
+
+  // Ensure activeTab is valid
+  useEffect(() => {
+    if (data.rolePermissions && data.rolePermissions.length > 0) {
+      if (activeTab >= data.rolePermissions.length) {
+        setActiveTab(Math.max(0, data.rolePermissions.length - 1));
+      }
+    }
+  }, [data.rolePermissions?.length, activeTab]);
 
   const addRole = () => {
-    if (!newRole.role.trim()) return;
-    const role = {
-      role: newRole.role.trim(),
-      permissions: newRole.permissions.filter((p) => p.trim()),
+    const newRoleObj = {
+      role: 'New Role',
+      permissions: [],
     };
-    update('rolePermissions', [...(data.rolePermissions || []), role]);
-    setNewRole({ role: '', permissions: [''] });
+    const newRoles = [...(data.rolePermissions || []), newRoleObj];
+    update('rolePermissions', newRoles);
+    setActiveTab(newRoles.length - 1);
   };
 
   const removeRole = (index: number) => {
     const roles = data.rolePermissions || [];
-    update(
-      'rolePermissions',
-      roles.filter((_, i) => i !== index),
-    );
+    const newRoles = roles.filter((_, i) => i !== index);
+    update('rolePermissions', newRoles);
+    if (activeTab >= newRoles.length) {
+      setActiveTab(Math.max(0, newRoles.length - 1));
+    }
   };
 
   const updateRole = (index: number, field: string, value: string) => {
@@ -667,6 +701,7 @@ const Step5RolePermissions: React.FC<{
 
   const addPermission = (roleIndex: number) => {
     const roles = data.rolePermissions || [];
+    if (!roles[roleIndex].permissions) roles[roleIndex].permissions = [];
     roles[roleIndex].permissions.push('');
     update('rolePermissions', [...roles]);
   };
@@ -683,77 +718,99 @@ const Step5RolePermissions: React.FC<{
     update('rolePermissions', [...roles]);
   };
 
+  const currentRole = data.rolePermissions?.[activeTab];
+
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-brand-text-primary mb-2">Role & Permissions</h3>
-        <p className="text-sm text-brand-text-secondary mb-4">
-          Define user roles and their permissions
-        </p>
+        {/* Tabs Header */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-brand-border mb-4">
+          {(data.rolePermissions || []).map((role, index) => (
+            <button
+              key={index}
+              onClick={() => setActiveTab(index)}
+              className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                activeTab === index
+                  ? 'bg-brand-primary/10 text-brand-primary border-b-2 border-brand-primary'
+                  : 'text-brand-text-secondary hover:text-brand-text-primary hover:bg-brand-surface'
+              }`}
+            >
+              {role.role || `Role ${index + 1}`}
+            </button>
+          ))}
+          <Button variant="secondary" onClick={addRole} className="!p-2 flex-shrink-0">
+            <PlusCircleIcon className="h-4 w-4 mr-1" />
+            Add
+          </Button>
+        </div>
 
-        {(data.rolePermissions || []).map((role, roleIndex) => (
-          <Card key={roleIndex} className="mb-4">
-            <div className="flex justify-between items-start mb-3">
-              <h4 className="font-medium text-brand-text-primary">Role {roleIndex + 1}</h4>
-              <Button variant="secondary" onClick={() => removeRole(roleIndex)} className="!p-2">
-                <XIcon className="h-4 w-4" />
+        {/* Active Tab Content */}
+        {currentRole ? (
+          <Card key={activeTab} className="animate-fadeIn">
+            <div className="flex justify-between items-start mb-4">
+              <h4 className="font-medium text-brand-text-primary">
+                Editing: {currentRole.role || 'Untitled Role'}
+              </h4>
+              <Button
+                variant="danger"
+                onClick={() => removeRole(activeTab)}
+                className="!py-1 !px-3 text-xs"
+              >
+                Delete Role
               </Button>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Input
                 label="Role Name"
-                value={role.role}
-                onChange={(e) => updateRole(roleIndex, 'role', e.target.value)}
+                value={currentRole.role}
+                onChange={(e) => updateRole(activeTab, 'role', e.target.value)}
+                placeholder="e.g., Administrator, User"
               />
               <div>
                 <label className="block text-sm font-medium text-brand-text-secondary mb-2">
                   Permissions
                 </label>
-                {role.permissions.map((permission, permIndex) => (
-                  <div key={permIndex} className="flex gap-2 mb-2">
-                    <Input
-                      label=""
-                      value={permission}
-                      onChange={(e) => updatePermission(roleIndex, permIndex, e.target.value)}
-                      placeholder="Permission description"
-                      className="flex-grow"
-                    />
-                    <Button
-                      variant="secondary"
-                      onClick={() => removePermission(roleIndex, permIndex)}
-                      className="!p-2"
-                    >
-                      <XIcon className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                <div className="space-y-2">
+                  {(currentRole.permissions || []).map((permission, permIndex) => (
+                    <div key={permIndex} className="flex gap-2">
+                      <div className="flex-grow">
+                        <Input
+                          label=""
+                          value={permission}
+                          onChange={(e) => updatePermission(activeTab, permIndex, e.target.value)}
+                          placeholder="e.g., Can manage users"
+                        />
+                      </div>
+                      <Button
+                        variant="secondary"
+                        onClick={() => removePermission(activeTab, permIndex)}
+                        className="!p-2"
+                      >
+                        <XIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
                 <Button
                   variant="secondary"
-                  onClick={() => addPermission(roleIndex)}
-                  className="text-sm"
+                  onClick={() => addPermission(activeTab)}
+                  className="text-sm mt-2"
                 >
+                  <PlusCircleIcon className="h-4 w-4 mr-2" />
                   Add Permission
                 </Button>
               </div>
             </div>
           </Card>
-        ))}
-
-        <Card className="bg-brand-bg/50">
-          <h4 className="font-medium text-brand-text-primary mb-3">Add New Role</h4>
-          <div className="space-y-3">
-            <Input
-              label="Role Name"
-              value={newRole.role}
-              onChange={(e) => setNewRole((prev) => ({ ...prev, role: e.target.value }))}
-            />
-            <div className="flex justify-end">
-              <Button onClick={addRole} disabled={!newRole.role.trim()}>
-                Add Role
-              </Button>
-            </div>
+        ) : (
+          <div className="text-center py-10 bg-brand-surface/30 rounded-lg border border-dashed border-brand-border">
+            <p className="text-brand-text-secondary mb-4">No roles defined yet.</p>
+            <Button onClick={addRole}>
+              <PlusCircleIcon className="h-5 w-5 mr-2" />
+              Create First Role
+            </Button>
           </div>
-        </Card>
+        )}
       </div>
     </div>
   );
@@ -764,24 +821,34 @@ const Step6StandardFlows: React.FC<{
   data: ProjectInputData;
   update: (field: keyof ProjectInputData, value: unknown) => void;
 }> = ({ data, update }) => {
-  const [newFlow, setNewFlow] = useState({ name: '', steps: [''] });
+  const [activeTab, setActiveTab] = useState(0);
+
+  // Ensure activeTab is valid
+  useEffect(() => {
+    if (data.standardFlows && data.standardFlows.length > 0) {
+      if (activeTab >= data.standardFlows.length) {
+        setActiveTab(Math.max(0, data.standardFlows.length - 1));
+      }
+    }
+  }, [data.standardFlows?.length, activeTab]);
 
   const addFlow = () => {
-    if (!newFlow.name.trim()) return;
-    const flow = {
-      flowName: newFlow.name.trim(),
-      steps: newFlow.steps.filter((s) => s.trim()),
+    const newFlowObj = {
+      flowName: 'New Flow',
+      steps: [],
     };
-    update('standardFlows', [...(data.standardFlows || []), flow]);
-    setNewFlow({ name: '', steps: [''] });
+    const newFlows = [...(data.standardFlows || []), newFlowObj];
+    update('standardFlows', newFlows);
+    setActiveTab(newFlows.length - 1);
   };
 
   const removeFlow = (index: number) => {
     const flows = data.standardFlows || [];
-    update(
-      'standardFlows',
-      flows.filter((_, i) => i !== index),
-    );
+    const newFlows = flows.filter((_, i) => i !== index);
+    update('standardFlows', newFlows);
+    if (activeTab >= newFlows.length) {
+      setActiveTab(Math.max(0, newFlows.length - 1));
+    }
   };
 
   const updateFlow = (index: number, field: string, value: string) => {
@@ -792,6 +859,7 @@ const Step6StandardFlows: React.FC<{
 
   const addStep = (flowIndex: number) => {
     const flows = data.standardFlows || [];
+    if (!flows[flowIndex].steps) flows[flowIndex].steps = [];
     flows[flowIndex].steps.push('');
     update('standardFlows', [...flows]);
   };
@@ -808,76 +876,98 @@ const Step6StandardFlows: React.FC<{
     update('standardFlows', [...flows]);
   };
 
+  const currentFlow = data.standardFlows?.[activeTab];
+
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-brand-text-primary mb-2">Standard Flows</h3>
-        <p className="text-sm text-brand-text-secondary mb-4">
-          Define key business processes and workflows
-        </p>
+        {/* Tabs Header */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-brand-border mb-4">
+          {(data.standardFlows || []).map((flow, index) => (
+            <button
+              key={index}
+              onClick={() => setActiveTab(index)}
+              className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                activeTab === index
+                  ? 'bg-brand-primary/10 text-brand-primary border-b-2 border-brand-primary'
+                  : 'text-brand-text-secondary hover:text-brand-text-primary hover:bg-brand-surface'
+              }`}
+            >
+              {flow.flowName || `Flow ${index + 1}`}
+            </button>
+          ))}
+          <Button variant="secondary" onClick={addFlow} className="!p-2 flex-shrink-0">
+            <PlusCircleIcon className="h-4 w-4 mr-1" />
+            Add
+          </Button>
+        </div>
 
-        {(data.standardFlows || []).map((flow, flowIndex) => (
-          <Card key={flowIndex} className="mb-4">
-            <div className="flex justify-between items-start mb-3">
-              <h4 className="font-medium text-brand-text-primary">Flow {flowIndex + 1}</h4>
-              <Button variant="secondary" onClick={() => removeFlow(flowIndex)} className="!p-2">
-                <XIcon className="h-4 w-4" />
+        {/* Active Tab Content */}
+        {currentFlow ? (
+          <Card key={activeTab} className="animate-fadeIn">
+            <div className="flex justify-between items-start mb-4">
+              <h4 className="font-medium text-brand-text-primary">
+                Editing: {currentFlow.flowName || 'Untitled Flow'}
+              </h4>
+              <Button
+                variant="danger"
+                onClick={() => removeFlow(activeTab)}
+                className="!py-1 !px-3 text-xs"
+              >
+                Delete Flow
               </Button>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Input
                 label="Flow Name"
-                value={flow.flowName}
-                onChange={(e) => updateFlow(flowIndex, 'flowName', e.target.value)}
+                value={currentFlow.flowName}
+                onChange={(e) => updateFlow(activeTab, 'flowName', e.target.value)}
+                placeholder="e.g., Order Processing"
               />
               <div>
                 <label className="block text-sm font-medium text-brand-text-secondary mb-2">
                   Steps
                 </label>
-                {flow.steps.map((step, stepIndex) => (
-                  <div key={stepIndex} className="flex gap-2 mb-2">
-                    <span className="text-sm text-brand-text-secondary mt-2 w-6">
-                      {stepIndex + 1}.
-                    </span>
-                    <Input
-                      label=""
-                      value={step}
-                      onChange={(e) => updateStep(flowIndex, stepIndex, e.target.value)}
-                      placeholder="Step description"
-                      className="flex-grow"
-                    />
-                    <Button
-                      variant="secondary"
-                      onClick={() => removeStep(flowIndex, stepIndex)}
-                      className="!p-2"
-                    >
-                      <XIcon className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button variant="secondary" onClick={() => addStep(flowIndex)} className="text-sm">
+                <div className="space-y-2">
+                  {(currentFlow.steps || []).map((step, stepIndex) => (
+                    <div key={stepIndex} className="flex gap-2">
+                      <span className="text-sm text-brand-text-secondary mt-2 w-6">
+                        {stepIndex + 1}.
+                      </span>
+                      <div className="flex-grow">
+                        <Input
+                          label=""
+                          value={step}
+                          onChange={(e) => updateStep(activeTab, stepIndex, e.target.value)}
+                          placeholder="Step description"
+                        />
+                      </div>
+                      <Button
+                        variant="secondary"
+                        onClick={() => removeStep(activeTab, stepIndex)}
+                        className="!p-2"
+                      >
+                        <XIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <Button variant="secondary" onClick={() => addStep(activeTab)} className="text-sm mt-2">
+                  <PlusCircleIcon className="h-4 w-4 mr-2" />
                   Add Step
                 </Button>
               </div>
             </div>
           </Card>
-        ))}
-
-        <Card className="bg-brand-bg/50">
-          <h4 className="font-medium text-brand-text-primary mb-3">Add New Flow</h4>
-          <div className="space-y-3">
-            <Input
-              label="Flow Name"
-              value={newFlow.name}
-              onChange={(e) => setNewFlow((prev) => ({ ...prev, name: e.target.value }))}
-            />
-            <div className="flex justify-end">
-              <Button onClick={addFlow} disabled={!newFlow.name.trim()}>
-                Add Flow
-              </Button>
-            </div>
+        ) : (
+          <div className="text-center py-10 bg-brand-surface/30 rounded-lg border border-dashed border-brand-border">
+            <p className="text-brand-text-secondary mb-4">No flows defined yet.</p>
+            <Button onClick={addFlow}>
+              <PlusCircleIcon className="h-5 w-5 mr-2" />
+              Create First Flow
+            </Button>
           </div>
-        </Card>
+        )}
       </div>
     </div>
   );
@@ -937,170 +1027,168 @@ const Step7RiskAssessmentAndMetrics: React.FC<{
     <div className="space-y-8">
       <div>
         <h3 className="text-lg font-semibold text-brand-text-primary mb-2">Risk Assessment</h3>
-        <p className="text-sm text-brand-text-secondary mb-4">
-          Identify potential risks and their mitigation strategies
-        </p>
 
-        {data.riskAssessment.map((risk, index) => (
-          <Card key={index} className="mb-4">
-            <div className="flex justify-between items-start mb-3">
-              <h4 className="font-medium text-brand-text-primary">
-                Risk {index + 1}: {risk.risk}
-              </h4>
-              <Button variant="secondary" onClick={() => removeRisk(index)} className="!p-2">
-                <XIcon className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div>
-                <span className="font-medium">Impact:</span>
-                <span
-                  className={`ml-2 px-2 py-1 rounded-full text-xs ${
-                    risk.impact === 'High'
-                      ? 'bg-red-500/20 text-red-400'
-                      : risk.impact === 'Low'
-                        ? 'bg-blue-500/20 text-blue-400'
-                        : 'bg-yellow-500/20 text-yellow-400'
-                  }`}
-                >
-                  {risk.impact}
-                </span>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {data.riskAssessment.map((risk, index) => (
+            <Card key={index} className="h-full">
+              <div className="flex justify-between items-start mb-3">
+                <h4 className="font-medium text-brand-text-primary">
+                  Risk {index + 1}: {risk.risk}
+                </h4>
+                <Button variant="secondary" onClick={() => removeRisk(index)} className="!p-2">
+                  <XIcon className="h-4 w-4" />
+                </Button>
               </div>
-              <div>
-                <span className="font-medium">Probability:</span>
-                <span
-                  className={`ml-2 px-2 py-1 rounded-full text-xs ${
-                    risk.probability === 'High'
-                      ? 'bg-red-500/20 text-red-400'
-                      : risk.probability === 'Low'
-                        ? 'bg-blue-500/20 text-blue-400'
-                        : 'bg-yellow-500/20 text-yellow-400'
-                  }`}
-                >
-                  {risk.probability}
-                </span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <span className="font-medium">Impact:</span>
+                  <span
+                    className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                      risk.impact === 'High'
+                        ? 'bg-red-500/20 text-red-400'
+                        : risk.impact === 'Low'
+                          ? 'bg-blue-500/20 text-blue-400'
+                          : 'bg-yellow-500/20 text-yellow-400'
+                    }`}
+                  >
+                    {risk.impact}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-medium">Probability:</span>
+                  <span
+                    className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                      risk.probability === 'High'
+                        ? 'bg-red-500/20 text-red-400'
+                        : risk.probability === 'Low'
+                          ? 'bg-blue-500/20 text-blue-400'
+                          : 'bg-yellow-500/20 text-yellow-400'
+                    }`}
+                  >
+                    {risk.probability}
+                  </span>
+                </div>
+                <div className="md:col-span-1 col-span-3">
+                  <span className="font-medium">Mitigation:</span>
+                  <p className="mt-1 text-sm">{risk.mitigation}</p>
+                </div>
               </div>
-              <div className="md:col-span-1 col-span-3">
-                <span className="font-medium">Mitigation:</span>
-                <p className="mt-1 text-sm">{risk.mitigation}</p>
+            </Card>
+          ))}
+
+          <Card className="bg-brand-bg/50 h-full">
+            <h4 className="font-medium text-brand-text-primary mb-3">Add New Risk</h4>
+            <div className="space-y-3">
+              <Input
+                label="Risk Description"
+                value={newRisk.risk}
+                onChange={(e) => setNewRisk((prev) => ({ ...prev, risk: e.target.value }))}
+                placeholder="Describe the potential risk..."
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <select
+                  value={newRisk.impact}
+                  onChange={(e) =>
+                    setNewRisk((prev) => ({
+                      ...prev,
+                      impact: e.target.value as 'Low' | 'Medium' | 'High',
+                    }))
+                  }
+                  className="bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                >
+                  <option value="Low">Low Impact</option>
+                  <option value="Medium">Medium Impact</option>
+                  <option value="High">High Impact</option>
+                </select>
+                <select
+                  value={newRisk.probability}
+                  onChange={(e) =>
+                    setNewRisk((prev) => ({
+                      ...prev,
+                      probability: e.target.value as 'Low' | 'Medium' | 'High',
+                    }))
+                  }
+                  className="bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                >
+                  <option value="Low">Low Probability</option>
+                  <option value="Medium">Medium Probability</option>
+                  <option value="High">High Probability</option>
+                </select>
+              </div>
+              <Input
+                label="Mitigation Strategy"
+                value={newRisk.mitigation}
+                onChange={(e) => setNewRisk((prev) => ({ ...prev, mitigation: e.target.value }))}
+                placeholder="How will you mitigate this risk?"
+              />
+              <div className="flex justify-end">
+                <Button onClick={addRisk} disabled={!newRisk.risk.trim()}>
+                  Add Risk
+                </Button>
               </div>
             </div>
           </Card>
-        ))}
-
-        <Card className="bg-brand-bg/50">
-          <h4 className="font-medium text-brand-text-primary mb-3">Add New Risk</h4>
-          <div className="space-y-3">
-            <Input
-              label="Risk Description"
-              value={newRisk.risk}
-              onChange={(e) => setNewRisk((prev) => ({ ...prev, risk: e.target.value }))}
-              placeholder="Describe the potential risk..."
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <select
-                value={newRisk.impact}
-                onChange={(e) =>
-                  setNewRisk((prev) => ({
-                    ...prev,
-                    impact: e.target.value as 'Low' | 'Medium' | 'High',
-                  }))
-                }
-                className="bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
-              >
-                <option value="Low">Low Impact</option>
-                <option value="Medium">Medium Impact</option>
-                <option value="High">High Impact</option>
-              </select>
-              <select
-                value={newRisk.probability}
-                onChange={(e) =>
-                  setNewRisk((prev) => ({
-                    ...prev,
-                    probability: e.target.value as 'Low' | 'Medium' | 'High',
-                  }))
-                }
-                className="bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
-              >
-                <option value="Low">Low Probability</option>
-                <option value="Medium">Medium Probability</option>
-                <option value="High">High Probability</option>
-              </select>
-            </div>
-            <Input
-              label="Mitigation Strategy"
-              value={newRisk.mitigation}
-              onChange={(e) => setNewRisk((prev) => ({ ...prev, mitigation: e.target.value }))}
-              placeholder="How will you mitigate this risk?"
-            />
-            <div className="flex justify-end">
-              <Button onClick={addRisk} disabled={!newRisk.risk.trim()}>
-                Add Risk
-              </Button>
-            </div>
-          </div>
-        </Card>
+        </div>
       </div>
 
       <div>
         <h3 className="text-lg font-semibold text-brand-text-primary mb-2">Success Metrics</h3>
-        <p className="text-sm text-brand-text-secondary mb-4">
-          Define key performance indicators for measuring success
-        </p>
 
-        {data.successMetrics.map((metric, index) => (
-          <Card key={index} className="mb-4">
-            <div className="flex justify-between items-start mb-3">
-              <h4 className="font-medium text-brand-text-primary">
-                Metric {index + 1}: {metric.metric}
-              </h4>
-              <Button variant="secondary" onClick={() => removeMetric(index)} className="!p-2">
-                <XIcon className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium">Target:</span>
-                <p className="mt-1">{metric.target}</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {data.successMetrics.map((metric, index) => (
+            <Card key={index} className="h-full">
+              <div className="flex justify-between items-start mb-3">
+                <h4 className="font-medium text-brand-text-primary">
+                  Metric {index + 1}: {metric.metric}
+                </h4>
+                <Button variant="secondary" onClick={() => removeMetric(index)} className="!p-2">
+                  <XIcon className="h-4 w-4" />
+                </Button>
               </div>
-              <div>
-                <span className="font-medium">Timeframe:</span>
-                <p className="mt-1">{metric.timeframe}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-medium">Target:</span>
+                  <p className="mt-1">{metric.target}</p>
+                </div>
+                <div>
+                  <span className="font-medium">Timeframe:</span>
+                  <p className="mt-1">{metric.timeframe}</p>
+                </div>
+              </div>
+            </Card>
+          ))}
+
+          <Card className="bg-brand-bg/50 h-full">
+            <h4 className="font-medium text-brand-text-primary mb-3">Add Success Metric</h4>
+            <div className="space-y-3">
+              <Input
+                label="Metric Name"
+                value={newMetric.metric}
+                onChange={(e) => setNewMetric((prev) => ({ ...prev, metric: e.target.value }))}
+                placeholder="e.g., User engagement rate, Revenue growth..."
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Target"
+                  value={newMetric.target}
+                  onChange={(e) => setNewMetric((prev) => ({ ...prev, target: e.target.value }))}
+                  placeholder="e.g., 75%, $1M..."
+                />
+                <Input
+                  label="Timeframe"
+                  value={newMetric.timeframe}
+                  onChange={(e) => setNewMetric((prev) => ({ ...prev, timeframe: e.target.value }))}
+                  placeholder="e.g., Q1 2025, 6 months..."
+                />
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={addMetric} disabled={!newMetric.metric.trim()}>
+                  Add Metric
+                </Button>
               </div>
             </div>
           </Card>
-        ))}
-
-        <Card className="bg-brand-bg/50">
-          <h4 className="font-medium text-brand-text-primary mb-3">Add Success Metric</h4>
-          <div className="space-y-3">
-            <Input
-              label="Metric Name"
-              value={newMetric.metric}
-              onChange={(e) => setNewMetric((prev) => ({ ...prev, metric: e.target.value }))}
-              placeholder="e.g., User engagement rate, Revenue growth..."
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Target"
-                value={newMetric.target}
-                onChange={(e) => setNewMetric((prev) => ({ ...prev, target: e.target.value }))}
-                placeholder="e.g., 75%, $1M..."
-              />
-              <Input
-                label="Timeframe"
-                value={newMetric.timeframe}
-                onChange={(e) => setNewMetric((prev) => ({ ...prev, timeframe: e.target.value }))}
-                placeholder="e.g., Q1 2025, 6 months..."
-              />
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={addMetric} disabled={!newMetric.metric.trim()}>
-                Add Metric
-              </Button>
-            </div>
-          </div>
-        </Card>
+        </div>
       </div>
     </div>
   );
@@ -1210,14 +1298,46 @@ const Step8Review: React.FC<{ data: ProjectInputData }> = ({ data }) => {
 };
 
 const STEPS = [
-  { title: 'Basic Information', component: Step1BasicInfo },
-  { title: 'Core Requirements', component: Step2CoreRequirements },
-  { title: 'Technology Stack', component: Step3TechStack },
-  { title: 'Core Modules', component: Step4CoreModules },
-  { title: 'Role & Permissions', component: Step5RolePermissions },
-  { title: 'Standard Flows', component: Step6StandardFlows },
-  { title: 'Risk Assessment & Metrics', component: Step7RiskAssessmentAndMetrics },
-  { title: 'Review & Generate', component: Step8Review },
+  {
+    title: 'Basic Information',
+    component: Step1BasicInfo,
+    description: 'Provide the essential details about your project',
+  },
+  {
+    title: 'Core Requirements',
+    component: Step2CoreRequirements,
+    description: 'List the high-level requirements and goals',
+  },
+  {
+    title: 'Technology Stack',
+    component: Step3TechStack,
+    description: 'Select the technologies you plan to use',
+  },
+  {
+    title: 'Core Modules',
+    component: Step4CoreModules,
+    description: 'Define the main modules/components of your system',
+  },
+  {
+    title: 'Role & Permissions',
+    component: Step5RolePermissions,
+    description: 'Define user roles and their permissions',
+  },
+  {
+    title: 'Standard Flows',
+    component: Step6StandardFlows,
+    description: 'Define key business processes and workflows',
+  },
+  {
+    title: 'Risk Assessment & Metrics',
+    component: Step7RiskAssessmentAndMetrics,
+    description: 'Identify potential risks and success metrics',
+  },
+  {
+    title: 'Review & Generate',
+    component: Step8Review,
+    description: 'Review your project details before generating the plan',
+  },
 ];
 
 export const NewProjectWizard: React.FC<{
@@ -1479,7 +1599,7 @@ export const NewProjectWizard: React.FC<{
 
   return (
     <>
-      <div className="max-w-4xl mx-auto bg-brand-surface/50 backdrop-blur-lg border border-brand-border/50 rounded-xl shadow-2xl p-8">
+      <div className="w-full mx-auto bg-brand-surface/50 backdrop-blur-lg border border-brand-border/50 rounded-xl shadow-2xl p-8">
         <header className="mb-8">
           <div className="relative flex justify-between items-start mb-4">
             <div>
@@ -1519,6 +1639,28 @@ export const NewProjectWizard: React.FC<{
         </header>
 
         <main className="space-y-6">
+          <div className="mb-6">
+            <p className="text-brand-text-primary mb-4">{STEPS[currentStep].description}</p>
+            <div className="flex items-center justify-between gap-4 p-4 bg-brand-surface border border-brand-border rounded-lg">
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" onClick={prevStep} disabled={currentStep === 0}>
+                  Back
+                </Button>
+                <Button variant="secondary" onClick={handleResetForm}>
+                  Reset
+                </Button>
+              </div>
+              {currentStep < STEPS.length - 1 ? (
+                <Button onClick={nextStep} disabled={!validationResult.isValid}>
+                  Continue
+                </Button>
+              ) : (
+                <Button onClick={handleGenerate} isLoading={isGenerating}>
+                  Generate Plan
+                </Button>
+              )}
+            </div>
+          </div>
           <CurrentStepComponent
             data={formData}
             update={updateFormData}
