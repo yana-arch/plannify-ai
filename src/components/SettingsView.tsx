@@ -93,6 +93,12 @@ const PROVIDER_CONFIGS = {
     models: ['claude-3-5-sonnet-20241022', 'claude-3-haiku-20240307', 'claude-3-sonnet-20240229'],
     docsUrl: 'https://docs.anthropic.com/claude/docs',
   },
+  openai: {
+    name: 'OpenAI',
+    baseUrl: 'https://api.openai.com/v1',
+    models: ['gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo'],
+    docsUrl: 'https://platform.openai.com/docs/api-reference',
+  },
   custom: {
     name: 'Custom Provider',
     baseUrl: '',
@@ -221,9 +227,25 @@ const ProviderForm: React.FC<{
             required
           />
           {config.models.length > 0 && (
-            <p className="text-xs text-brand-text-secondary mt-1">
-              Popular models: {config.models.join(', ')}
-            </p>
+            <div className="mt-2 text-xs">
+              <span className="text-brand-text-secondary mr-2">Suggested:</span>
+              <div className="inline-flex flex-wrap gap-2 mt-1">
+                {config.models.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, model: m })}
+                    className={`px-2 py-1 rounded-md border transition-colors ${
+                      formData.model === m
+                        ? 'bg-brand-primary text-white border-brand-primary'
+                        : 'bg-brand-surface border-brand-border text-brand-text-secondary hover:border-brand-primary hover:text-brand-primary'
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 

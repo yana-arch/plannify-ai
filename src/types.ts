@@ -137,7 +137,13 @@ export interface ReportTemplate {
 
 export type Screen = 'wizard' | 'templates' | 'plan' | 'projects' | 'dashboard' | 'settings';
 
-export type APIProviderType = 'openrouter' | 'gemini' | 'ollama' | 'anthropic' | 'custom';
+export type APIProviderType =
+  | 'openrouter'
+  | 'gemini'
+  | 'ollama'
+  | 'anthropic'
+  | 'openai'
+  | 'custom';
 
 export interface APIProvider {
   id: string;

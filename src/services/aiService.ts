@@ -146,20 +146,76 @@ abstract class AIProvider {
 
 // Gemini provider implementation
 class GeminiProvider extends AIProvider {
-  private ai: GoogleGenAI;
+  private ai: GoogleGenAI | null = null;
+  private isCustomBaseUrl: boolean = false;
+  private readonly DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com';
 
   constructor(provider: APIProvider) {
     super(provider);
-    this.ai = new GoogleGenAI({ apiKey: provider.apiKey });
+    // Check if a custom base URL is provided and different from the default
+    this.isCustomBaseUrl =
+      !!provider.baseUrl && !provider.baseUrl.includes('generativelanguage.googleapis.com');
+
+    if (!this.isCustomBaseUrl) {
+      this.ai = new GoogleGenAI({ apiKey: provider.apiKey });
+    }
   }
 
   async generateContent(prompt: string, options?: any) {
-    const result = await this.ai.models.generateContent({
-      model: this.provider.model,
-      contents: prompt,
-      config: options,
-    });
-    return result;
+    if (this.isCustomBaseUrl) {
+      // Use REST API for custom Base URL (proxies)
+      console.log('🚀 Gemini (Custom): Sending request to', this.provider.baseUrl);
+
+      const baseUrl = this.provider.baseUrl.replace(/\/$/, ''); // Remove trailing slash
+      const url = `${baseUrl}/v1beta/models/${this.provider.model}:generateContent?key=${this.provider.apiKey}`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: options,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gemini Custom API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // Map REST response to ensure compatibility
+      // The REST API returns { candidates: [ { content: { parts: [ { text: "..." } ] } } ] }
+      // We need to return an object that aligns with what the service expects (data.text() or similar check)
+      // But looking at generateProjectPlan, for Gemini it expects `response.text()` function or property.
+      // Since we are returning a raw object here, we need to adapt the handle in generateProjectPlan OR
+      // we can return a mock object that has a text() function.
+
+      const generatedText =
+        data.candidates &&
+        data.candidates[0] &&
+        data.candidates[0].content &&
+        data.candidates[0].content.parts
+          ? data.candidates[0].content.parts.map((p: any) => p.text).join('')
+          : '';
+
+      return {
+        ...data,
+        text: generatedText,
+      };
+    } else {
+      // Use official SDK for default URL
+      if (!this.ai) throw new Error('Gemini SDK not initialized');
+
+      const result = await this.ai.models.generateContent({
+        model: this.provider.model,
+        contents: prompt,
+        config: options,
+      });
+      return result;
+    }
   }
 
   getModelName(): string {
@@ -279,6 +335,38 @@ class AnthropicProvider extends AIProvider {
   }
 }
 
+// OpenAI provider implementation
+class OpenAIProvider extends AIProvider {
+  async generateContent(prompt: string, options?: any) {
+    const baseUrl = this.provider.baseUrl.replace(/\/$/, ''); // Remove trailing slash
+    console.log('🚀 OpenAI: Sending request to', `${baseUrl}/chat/completions`);
+
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.provider.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: this.provider.model,
+        messages: [{ role: 'user', content: prompt }],
+        ...options,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    return await response.json();
+  }
+
+  getModelName(): string {
+    return this.provider.model;
+  }
+}
+
 // Factory to create provider instances
 class AIProviderFactory {
   static createProvider(provider: APIProvider): AIProvider {
@@ -291,6 +379,8 @@ class AIProviderFactory {
         return new OllamaProvider(provider);
       case 'anthropic':
         return new AnthropicProvider(provider);
+      case 'openai':
+        return new OpenAIProvider(provider);
       case 'custom':
         // For custom providers, default to OpenRouter-like API
         return new OpenRouterProvider(provider);
@@ -575,7 +665,11 @@ export const generateProjectPlan = async (
     // Handle different response formats based on provider
     if (provider.type === 'gemini') {
       jsonText = response.text?.trim() || '';
-    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
+    } else if (
+      provider.type === 'openrouter' ||
+      provider.type === 'anthropic' ||
+      provider.type === 'openai'
+    ) {
       jsonText =
         response.choices?.[0]?.message?.content ||
         response.content?.[0]?.text ||
@@ -793,7 +887,11 @@ export const regenerateProjectPlan = async (
     // Handle different response formats based on provider
     if (provider.type === 'gemini') {
       jsonText = response.text.trim();
-    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
+    } else if (
+      provider.type === 'openrouter' ||
+      provider.type === 'anthropic' ||
+      provider.type === 'openai'
+    ) {
       jsonText = response.choices?.[0]?.message?.content || response.content?.[0]?.text || '';
     } else if (provider.type === 'ollama') {
       jsonText = response.response || '';
@@ -879,7 +977,11 @@ export const enhanceFeatureSpecification = async (
     // Handle different response formats based on provider
     if (provider.type === 'gemini') {
       jsonText = response.text.trim();
-    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
+    } else if (
+      provider.type === 'openrouter' ||
+      provider.type === 'anthropic' ||
+      provider.type === 'openai'
+    ) {
       jsonText = response.choices?.[0]?.message?.content || response.content?.[0]?.text || '';
     } else if (provider.type === 'ollama') {
       jsonText = response.response || '';
@@ -952,7 +1054,11 @@ export const optimizeDevelopmentPlan = async (
     // Handle different response formats based on provider
     if (provider.type === 'gemini') {
       jsonText = response.text.trim();
-    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
+    } else if (
+      provider.type === 'openrouter' ||
+      provider.type === 'anthropic' ||
+      provider.type === 'openai'
+    ) {
       jsonText = response.choices?.[0]?.message?.content || response.content?.[0]?.text || '';
     } else if (provider.type === 'ollama') {
       jsonText = response.response || '';
@@ -1055,7 +1161,11 @@ export const generateReport = async (
     // Handle different response formats based on provider
     if (provider.type === 'gemini') {
       text = response.text.trim();
-    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
+    } else if (
+      provider.type === 'openrouter' ||
+      provider.type === 'anthropic' ||
+      provider.type === 'openai'
+    ) {
       text = response.choices?.[0]?.message?.content || response.content?.[0]?.text || '';
     } else if (provider.type === 'ollama') {
       text = response.response || '';
@@ -1190,21 +1300,28 @@ export const generateCritique = async (
   `;
 
   try {
-    const result = await aiService.generateContent(prompt, {
-      responseMimeType: 'application/json',
-      responseSchema: critiqueSchema,
-    });
+    const response = await retryService.executeAIOperation(async () => {
+      const result = await aiService.generateContent(prompt, {
+        responseMimeType: 'application/json',
+        responseSchema: critiqueSchema,
+      });
+      return result;
+    }, 'Critique Generation');
 
     // Parse result similarly to other functions
     let jsonText: string;
     if (provider.type === 'gemini') {
-      jsonText = result.text.trim();
-    } else if (provider.type === 'openrouter' || provider.type === 'anthropic') {
-      jsonText = result.choices?.[0]?.message?.content || result.content?.[0]?.text || '';
+      jsonText = response.text.trim();
+    } else if (
+      provider.type === 'openrouter' ||
+      provider.type === 'anthropic' ||
+      provider.type === 'openai'
+    ) {
+      jsonText = response.choices?.[0]?.message?.content || response.content?.[0]?.text || '';
     } else if (provider.type === 'ollama') {
-      jsonText = result.response || '';
+      jsonText = response.response || '';
     } else {
-      jsonText = result.text || result.content || '';
+      jsonText = response.text || response.content || '';
     }
 
     jsonText = cleanMarkdownCodeBlocks(jsonText);
