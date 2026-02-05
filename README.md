@@ -10,11 +10,12 @@ An AI-powered web platform that transforms project ideas into comprehensive, act
 
 ## ✨ Key Features
 
-- 🚀 **AI-Powered Project Planning** - Generate comprehensive project plans using Gemini AI
+- 🚀 **Multi-Model AI Support** - Support for Gemini, OpenAI, Anthropic, and local Ollama models
+- 📄 **Project Export** - Export comprehensive project plans to DOCX format
 - 🎯 **Smart Caching** - Cache API responses for improved performance
 - 🔄 **Retry Logic** - Automatic retry for failed API calls with exponential backoff
 - 🛡️ **Error Boundaries** - Graceful error handling with recovery options
-- 🎨 **Modern UI** - Beautiful, responsive design with loading states
+- 🎨 **Modern UI** - Beautiful, responsive design with Dark/Light mode support
 - 🧪 **Comprehensive Testing** - Full test coverage with Jest and React Testing Library
 - 🔧 **CI/CD Pipeline** - Automated testing and deployment with GitHub Actions
 - 📱 **Mobile Responsive** - Works perfectly on all devices
@@ -23,7 +24,7 @@ An AI-powered web platform that transforms project ideas into comprehensive, act
 
 - **Frontend**: React 19, TypeScript, Vite
 - **Styling**: Tailwind CSS with custom design system
-- **AI**: Google Gemini AI 2.5 Flash
+- **AI**: Google GenAI, OpenAI, Anthropic, Ollama (via unified service)
 - **Testing**: Jest, React Testing Library, jsdom
 - **CI/CD**: GitHub Actions
 - **Build Tool**: Vite with code splitting and optimization
@@ -33,7 +34,7 @@ An AI-powered web platform that transforms project ideas into comprehensive, act
 ### Prerequisites
 
 - Node.js 18+ and npm
-- Gemini API key from Google AI Studio
+- API Key (Gemini, OpenAI, or Anthropic) OR generic local LLM (Ollama)
 
 ### Installation
 
@@ -50,12 +51,9 @@ An AI-powered web platform that transforms project ideas into comprehensive, act
    npm install
    ```
 
-3. **Set up environment variables**
+3. **Configure AI Provider**
 
-   ```bash
-   cp .env.local.example .env.local
-   # Edit .env.local and add your Gemini API key
-   ```
+   Start the application and navigate to the **Settings** page to configure your preferred AI provider (Gemini, OpenAI, etc.) and API keys.
 
 4. **Start development server**
 
@@ -86,9 +84,9 @@ src/
 │   └── ...
 ├── services/           # Business logic and API services
 │   ├── __tests__/      # Service tests
+│   ├── aiService.ts    # Unified AI provider service
 │   ├── cacheService.ts # Caching layer
-│   ├── retryService.ts # Retry logic
-│   └── geminiService.ts # AI integration
+│   └── retryService.ts # Retry logic
 ├── contexts/           # React contexts
 ├── types/             # TypeScript type definitions
 └── setupTests.ts      # Test configuration
