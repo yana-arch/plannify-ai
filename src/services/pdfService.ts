@@ -1,23 +1,29 @@
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
+const downloadPdf = (pdf: any, filename: string) => {
+  pdf.save(filename);
+};
 
-export const exportPlanAsPdf = async (projectName: string) => {
-  const element = document.getElementById('project-plan-content');
-  if (!element) {
-    console.error('Project plan content element not found');
-    return;
-  }
-
+export const exportPlanAsPdf = async (elementId: string, projectName: string) => {
   try {
+    const html2canvas = (await import('html2canvas')).default;
+    const { jsPDF } = await import('jspdf');
+
+    const element = document.getElementById(elementId);
+    if (!element) {
+      console.error('❌ Element not found:', elementId);
+      return;
+    }
+
+    console.log('🚀 Starting PDF export for project:', projectName);
+
     const canvas = await html2canvas(element, {
-      scale: 2, // Improve quality
-      useCORS: true, // Handle external images if any
+      scale: 2, // Higher resolution
+      useCORS: true, // Handle cross-origin images
       logging: false,
     });
 
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF({
-      orientation: 'portrait',
+      orientation: 'p',
       unit: 'mm',
       format: 'a4',
     });
@@ -39,9 +45,10 @@ export const exportPlanAsPdf = async (projectName: string) => {
     }
 
     const filename = `${projectName.replace(/[^a-zA-Z0-9]/g, '_')}_Project_Plan.pdf`;
-    pdf.save(filename);
+    downloadPdf(pdf, filename);
+    console.log('✅ PDF export completed successfully');
   } catch (error) {
-    console.error('Failed to export PDF:', error);
-    throw new Error('Failed to generate PDF. Please try again.');
+    console.error('❌ PDF export failed:', error);
+    alert('Failed to export PDF');
   }
 };
