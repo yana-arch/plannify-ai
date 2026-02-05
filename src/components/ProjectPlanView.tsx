@@ -109,7 +109,7 @@ const downloadAsMarkdown = (content: string, filename: string) => {
   URL.revokeObjectURL(url);
 };
 
-const PlanSubNav: React.FC<{ activeTab: string; setActiveTab: (tab: string) => void }> = ({
+const TopTabBar: React.FC<{ activeTab: string; setActiveTab: (tab: string) => void }> = ({
   activeTab,
   setActiveTab,
 }) => {
@@ -125,23 +125,27 @@ const PlanSubNav: React.FC<{ activeTab: string; setActiveTab: (tab: string) => v
     'History',
   ];
   return (
-    <aside className="w-56 flex-shrink-0 p-4 border-r border-brand-border">
-      <nav className="space-y-1">
+    <nav className="border-b border-brand-border overflow-x-auto">
+      <div className="flex gap-1 px-6 min-w-max">
         {navItems.map((item) => (
           <button
             key={item}
             onClick={() => setActiveTab(item)}
-            className={`w-full text-left flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === item
-                ? 'text-brand-text-primary bg-brand-surface'
-                : 'text-brand-text-secondary hover:bg-brand-surface hover:text-brand-text-primary'
-            }`}
+            className={`
+              px-4 py-3 text-sm font-medium transition-all duration-200
+              border-b-2 -mb-[1px] whitespace-nowrap
+              ${
+                activeTab === item
+                  ? 'border-brand-primary text-brand-primary-hover'
+                  : 'border-transparent text-brand-text-secondary hover:text-brand-text-primary hover:border-brand-border'
+              }
+            `}
           >
             {item}
           </button>
         ))}
-      </nav>
-    </aside>
+      </div>
+    </nav>
   );
 };
 
@@ -1360,12 +1364,10 @@ export const ProjectPlanView: React.FC<{ project: SavedProject }> = ({ project }
       <header className="flex justify-between items-center border-b border-brand-border pb-4 mb-4 px-4">
         <h2 className="text-xl font-bold text-brand-text-primary">{projectName} - Project Plan</h2>
       </header>
-      <div className="flex flex-grow">
-        <PlanSubNav activeTab={activeTab} setActiveTab={setActiveTab} />
-        <main className="flex-grow p-6 overflow-y-auto max-h-[calc(100vh-14rem)]">
-          <div id="project-plan-content">{renderContent()}</div>
-        </main>
-      </div>
+      <TopTabBar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <main className="flex-grow p-6 overflow-y-auto max-h-[calc(100vh-14rem)]">
+        <div id="project-plan-content">{renderContent()}</div>
+      </main>
     </div>
   );
 };
