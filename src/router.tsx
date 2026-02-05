@@ -72,8 +72,11 @@ const WizardRoute = () => {
     clearCurrentProject();
   }, [clearCurrentProject]);
 
-  const handleGenerate = async (data: ProjectInputData) => {
-    const newProjectId = await createNewProject(data);
+  const handleGenerate = async (
+    data: ProjectInputData,
+    options?: { useBatched?: boolean; onProgress?: (batch: string, progress: number) => void },
+  ) => {
+    const newProjectId = await createNewProject(data, options);
     if (newProjectId) {
       navigate(`/projects/${newProjectId}`);
     }

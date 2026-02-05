@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Modal } from '../ui';
 import { InfoIcon, AlertTriangleIcon } from '../icons';
 import type { ProjectInputData } from '../../types';
@@ -6,16 +6,22 @@ import type { ProjectInputData } from '../../types';
 export const PreviewModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (useBatched: boolean) => void;
   data: ProjectInputData;
 }> = ({ isOpen, onClose, onConfirm, data }) => {
+  const [useBatchedGeneration, setUseBatchedGeneration] = useState(true);
+
   if (!isOpen) return null;
+
+  const handleConfirm = () => {
+    onConfirm(useBatchedGeneration);
+  };
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      onConfirm={onConfirm}
+      onConfirm={handleConfirm}
       title="Preview Plan Generation"
       confirmText="Generate Plan"
     >
@@ -66,7 +72,10 @@ export const PreviewModal: React.FC<{
             <div>
               <h6 className="font-semibold text-yellow-700 mb-1">Important Notes:</h6>
               <ul className="text-sm text-yellow-600 space-y-1">
-                <li>• Generation typically takes 10-30 seconds depending on complexity</li>
+                <li>
+                  • Generation typically takes{' '}
+                  {useBatchedGeneration ? '20-40 seconds with progress updates' : '10-30 seconds'}
+                </li>
                 <li>• AI will generate comprehensive Mermaid diagrams for visualization</li>
                 <li>• All generated content can be edited and refined afterwards</li>
                 <li>• Previous plan versions are automatically saved</li>
@@ -80,6 +89,26 @@ export const PreviewModal: React.FC<{
             ✨ <strong>Ready to proceed!</strong> Your project data looks comprehensive for
             high-quality AI plan generation.
           </p>
+        </div>
+        {/* Batch Mode Selection - AT TOP */}
+        <div className="p-4 bg-brand-surface-muted/50 rounded-lg border border-brand-border">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={useBatchedGeneration}
+              onChange={(e) => setUseBatchedGeneration(e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded border-brand-border bg-brand-surface text-brand-primary focus:ring-brand-primary focus:ring-offset-0"
+            />
+            <div className="flex-1">
+              <div className="font-medium text-brand-text-primary">
+                ⚡ Use Batched AI Generation (Recommended)
+              </div>
+              <p className="text-sm text-brand-text-secondary mt-1">
+                Splits the generation into 6 optimized batches with real-time progress tracking.
+                Faster, more efficient, and provides better results.
+              </p>
+            </div>
+          </label>
         </div>
       </div>
     </Modal>

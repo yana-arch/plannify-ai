@@ -91,7 +91,10 @@ const STEPS = [
 ];
 
 export const NewProjectWizard: React.FC<{
-  onGenerate: (data: ProjectInputData) => void;
+  onGenerate: (
+    data: ProjectInputData,
+    options?: { useBatched?: boolean; onProgress?: (batch: string, progress: number) => void },
+  ) => void;
   isGenerating: boolean;
   initialData?: TemplateData;
 }> = ({ onGenerate, isGenerating, initialData }) => {
@@ -120,6 +123,7 @@ export const NewProjectWizard: React.FC<{
   });
   const [showValidationPanel, setShowValidationPanel] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState<string>('');
 
   // Handle updates to initialData after mount (e.g. template selection changes)
   const serializedInitialData = initialData ? JSON.stringify(initialData) : null;
@@ -177,9 +181,15 @@ export const NewProjectWizard: React.FC<{
     }
   };
 
-  const handleConfirmGenerate = () => {
+  const handleConfirmGenerate = (useBatched: boolean) => {
     setShowPreviewModal(false);
-    onGenerate(formData);
+    setGenerationProgress('Starting generation...');
+    onGenerate(formData, {
+      useBatched,
+      onProgress: (batch, _progress) => {
+        setGenerationProgress(batch);
+      },
+    });
   };
 
   const handleResetForm = () => {
@@ -271,28 +281,38 @@ export const NewProjectWizard: React.FC<{
           </div>
         </main>
 
-        <footer className="flex-none mt-8 pt-6 border-t border-brand-border flex justify-between items-center">
-          <Button
-            variant="secondary"
-            onClick={prevStep}
-            disabled={currentStep === 0 || isGenerating}
-          >
-            Back
-          </Button>
+        <footer className="flex-none mt-8 pt-6 border-t border-brand-border">
+          {/* Progress indicator when generating */}
+          {isGenerating && generationProgress && (
+            <div className="mb-4 p-3 bg-brand-primary/10 border border-brand-primary/30 rounded-md">
+              <p className="text-brand-primary text-sm font-medium">{generationProgress}</p>
+            </div>
+          )}
 
-          <div className="flex gap-4">
-            {currentStep < STEPS.length - 1 ? (
-              <Button onClick={nextStep}>Continue</Button>
-            ) : (
-              <Button
-                onClick={handleGenerate}
-                isLoading={isGenerating}
-                className="bg-brand-primary hover:bg-brand-primary/90"
-              >
-                <WandSparklesIcon className="h-4 w-4 mr-2" />
-                Generate Project Plan
-              </Button>
-            )}
+
+          <div className="flex justify-between items-center">
+            <Button
+              variant="secondary"
+              onClick={prevStep}
+              disabled={currentStep === 0 || isGenerating}
+            >
+              Back
+            </Button>
+
+            <div className="flex gap-4">
+              {currentStep < STEPS.length - 1 ? (
+                <Button onClick={nextStep}>Continue</Button>
+              ) : (
+                <Button
+                  onClick={handleGenerate}
+                  isLoading={isGenerating}
+                  className="bg-brand-primary hover:bg-brand-primary/90"
+                >
+                  <WandSparklesIcon className="h-4 w-4 mr-2" />
+                  Generate Project Plan
+                </Button>
+              )}
+            </div>
           </div>
         </footer>
       </div>

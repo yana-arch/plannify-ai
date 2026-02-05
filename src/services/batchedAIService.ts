@@ -1,6 +1,6 @@
 import { Type } from '@google/genai';
-import type { ProjectInputData, ProjectPlan, FeatureSpecification, Milestone } from '../types';
-import type { APIProvider } from '../types';
+import type { ProjectInputData, ProjectPlan, FeatureSpecification, Milestone } from '@/types';
+import type { APIProvider } from '@/types';
 import { cacheService } from './cacheService';
 import { retryService } from './retryService';
 
@@ -168,8 +168,9 @@ const databaseERDSchema = {
 
 const cleanMarkdownCodeBlocks = (text: string): string => {
   if (!text) return text;
-  let cleaned = text.replace(/^```(?:json|JSON)?\\s*\\n?/gm, '').replace(/\\n?```\\s*$/gm, '');
-  cleaned = cleaned.replace(/^```\\s*\\n?/gm, '').replace(/\\n?```\\s*$/gm, '');
+  // Fix: Use single backslash for regex
+  let cleaned = text.replace(/^```(?:json|JSON)?\s*\n?/gm, '').replace(/\n?```\s*$/gm, '');
+  cleaned = cleaned.replace(/^```\s*\n?/gm, '').replace(/\n?```\s*$/gm, '');
   return cleaned.trim();
 };
 
@@ -177,28 +178,46 @@ const cleanMarkdownCodeBlocks = (text: string): string => {
 import { validateMermaidCode, validateMermaidERDCode, AIService } from './aiService';
 
 // Helper to extract JSON from AI response
-const extractJSONFromResponse = (response: any, provider: APIProvider): string => {
+const extractJSONFromResponse = (response: unknown, provider: APIProvider): string => {
   let jsonText: string;
 
+  // Type guard for response object
+  const isObject = (val: unknown): val is Record<string, unknown> => {
+    return typeof val === 'object' && val !== null;
+  };
+
+  if (!isObject(response)) {
+    return '';
+  }
+
   if (provider.type === 'gemini') {
-    jsonText = response.text?.trim() || '';
+    jsonText = (response.text as string | undefined)?.trim() || '';
   } else if (
     provider.type === 'openrouter' ||
     provider.type === 'anthropic' ||
     provider.type === 'openai'
   ) {
+    const choices = response.choices as Array<Record<string, unknown>> | undefined;
+    const content = response.content as Array<Record<string, unknown>> | undefined;
+
     jsonText =
-      response.choices?.[0]?.message?.content ||
-      response.content?.[0]?.text ||
-      response.choices[0]?.text ||
+      ((choices?.[0]?.message as Record<string, unknown> | undefined)?.content as string) ||
+      (content?.[0]?.text as string | undefined) ||
+      (choices?.[0]?.text as string | undefined) ||
       '';
-    if (!jsonText && response.choices?.[0]) {
-      jsonText = response.choices[0].message?.content || response.choices[0].text || '';
+
+    if (!jsonText && choices?.[0]) {
+      const firstChoice = choices[0];
+      jsonText =
+        ((firstChoice.message as Record<string, unknown> | undefined)?.content as string) ||
+        (firstChoice.text as string | undefined) ||
+        '';
     }
   } else if (provider.type === 'ollama') {
-    jsonText = response.response || '';
+    jsonText = (response.response as string | undefined) || '';
   } else {
-    jsonText = response.text || response.content || '';
+    jsonText =
+      (response.text as string | undefined) || (response.content as string | undefined) || '';
   }
 
   return cleanMarkdownCodeBlocks(jsonText);
@@ -206,10 +225,10 @@ const extractJSONFromResponse = (response: any, provider: APIProvider): string =
 
 const makeAIRequest = async (
   prompt: string,
-  schema: any,
+  schema: Record<string, unknown>,
   provider: APIProvider,
   batchName: string,
-): Promise<any> => {
+): Promise<Record<string, unknown>> => {
   const aiService = new AIService(provider);
 
   const response = await retryService.executeAIOperation(async () => {
@@ -228,16 +247,17 @@ const makeAIRequest = async (
 
   try {
     return JSON.parse(jsonText);
-  } catch (parseError: any) {
-    const jsonMatch = jsonText.match(/\\{[\\s\\S]*\\}/);
+  } catch (parseError) {
+    const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown error';
+    const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       try {
         return JSON.parse(jsonMatch[0]);
       } catch {
-        throw new Error(`Failed to parse JSON for ${batchName}: ${parseError.message}`);
+        throw new Error(`Failed to parse JSON for ${batchName}: ${errorMessage}`);
       }
     }
-    throw new Error(`Invalid JSON for ${batchName}: ${parseError.message}`);
+    throw new Error(`Invalid JSON for ${batchName}: ${errorMessage}`);
   }
 };
 
@@ -294,7 +314,7 @@ Provide a comprehensive high-level analysis. Be specific and actionable.
 
   cacheService.set(cacheKey, result, 1000 * 60 * 60); // 1 hour cache
   console.log('✅ [Batch 1] Core analysis generated successfully');
-  return result as CoreAnalysis;
+  return result as unknown as CoreAnalysis;
 };
 
 // ==================== Batch 2: Feature Specifications ====================
@@ -346,8 +366,10 @@ Make the features comprehensive and implementation-ready.
   const result = await makeAIRequest(prompt, featuresSchema, provider, 'Batch 2: Features');
 
   cacheService.set(cacheKey, result.detailedFeatures, 1000 * 60 * 60);
-  console.log(`✅ [Batch 2] Generated ${result.detailedFeatures.length} features`);
-  return result.detailedFeatures as FeatureSpecification[];
+  console.log(
+    `✅ [Batch 2] Generated ${(result.detailedFeatures as FeatureSpecification[] | undefined)?.length || 0} features`,
+  );
+  return result.detailedFeatures as unknown as FeatureSpecification[];
 };
 
 // ==================== Batch 3: Development Plan ====================
@@ -399,8 +421,10 @@ Consider dependencies and logical sequencing. Make it suitable for a Gantt chart
   );
 
   cacheService.set(cacheKey, result.milestones, 1000 * 60 * 60);
-  console.log(`✅ [Batch 3] Generated ${result.milestones.length} milestones`);
-  return result.milestones as Milestone[];
+  console.log(
+    `✅ [Batch 3] Generated ${(result.milestones as Milestone[] | undefined)?.length || 0} milestones`,
+  );
+  return result.milestones as unknown as Milestone[];
 };
 
 // ==================== Batch 4: Architecture Diagram ====================
@@ -463,7 +487,7 @@ Return ONLY the Mermaid code, no markdown code blocks, no explanations.
     'Batch 4: Architecture',
   );
 
-  let diagram = result.systemArchitectureMermaid;
+  let diagram = result.systemArchitectureMermaid as string;
   diagram = validateMermaidCode(diagram);
 
   cacheService.set(cacheKey, diagram, 1000 * 60 * 60);
@@ -530,7 +554,7 @@ Return ONLY the Mermaid code.
   console.log('🚀 [Batch 5] Generating user flow diagram...');
   const result = await makeAIRequest(prompt, userFlowDiagramSchema, provider, 'Batch 5: User Flow');
 
-  let diagram = result.userFlowMermaid;
+  let diagram = result.userFlowMermaid as string;
   diagram = validateMermaidCode(diagram);
 
   cacheService.set(cacheKey, diagram, 1000 * 60 * 60);
@@ -606,7 +630,7 @@ Return ONLY the Mermaid ERD code.
   console.log('🚀 [Batch 6] Generating database ERD...');
   const result = await makeAIRequest(prompt, databaseERDSchema, provider, 'Batch 6: Database ERD');
 
-  let diagram = result.databaseERDMermaid;
+  let diagram = result.databaseERDMermaid as string;
   diagram = validateMermaidERDCode(diagram);
 
   cacheService.set(cacheKey, diagram, 1000 * 60 * 60);
@@ -666,8 +690,9 @@ export const generateProjectPlanBatched = async (
     onProgress?.('Project plan generated successfully', 100);
 
     return projectPlan;
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('❌ Batched generation failed:', error);
-    throw new Error(`Failed to generate project plan: ${error.message}`);
+    throw new Error(`Failed to generate project plan: ${errorMessage}`);
   }
 };

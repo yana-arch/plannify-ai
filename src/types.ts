@@ -187,7 +187,13 @@ export interface ProjectsContextType {
   currentProject: SavedProject | null;
   isLoading: boolean;
   error: string | null;
-  createNewProject: (data: ProjectInputData) => Promise<string | null>;
+  createNewProject: (
+    data: ProjectInputData,
+    options?: {
+      useBatched?: boolean;
+      onProgress?: (batch: string, progress: number) => void;
+    },
+  ) => Promise<string | null>;
   loadProject: (projectId: string) => void;
   deleteProject: (projectId: string) => void;
   importProject: (project: SavedProject) => void;

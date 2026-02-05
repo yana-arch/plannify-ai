@@ -17,6 +17,7 @@ import type {
   ProjectsContextType,
 } from './types';
 import { generateProjectPlan } from './services/aiService';
+import { generateProjectPlanBatched, type ProgressCallback } from './services/batchedAIService';
 import { useSettings } from './SettingsContext';
 
 const ProjectsContext = createContext<ProjectsContextType | undefined>(undefined);
@@ -52,14 +53,25 @@ export const ProjectsProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const createNewProject = useCallback(
-    async (data: ProjectInputData): Promise<string | null> => {
+    async (
+      data: ProjectInputData,
+      options?: {
+        useBatched?: boolean;
+        onProgress?: ProgressCallback;
+      },
+    ): Promise<string | null> => {
       setIsLoading(true);
       setError(null);
       try {
         if (!activeProvider) {
           throw new Error('No active AI provider configured. Please check your settings.');
         }
-        const plan = await generateProjectPlan(data, activeProvider);
+
+        // Use batched or single request based on user preference
+        const plan = options?.useBatched
+          ? await generateProjectPlanBatched(data, activeProvider, options.onProgress)
+          : await generateProjectPlan(data, activeProvider);
+
         const newProject: SavedProject = {
           id: Date.now().toString(),
           projectName: data.projectName,
