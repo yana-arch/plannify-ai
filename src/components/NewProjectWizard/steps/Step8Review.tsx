@@ -3,7 +3,7 @@ import type { ProjectInputData } from '../../../types';
 
 export const Step8Review: React.FC<{ data: ProjectInputData }> = ({ data }) => {
   return (
-    <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
+    <div className="space-y-4 max-h-full overflow-y-auto pr-2">
       <h3 className="text-lg font-semibold text-brand-text-primary">Review Your Project Details</h3>
       <p className="text-sm text-brand-text-secondary">
         Please review the information below before generating the plan.

@@ -267,8 +267,10 @@ const ProviderCard: React.FC<{
   onDelete: () => void;
   onSetActive: () => void;
   onTestConnection: () => void;
-}> = ({ provider, isActive, onEdit, onDelete, onSetActive, onTestConnection }) => {
-  const { isLoading, testProviderConnection } = useSettings();
+}> = ({ provider, isActive, onEdit, onDelete, onSetActive,
+  onTestConnection: _onTestConnection,
+}) => {
+  const { testProviderConnection } = useSettings();
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<boolean | null>(null);
 
@@ -278,7 +280,7 @@ const ProviderCard: React.FC<{
     try {
       const result = await testProviderConnection(provider);
       setTestResult(result);
-    } catch (error) {
+    } catch (_error) {
       setTestResult(false);
     } finally {
       setIsTesting(false);
@@ -404,7 +406,7 @@ export const SettingsView: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full h-full p-6">
       <header className="mb-8 text-center">
         <h2 className="text-3xl font-bold text-brand-text-primary">Settings</h2>
         <p className="text-brand-text-secondary mt-2">
@@ -413,7 +415,7 @@ export const SettingsView: React.FC = () => {
       </header>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-md">
+        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-md max-w-4xl mx-auto">
           <p className="text-red-400 text-sm">{error}</p>
           <button onClick={clearError} className="mt-2 text-xs text-red-300 hover:text-red-200">
             Dismiss
@@ -421,66 +423,70 @@ export const SettingsView: React.FC = () => {
         </div>
       )}
 
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold text-brand-text-primary">API Providers</h3>
-          <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
-            <PlusCircleIcon className="h-4 w-4" />
-            Add Provider
-          </Button>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-brand-text-primary">API Providers</h3>
+            <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
+              <PlusCircleIcon className="h-4 w-4" />
+              Add Provider
+            </Button>
+          </div>
 
-        {activeProvider && (
-          <div className="mb-4 p-4 bg-brand-primary/10 border border-brand-primary/20 rounded-md">
-            <div className="flex items-center gap-2">
-              <CheckCircleIcon className="h-5 w-5 text-brand-primary" />
-              <div>
-                <p className="font-medium text-brand-text-primary">Active Provider</p>
-                <p className="text-sm text-brand-text-secondary">
-                  {activeProvider.name} ({PROVIDER_CONFIGS[activeProvider.type].name})
-                </p>
+          {activeProvider && (
+            <div className="mb-4 p-4 bg-brand-primary/10 border border-brand-primary/20 rounded-md">
+              <div className="flex items-center gap-2">
+                <CheckCircleIcon className="h-5 w-5 text-brand-primary" />
+                <div>
+                  <p className="font-medium text-brand-text-primary">Active Provider</p>
+                  <p className="text-sm text-brand-text-secondary">
+                    {activeProvider.name} ({PROVIDER_CONFIGS[activeProvider.type].name})
+                  </p>
+                </div>
               </div>
             </div>
+          )}
+
+          <div className="grid gap-4">
+            {settings.providers.map((provider) => (
+              <ProviderCard
+                key={provider.id}
+                provider={provider}
+                isActive={provider.id === settings.activeProviderId}
+                onEdit={() => handleEditProvider(provider)}
+                onDelete={() => handleDeleteProvider(provider)}
+                onSetActive={() => handleSetActive(provider)}
+                onTestConnection={() => {}} // Handled internally in ProviderCard
+              />
+            ))}
           </div>
-        )}
-
-        <div className="grid gap-4">
-          {settings.providers.map((provider) => (
-            <ProviderCard
-              key={provider.id}
-              provider={provider}
-              isActive={provider.id === settings.activeProviderId}
-              onEdit={() => handleEditProvider(provider)}
-              onDelete={() => handleDeleteProvider(provider)}
-              onSetActive={() => handleSetActive(provider)}
-              onTestConnection={() => {}} // Handled internally in ProviderCard
-            />
-          ))}
         </div>
-      </div>
 
-      {(showForm || editingProvider) && (
-        <div className="mb-6">
-          <ProviderForm
-            provider={editingProvider}
-            onSave={editingProvider ? handleUpdateProvider : handleAddProvider}
-            onCancel={() => {
-              setShowForm(false);
-              setEditingProvider(undefined);
-            }}
-          />
-        </div>
-      )}
-
-      <div className="mt-8 p-6 bg-brand-surface rounded-lg">
-        <h4 className="font-semibold text-brand-text-primary mb-2">Supported Providers</h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          {Object.entries(PROVIDER_CONFIGS).map(([key, config]) => (
-            <div key={key} className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-brand-primary rounded-full"></div>
-              <span className="text-brand-text-secondary">{config.name}</span>
+        <div className="lg:col-span-4 space-y-6">
+           {(showForm || editingProvider) && (
+            <div className="mb-6">
+              <ProviderForm
+                provider={editingProvider}
+                onSave={editingProvider ? handleUpdateProvider : handleAddProvider}
+                onCancel={() => {
+                  setShowForm(false);
+                  setEditingProvider(undefined);
+                }}
+              />
             </div>
-          ))}
+          )}
+
+          <div className="p-6 bg-brand-surface rounded-lg">
+            <h4 className="font-semibold text-brand-text-primary mb-4">Supported Providers</h4>
+            <div className="space-y-3 text-sm">
+              {Object.entries(PROVIDER_CONFIGS).map(([key, config]) => (
+                <div key={key} className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-brand-primary rounded-full"></div>
+                  <span className="text-brand-text-secondary">{config.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

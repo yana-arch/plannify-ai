@@ -76,17 +76,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     .slice(0, 3);
 
   return (
-    <div className="w-full max-w-5xl mx-auto">
-      <header className="mb-12">
+    <div className="w-full h-full p-6">
+      <header className="mb-8">
         <h1 className="text-4xl font-bold text-brand-text-primary">Welcome to PlannifyAI</h1>
         <p className="text-brand-text-secondary mt-2 max-w-2xl">
           Your intelligent partner for transforming ideas into comprehensive project blueprints.
         </p>
       </header>
 
-      <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <main className="grid grid-cols-1 md:grid-cols-12 gap-6">
         {/* Main CTA */}
-        <div className="lg:col-span-2">
+        <div className="md:col-span-8 lg:col-span-9">
           <Card className="h-full flex flex-col justify-center items-center text-center p-12 bg-gradient-to-br from-brand-primary/10 via-brand-surface to-brand-surface">
             <WandSparklesIcon className="h-12 w-12 text-brand-primary-hover mb-4" />
             <h2 className="text-2xl font-bold text-brand-text-primary">Start a New Project</h2>
@@ -101,7 +101,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Quick Actions */}
-        <div className="flex flex-col gap-6">
+        <div className="md:col-span-4 lg:col-span-3 flex flex-col gap-6">
           <input
             type="file"
             ref={fileInputRef}
@@ -169,7 +169,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {recentProjects.length > 0 && (
         <section className="mt-12">
           <h2 className="text-2xl font-bold text-brand-text-primary mb-6">Recent Projects</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
             {recentProjects.map((project) => (
               <ProjectCard
                 key={project.id}

@@ -201,8 +201,8 @@ export const NewProjectWizard: React.FC<{
 
   return (
     <>
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <header className="mb-8">
+      <div className="w-full h-full flex flex-col p-6">
+        <header className="flex-none mb-6">
           <div className="flex justify-between items-center mb-4">
             <div>
               <h2 className="text-2xl font-bold text-brand-text-primary">
@@ -225,23 +225,52 @@ export const NewProjectWizard: React.FC<{
           />
         </header>
 
-        <main className="space-y-6">
-          <Card className="min-h-[400px]">
-            <CurrentStepComponent
-              data={formData}
-              update={updateFormData}
-              validation={validationResult}
-            />
-          </Card>
+        <main className="flex-grow flex flex-col lg:flex-row gap-8 min-h-0">
+          {/* Left Panel: Form Content */}
+          <div className="flex-grow flex flex-col min-w-0">
+            <Card className="flex-grow flex flex-col min-h-[500px] p-6">
+              <CurrentStepComponent
+                data={formData}
+                update={updateFormData}
+                validation={validationResult}
+              />
+            </Card>
+          </div>
 
-          <ValidationPanel
-            result={validationResult}
-            show={showValidationPanel}
-            onDismiss={() => setShowValidationPanel(false)}
-          />
+          {/* Right Panel: Context & Validation */}
+          <div className="w-full lg:w-80 xl:w-96 flex-none flex flex-col gap-6">
+            {/* Validation Panel - Always visible if there are issues, or just a place for it */}
+            {showValidationPanel && (
+              <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                <ValidationPanel
+                  result={validationResult}
+                  show={true}
+                  onDismiss={() => setShowValidationPanel(false)}
+                />
+              </div>
+            )}
+            
+            {/* Guide / Context Placeholder */}
+            {!showValidationPanel && (
+              <Card className="flex-grow bg-brand-surface-muted/50 border-brand-border/50 p-6">
+                <div className="flex items-center gap-2 mb-4 text-brand-primary">
+                  <div className="p-1.5 bg-brand-primary/10 rounded-md">
+                    <WandSparklesIcon className="h-4 w-4" />
+                  </div>
+                  <h3 className="font-semibold text-sm uppercase tracking-wide">AI Assistant</h3>
+                </div>
+                <div className="space-y-4 text-sm text-brand-text-secondary">
+                  <p>I'm here to help you define your project.</p>
+                  <p>
+                    <strong>Tip:</strong> Be as specific as possible in this step to get the most accurate project plan.
+                  </p>
+                </div>
+              </Card>
+            )}
+          </div>
         </main>
 
-        <footer className="mt-8 pt-6 border-t border-brand-border flex justify-between items-center">
+        <footer className="flex-none mt-8 pt-6 border-t border-brand-border flex justify-between items-center">
           <Button
             variant="secondary"
             onClick={prevStep}

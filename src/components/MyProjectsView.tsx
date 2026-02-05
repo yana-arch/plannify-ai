@@ -12,7 +12,7 @@ interface MyProjectsViewProps {
 export const MyProjectsView: React.FC<MyProjectsViewProps> = ({ onViewProject, onNewProject }) => {
   const { projects, deleteProject } = useProjects();
   return (
-    <div className="w-full max-w-5xl mx-auto">
+    <div className="w-full h-full p-6">
       <header className="mb-8 flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-brand-text-primary">My Projects</h2>
@@ -27,7 +27,7 @@ export const MyProjectsView: React.FC<MyProjectsViewProps> = ({ onViewProject, o
       </header>
       <main>
         {projects.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
             {projects
               .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
               .map((project) => (

@@ -114,7 +114,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ onSelectTemplate }
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to export templates');
     }
   };
@@ -165,7 +165,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ onSelectTemplate }
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to export template');
     }
   };
@@ -242,7 +242,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ onSelectTemplate }
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto">
+    <div className="w-full h-full p-6">
       <header className="mb-8 text-center">
         <h2 className="text-3xl font-bold text-brand-text-primary">Project Templates</h2>
         <p className="text-brand-text-secondary mt-2 max-w-2xl mx-auto">
@@ -349,7 +349,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ onSelectTemplate }
           />
         </div>
       </section>
-      <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
         {filteredTemplates.map((template, index) => (
           <TemplateCard
             key={index}
