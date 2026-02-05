@@ -391,7 +391,7 @@ class AIProviderFactory {
 }
 
 // Main AI Service class
-class AIService {
+export class AIService {
   private provider: AIProvider | undefined;
 
   constructor(provider?: APIProvider) {
@@ -808,7 +808,7 @@ export const generateProjectPlan = async (
 // ... existing code for other functions will be moved here later
 // For now, keeping the core functionality focused on the main plan generation
 
-const validateMermaidCode = (code: string): string => {
+export const validateMermaidCode = (code: string): string => {
   if (!code) return code;
 
   // Only perform minimal validation and basic cleanup
@@ -838,7 +838,7 @@ const validateMermaidCode = (code: string): string => {
   return validatedCode;
 };
 
-const validateMermaidERDCode = (code: string): string => {
+export const validateMermaidERDCode = (code: string): string => {
   if (!code) return code;
 
   // Only perform minimal validation and basic cleanup
