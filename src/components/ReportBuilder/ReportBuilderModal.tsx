@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { ProjectPlan } from '../../types';
-import { ReportSection, ReportConfig } from '../../types/report';
+import { ReportSection, ReportConfig, FormattingOptions } from '../../types/report';
 import { SectionEditor } from './SectionEditor';
 import { ReportPreview } from './ReportPreview';
+import { FormattingPanel } from './FormattingPanel';
+import { FORMATTING_PRESETS } from '@/presets/formatting';
 // dnd-kit imports removed as requested in review
 
 interface ReportBuilderModalProps {
@@ -69,10 +71,47 @@ export const ReportBuilderModal: React.FC<ReportBuilderModalProps> = ({
 }) => {
   const [sections, setSections] = useState<ReportSection[]>(DEFAULT_SECTIONS);
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>('summary');
-  const [reportTitle, setReportTitle] = useState(projectName || 'Project Plan');
+  const [reportTitle] = useState(projectName || 'Project Plan');
+  const [activePanel, setActivePanel] = useState<'sections' | 'formatting'>('sections');
+  const [theme, setTheme] = useState<'modern' | 'corporate' | 'minimal' | 'custom'>('modern');
+  const [formatting, setFormatting] = useState<FormattingOptions>(FORMATTING_PRESETS.modern);
 
   const handleUpdateSection = (updatedSection: ReportSection) => {
     setSections((prev) => prev.map((s) => (s.id === updatedSection.id ? updatedSection : s)));
+  };
+
+  const handleSelectPreset = (presetName: string) => {
+    // Define allowed theme types
+    const allowedThemes = ['modern', 'corporate', 'minimal', 'custom'] as const;
+    type ThemeType = (typeof allowedThemes)[number];
+
+    // Type-safe theme check
+    if (allowedThemes.includes(presetName as ThemeType)) {
+      const typedTheme = presetName as ThemeType;
+      setTheme(typedTheme);
+
+      // Apply preset if not custom and exists
+      if (typedTheme !== 'custom' && FORMATTING_PRESETS[typedTheme]) {
+        setFormatting(FORMATTING_PRESETS[typedTheme]);
+      }
+    }
+  };
+
+  const handleFormattingUpdate = (newFormatting: FormattingOptions) => {
+    setFormatting(newFormatting);
+    // When user customizes, switch to 'custom' theme
+    if (theme !== 'custom') {
+      setTheme('custom');
+    }
+  };
+
+  const handleExport = () => {
+    onExport({
+      title: reportTitle,
+      sections,
+      theme,
+      formatting,
+    });
   };
 
   const selectedSection = sections.find((s) => s.id === selectedSectionId);
@@ -89,9 +128,34 @@ export const ReportBuilderModal: React.FC<ReportBuilderModalProps> = ({
               Custom Export Builder
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Customize your report structure and content
+              Customize your report structure and formatting
             </p>
           </div>
+
+          {/* Tab Navigation */}
+          <div className="flex items-center gap-2 bg-gray-200 dark:bg-gray-700 p-1 rounded-lg">
+            <button
+              onClick={() => setActivePanel('sections')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                activePanel === 'sections'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              Sections
+            </button>
+            <button
+              onClick={() => setActivePanel('formatting')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                activePanel === 'formatting'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              Formatting
+            </button>
+          </div>
+
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
@@ -100,7 +164,7 @@ export const ReportBuilderModal: React.FC<ReportBuilderModalProps> = ({
               Cancel
             </button>
             <button
-              onClick={() => onExport({ title: reportTitle, sections, theme: 'modern' })}
+              onClick={handleExport}
               className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow transition-colors flex items-center gap-2"
             >
               <span>Download Report</span>
@@ -110,51 +174,66 @@ export const ReportBuilderModal: React.FC<ReportBuilderModalProps> = ({
 
         {/* Main Content */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Left Sidebar: Sections List */}
-          <div className="w-1/4 min-w-[280px] border-r border-gray-200 dark:border-gray-700 overflow-y-auto bg-gray-50 dark:bg-gray-900/30 p-4">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
-              Report Structure
-            </h3>
-            <div className="space-y-2">
-              {sections.map((section) => (
-                <div
-                  key={section.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setSelectedSectionId(section.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setSelectedSectionId(section.id);
-                    }
-                  }}
-                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                    selectedSectionId === section.id
-                      ? 'bg-white dark:bg-gray-800 border-indigo-500 shadow-sm ring-1 ring-indigo-500'
-                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-indigo-300'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={section.isEnabled}
-                    tabIndex={-1} // Prevent double-tabbing, handle via parent click
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      const newSections = sections.map((s) =>
-                        s.id === section.id ? { ...s, isEnabled: e.target.checked } : s,
-                      );
-                      setSections(newSections);
-                    }}
-                    className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
-                  />
-                  <span
-                    className={`text-sm font-medium ${section.isEnabled ? 'text-gray-900 dark:text-gray-200' : 'text-gray-400 decoration-slate-400'}`}
-                  >
-                    {section.title}
-                  </span>
+          {/* Left Sidebar: Sections List OR Formatting Panel */}
+          <div className="w-1/4 min-w-[280px] border-r border-gray-200 dark:border-gray-700 overflow-y-auto bg-gray-50 dark:bg-gray-900/30">
+            {activePanel === 'sections' ? (
+              <div className="p-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                  Report Structure
+                </h3>
+                <div className="space-y-2">
+                  {sections.map((section) => (
+                    <div
+                      key={section.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setSelectedSectionId(section.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedSectionId(section.id);
+                        }
+                      }}
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                        selectedSectionId === section.id
+                          ? 'bg-white dark:bg-gray-800 border-indigo-500 shadow-sm ring-1 ring-indigo-500'
+                          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-indigo-300'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={section.isEnabled}
+                        tabIndex={-1}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          const newSections = sections.map((s) =>
+                            s.id === section.id ? { ...s, isEnabled: e.target.checked } : s,
+                          );
+                          setSections(newSections);
+                        }}
+                        className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                      />
+                      <span
+                        className={`text-sm font-medium ${
+                          section.isEnabled
+                            ? 'text-gray-900 dark:text-gray-200'
+                            : 'text-gray-400 decoration-slate-400'
+                        }`}
+                      >
+                        {section.title}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <FormattingPanel
+                formatting={formatting}
+                onUpdate={handleFormattingUpdate}
+                onSelectPreset={handleSelectPreset}
+                currentTheme={theme}
+              />
+            )}
           </div>
 
           {/* Center Panel: Editor */}

@@ -1,7 +1,9 @@
-import type { ProjectPlan } from '../types';
-import type { ReportConfig } from '../types/report';
-// import * as docx from 'docx'; // Removed to ensure code splitting
+import type { ProjectPlan } from '@/types';
+import type { ReportConfig } from '@/types/report';
 import MarkdownIt from 'markdown-it';
+import { getFormattingPreset } from '@/presets/formatting';
+import { PAGE_SIZES, LINE_SPACING, DEFAULT_SPACING } from '@/constants/docx';
+import { parseMarkdownTokensToDocx } from './markdownParser';
 
 const downloadBlob = (blob: Blob, filename: string) => {
   const url = URL.createObjectURL(blob);
@@ -16,7 +18,31 @@ const downloadBlob = (blob: Blob, filename: string) => {
 
 export const exportPlanAsDocx = async (plan: ProjectPlan, config: ReportConfig) => {
   try {
-    const docx = await import('docx');
+    // Dynamic import with retry logic
+    let docx;
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    while (retryCount < maxRetries) {
+      try {
+        docx = await import('docx');
+        break; // Success, exit retry loop
+      } catch (_importError) {
+        retryCount++;
+        if (retryCount >= maxRetries) {
+          throw new Error(
+            'Failed to load DOCX library after multiple attempts. Please refresh the page.',
+          );
+        }
+        // Wait before retry (exponential backoff)
+        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
+      }
+    }
+
+    if (!docx) {
+      throw new Error('Failed to load DOCX library');
+    }
+
     const {
       Document,
       Packer,
@@ -32,6 +58,10 @@ export const exportPlanAsDocx = async (plan: ProjectPlan, config: ReportConfig) 
     } = docx;
 
     console.log('🚀 Starting DOCX export for project:', config.title);
+
+    // Get formatting options from config or use theme preset
+    const formatting = config.formatting || getFormattingPreset(config.theme);
+    console.log(`📐 Using formatting: ${config.theme} theme`);
 
     const docSections: any[] = [];
 
@@ -98,9 +128,13 @@ export const exportPlanAsDocx = async (plan: ProjectPlan, config: ReportConfig) 
         const md = new MarkdownIt();
         const tokens = md.parse(section.content, {});
 
-        // Re-use the markdown parsing logic from exportReportAsDocx
-        // Note: Ideally extract this to a helper function
-        const parsedParagraphs = parseMarkdownTokensToDocx(tokens, docx);
+        // Use improved markdown parser with proper typing
+        const parsedParagraphs = parseMarkdownTokensToDocx(
+          tokens,
+          Paragraph,
+          TextRun,
+          formatting.documentFont.size, // Pass font size from formatting
+        );
         docSections.push(...parsedParagraphs);
       } else if (section.type === 'dynamic') {
         // Fallback to standard data generation if no Custom Content
@@ -256,27 +290,82 @@ export const exportPlanAsDocx = async (plan: ProjectPlan, config: ReportConfig) 
             basedOn: 'Normal',
             next: 'Normal',
             run: {
-              size: 24, // 12pt
-              font: 'Calibri',
+              size: formatting.documentFont.size,
+              font: formatting.documentFont.family,
+              color: formatting.documentFont.color || '000000',
+              bold: formatting.documentFont.bold,
+              italics: formatting.documentFont.italic,
             },
             paragraph: {
               spacing: {
-                after: 200,
-                line: 360, // 1.5 line spacing
+                after: DEFAULT_SPACING.AFTER,
+                line: LINE_SPACING.ONE_AND_HALF,
+              },
+            },
+          },
+          {
+            id: 'Title',
+            name: 'Title',
+            run: {
+              size: formatting.headings.title.size,
+              font: formatting.headings.title.family,
+              color: formatting.headings.title.color || '000000',
+              bold: formatting.headings.title.bold !== false,
+            },
+            paragraph: {
+              spacing: {
+                before: formatting.headings.title.spacingBefore || 0,
+                after: formatting.headings.title.spacingAfter || 400,
               },
             },
           },
           {
             id: 'Heading1',
             name: 'Heading 1',
-            run: { size: 32, bold: true, color: '2E74B5' },
-            paragraph: { spacing: { before: 600, after: 300 } },
+            run: {
+              size: formatting.headings.h1.size,
+              font: formatting.headings.h1.family,
+              color: formatting.headings.h1.color || '000000',
+              bold: formatting.headings.h1.bold !== false,
+            },
+            paragraph: {
+              spacing: {
+                before: formatting.headings.h1.spacingBefore || 600,
+                after: formatting.headings.h1.spacingAfter || 300,
+              },
+            },
           },
           {
             id: 'Heading2',
             name: 'Heading 2',
-            run: { size: 28, bold: true, color: '2E74B5' },
-            paragraph: { spacing: { before: 400, after: 200 } },
+            run: {
+              size: formatting.headings.h2.size,
+              font: formatting.headings.h2.family,
+              color: formatting.headings.h2.color || '000000',
+              bold: formatting.headings.h2.bold !== false,
+            },
+            paragraph: {
+              spacing: {
+                before: formatting.headings.h2.spacingBefore || 400,
+                after: formatting.headings.h2.spacingAfter || 200,
+              },
+            },
+          },
+          {
+            id: 'Heading3',
+            name: 'Heading 3',
+            run: {
+              size: formatting.headings.h3.size,
+              font: formatting.headings.h3.family,
+              color: formatting.headings.h3.color || '000000',
+              bold: formatting.headings.h3.bold !== false,
+            },
+            paragraph: {
+              spacing: {
+                before: formatting.headings.h3.spacingBefore || 300,
+                after: formatting.headings.h3.spacingAfter || 150,
+              },
+            },
           },
         ],
       },
@@ -284,12 +373,17 @@ export const exportPlanAsDocx = async (plan: ProjectPlan, config: ReportConfig) 
         {
           properties: {
             page: {
-              margin: {
-                top: 1440, // 1 inch
-                right: 1440, // 1 inch
-                bottom: 1440, // 1 inch
-                left: 1440, // 1 inch
-              },
+              margin: formatting.margins,
+              // Set page size based on formatting.pageSize
+              ...(formatting.pageSize === 'a4'
+                ? {
+                    width: PAGE_SIZES.A4.width,
+                    height: PAGE_SIZES.A4.height,
+                  }
+                : {
+                    width: PAGE_SIZES.LETTER.width,
+                    height: PAGE_SIZES.LETTER.height,
+                  }),
             },
           },
           children: docSections,
@@ -303,75 +397,24 @@ export const exportPlanAsDocx = async (plan: ProjectPlan, config: ReportConfig) 
 
     downloadBlob(blob, filename);
     console.log('✅ DOCX export completed successfully');
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ DOCX export failed:', error);
-    alert(`Export failed: ${error.message}`);
-  }
-};
 
-// Type definitions for markdown parsing
-interface MarkdownToken {
-  type: string;
-  content?: string;
-  children?: MarkdownToken[];
-  tag?: string;
-}
+    // Provide user-friendly error messages
+    let errorMessage = 'Failed to export DOCX document.';
 
-interface DocxModule {
-  Paragraph: any;
-  TextRun: any;
-  [key: string]: any;
-}
-
-// Helper to parse markdown tokens to DOCX elements
-function parseMarkdownTokensToDocx(tokens: MarkdownToken[], docx: DocxModule): any[] {
-  const { Paragraph, TextRun } = docx;
-  const children: any[] = [];
-
-  let currentParagraphChildren: any[] = [];
-
-  tokens.forEach((token) => {
-    if (token.type === 'inline') {
-      // If token has children (formatting), try to interpret them, otherwise plain text
-      if (token.children && token.children.length > 0) {
-        // Simple state machine for bold/italic
-        let isBold = false;
-        let isItalic = false;
-
-        token.children.forEach((child: MarkdownToken) => {
-          if (child.type === 'text') {
-            currentParagraphChildren.push(
-              new TextRun({
-                text: child.content,
-                bold: isBold,
-                italics: isItalic,
-              }),
-            );
-          } else if (child.type === 'strong_open') {
-            isBold = true;
-          } else if (child.type === 'strong_close') {
-            isBold = false;
-          } else if (child.type === 'em_open') {
-            isItalic = true;
-          } else if (child.type === 'em_close') {
-            isItalic = false;
-          }
-        });
+    if (error instanceof Error) {
+      if (error.message.includes('import')) {
+        errorMessage = 'Failed to load DOCX library. Please refresh and try again.';
+      } else if (error.message.includes('formatting')) {
+        errorMessage = 'Invalid formatting options. Please check your theme settings.';
       } else {
-        currentParagraphChildren.push(new TextRun(token.content));
-      }
-    } else if (token.type === 'paragraph_close' || token.type === 'heading_close') {
-      if (currentParagraphChildren.length > 0) {
-        children.push(new Paragraph({ children: currentParagraphChildren }));
-        currentParagraphChildren = [];
+        errorMessage = `Export failed: ${error.message}`;
       }
     }
-  });
 
-  return children;
-}
-
-// Legacy function removed - use exportPlanAsDocx instead
-// If you need this functionality, construct a ReportConfig and call exportPlanAsDocx
+    alert(errorMessage);
+  }
+};
 
 // End of file
