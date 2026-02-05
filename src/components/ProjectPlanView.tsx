@@ -9,8 +9,10 @@ import type {
   Milestone,
   SavedProject,
 } from '../types';
+import type { ReportConfig } from '../types/report';
 import { Card, Button, Modal } from './ui';
 import { AIReviewTab } from './AIReviewTab';
+import { ReportBuilderModal } from './ReportBuilder/ReportBuilderModal';
 import {
   DownloadIcon,
   WandSparklesIcon,
@@ -153,9 +155,23 @@ const OverviewTab: React.FC<{
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isReportBuilderOpen, setIsReportBuilderOpen] = useState(false);
   const { updateCurrentProjectPlan } = useProjects();
 
   const handleEvolveToggle = () => setIsEvolving(!isEvolving);
+
+  const handleExportClick = () => {
+    setIsReportBuilderOpen(true);
+  };
+
+  const handleReportExport = async (config: ReportConfig) => {
+    setIsReportBuilderOpen(false);
+    if (plan) {
+      console.log('Exporting with config:', config);
+      const { exportPlanAsDocx } = await loadDocxService();
+      await exportPlanAsDocx(plan, config);
+    }
+  };
 
   const handleRegenerate = async () => {
     if (!evolvePrompt.trim()) {
@@ -200,6 +216,14 @@ const OverviewTab: React.FC<{
             <h3 className="text-lg font-semibold mb-2">AI-Generated Project Summary</h3>
             <p className="text-brand-text-secondary">{plan.summary}</p>
           </div>
+          {/* The button below is the one being modified/added as per the instruction */}
+          <button
+            onClick={handleExportClick}
+            className="flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+          >
+            <DownloadIcon className="mr-2 h-5 w-5" />
+            Export DOCX
+          </button>
           <Button
             variant="secondary"
             className="!px-2 !py-1 text-xs flex-shrink-0"
@@ -281,6 +305,13 @@ const OverviewTab: React.FC<{
           </ul>
         </Card>
       </div>
+      <ReportBuilderModal
+        isOpen={isReportBuilderOpen}
+        onClose={() => setIsReportBuilderOpen(false)}
+        projectPlan={plan}
+        projectName={projectInput.projectName || 'Project Plan'}
+        onExport={handleReportExport}
+      />
     </div>
   );
 };
@@ -1126,6 +1157,21 @@ const ReportsTab: React.FC<{ plan: ProjectPlan; projectName: string }> = ({
   const [loadingReport, setLoadingReport] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [isReportBuilderOpen, setIsReportBuilderOpen] = useState(false);
+
+  const handleExportClick = () => {
+    setIsReportBuilderOpen(true);
+  };
+
+  const handleReportExport = async (config: ReportConfig) => {
+    setIsReportBuilderOpen(false);
+    if (plan) {
+      console.log('Exporting with config:', config);
+      const { exportPlanAsDocx } = await loadDocxService();
+      await exportPlanAsDocx(plan, config);
+    }
+  };
+
   const handleGenerateReport = async (template: ReportTemplate, format: 'md' | 'docx') => {
     if (!activeProvider) {
       setError('No active AI provider configured. Please check your settings.');
@@ -1141,8 +1187,13 @@ const ReportsTab: React.FC<{ plan: ProjectPlan; projectName: string }> = ({
         downloadAsMarkdown(reportContent, filename);
       } else {
         // Lazy load DOCX service only when needed
-        const { exportReportAsDocx } = await loadDocxService();
-        await exportReportAsDocx(reportContent, projectName, template.title);
+        // Legacy export function removed - use the Report Builder modal instead
+        console.warn(
+          'Direct DOCX export removed. Please use the Report Builder for custom exports.',
+        );
+        alert(
+          'This export method has been deprecated. Please use the Report Builder for custom DOCX exports.',
+        );
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
@@ -1184,8 +1235,7 @@ const ReportsTab: React.FC<{ plan: ProjectPlan; projectName: string }> = ({
                 Generate MD
               </Button>
               <Button
-                onClick={() => handleGenerateReport(template, 'docx')}
-                isLoading={loadingReport === `${template.id}_docx`}
+                onClick={handleExportClick} // Changed to open ReportBuilderModal
                 className="w-full text-xs"
               >
                 Generate DOCX
@@ -1194,6 +1244,15 @@ const ReportsTab: React.FC<{ plan: ProjectPlan; projectName: string }> = ({
           </Card>
         ))}
       </div>
+
+      {/* Report Builder Modal */}
+      <ReportBuilderModal
+        isOpen={isReportBuilderOpen}
+        onClose={() => setIsReportBuilderOpen(false)}
+        projectPlan={plan}
+        projectName={projectName}
+        onExport={handleReportExport}
+      />
     </div>
   );
 };
@@ -1266,34 +1325,9 @@ export const ProjectPlanView: React.FC<{ project: SavedProject }> = ({ project }
 
   useEffect(() => {
     // When a new project is loaded, switch to the overview tab.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveTab('Overview');
   }, [project.id]);
-
-  const [exportFormat, setExportFormat] = useState<'md' | 'docx' | 'pdf'>('md');
-  const [isExporting, setIsExporting] = useState(false);
-
-  const handleExport = async (format?: 'md' | 'docx' | 'pdf') => {
-    const selectedFormat = format || exportFormat;
-    setIsExporting(true);
-
-    try {
-      if (selectedFormat === 'md') {
-        const markdownContent = formatPlanToMarkdown(projectPlan, projectName);
-        downloadAsMarkdown(markdownContent, `${projectName.replace(/\s+/g, '_')}_Plan.md`);
-      } else if (selectedFormat === 'pdf') {
-        const { exportPlanAsPdf } = await loadPdfService();
-        await exportPlanAsPdf(projectName);
-      } else {
-        // Lazy load DOCX service only when needed
-        const { exportPlanAsDocx } = await loadDocxService();
-        await exportPlanAsDocx(projectPlan, projectName);
-      }
-    } catch (error) {
-      console.error('Export failed:', error);
-    } finally {
-      setIsExporting(false);
-    }
-  };
 
   const renderContent = () => {
     const projectContext = { name: projectName, description: projectPlan.summary };
@@ -1325,21 +1359,6 @@ export const ProjectPlanView: React.FC<{ project: SavedProject }> = ({ project }
     <div className="flex flex-col flex-grow bg-brand-surface/50 backdrop-blur-lg border border-brand-border/50 rounded-xl shadow-2xl p-4 w-full">
       <header className="flex justify-between items-center border-b border-brand-border pb-4 mb-4 px-4">
         <h2 className="text-xl font-bold text-brand-text-primary">{projectName} - Project Plan</h2>
-        <div className="flex items-center gap-3">
-          <select
-            value={exportFormat}
-            onChange={(e) => setExportFormat(e.target.value as 'md' | 'docx' | 'pdf')}
-            className="bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-sm text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
-          >
-            <option value="md">Markdown (.md)</option>
-            <option value="docx">Word (.docx)</option>
-            <option value="pdf">PDF (.pdf)</option>
-          </select>
-          <Button variant="secondary" onClick={() => handleExport()} isLoading={isExporting}>
-            <DownloadIcon className="h-4 w-4 mr-2" />
-            {isExporting ? 'Exporting...' : 'Export Plan'}
-          </Button>
-        </div>
       </header>
       <div className="flex flex-grow">
         <PlanSubNav activeTab={activeTab} setActiveTab={setActiveTab} />

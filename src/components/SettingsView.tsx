@@ -267,7 +267,12 @@ const ProviderCard: React.FC<{
   onDelete: () => void;
   onSetActive: () => void;
   onTestConnection: () => void;
-}> = ({ provider, isActive, onEdit, onDelete, onSetActive,
+}> = ({
+  provider,
+  isActive,
+  onEdit,
+  onDelete,
+  onSetActive,
   onTestConnection: _onTestConnection,
 }) => {
   const { testProviderConnection } = useSettings();
@@ -463,7 +468,7 @@ export const SettingsView: React.FC = () => {
         </div>
 
         <div className="lg:col-span-4 space-y-6">
-           {(showForm || editingProvider) && (
+          {(showForm || editingProvider) && (
             <div className="mb-6">
               <ProviderForm
                 provider={editingProvider}

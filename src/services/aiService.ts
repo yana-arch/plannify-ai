@@ -10,6 +10,7 @@ import type {
 import type { APIProvider } from '../types';
 import { cacheService } from './cacheService';
 import { retryService } from './retryService';
+import { extractTextFromProviderResponse, validateAndSanitizePrompt } from './aiServiceUtils';
 
 const featureSpecificationSchema = {
   type: Type.OBJECT,
@@ -391,18 +392,51 @@ class AIProviderFactory {
 
 // Main AI Service class
 class AIService {
-  private provider: AIProvider;
+  private provider: AIProvider | undefined;
 
-  constructor(provider: APIProvider) {
-    this.provider = AIProviderFactory.createProvider(provider);
+  constructor(provider?: APIProvider) {
+    if (provider) {
+      this.provider = AIProviderFactory.createProvider(provider);
+    }
   }
 
   async generateContent(prompt: string, options?: any): Promise<any> {
+    if (!this.provider) {
+      throw new Error('AI Provider not initialized');
+    }
     return await this.provider.generateContent(prompt, options);
   }
 
   getModelName(): string {
-    return this.provider.getModelName();
+    return this.provider?.getModelName() || 'Unknown';
+  }
+
+  async generateSectionContent(
+    sectionTitle: string,
+    currentContent: string,
+    userPrompt: string,
+    provider: APIProvider,
+  ): Promise<string> {
+    const prompt = `
+        You are a professional technical writer editing a project plan report.
+        
+        Section: "${sectionTitle}"
+        Current Content (Context):
+        "${currentContent}"
+
+        User Instruction: "${userPrompt}"
+
+        Please rewrite the content for this section based on the user's instruction. 
+        Return ONLY the new content in Markdown format. 
+        Do not include "Here is the rewritten content" or similar fluff.
+      `;
+
+    const tempService = new AIService(provider);
+    const response = await tempService.generateContent(prompt);
+
+    // Use the utility function to extract text from any provider
+    const text = extractTextFromProviderResponse(response, provider.type);
+    return text.trim();
   }
 }
 
@@ -1432,3 +1466,5 @@ export const generateCoreRequirements = async (
     throw error;
   }
 };
+
+export const aiService = new AIService();

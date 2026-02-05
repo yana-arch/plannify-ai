@@ -249,7 +249,7 @@ export const NewProjectWizard: React.FC<{
                 />
               </div>
             )}
-            
+
             {/* Guide / Context Placeholder */}
             {!showValidationPanel && (
               <Card className="flex-grow bg-brand-surface-muted/50 border-brand-border/50 p-6">
@@ -262,7 +262,8 @@ export const NewProjectWizard: React.FC<{
                 <div className="space-y-4 text-sm text-brand-text-secondary">
                   <p>I'm here to help you define your project.</p>
                   <p>
-                    <strong>Tip:</strong> Be as specific as possible in this step to get the most accurate project plan.
+                    <strong>Tip:</strong> Be as specific as possible in this step to get the most
+                    accurate project plan.
                   </p>
                 </div>
               </Card>
