@@ -1,6 +1,6 @@
 import React from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { GridIcon, LayoutDashboardIcon, FolderKanbanIcon, CopyIcon, PlusCircleIcon } from './icons';
-import type { Screen } from '../types';
 
 // Simple settings icon
 const SettingsIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -22,22 +22,21 @@ const SettingsIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const navigation = [
-  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboardIcon },
-  { id: 'wizard', name: 'New Project', icon: PlusCircleIcon },
-  { id: 'templates', name: 'Templates', icon: CopyIcon },
-  { id: 'projects', name: 'My Projects', icon: FolderKanbanIcon },
-  { id: 'settings', name: 'Settings', icon: SettingsIcon },
+  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboardIcon, path: '/dashboard' },
+  { id: 'wizard', name: 'New Project', icon: PlusCircleIcon, path: '/wizard' },
+  { id: 'templates', name: 'Templates', icon: CopyIcon, path: '/templates' },
+  { id: 'projects', name: 'My Projects', icon: FolderKanbanIcon, path: '/projects' },
+  { id: 'settings', name: 'Settings', icon: SettingsIcon, path: '/settings' },
 ];
 
 interface NavItemProps {
   item: (typeof navigation)[0];
   isActive: boolean;
-  onClick: () => void;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ item, isActive, onClick }) => (
-  <button
-    onClick={onClick}
+const NavItem: React.FC<NavItemProps> = ({ item, isActive }) => (
+  <NavLink
+    to={item.path}
     className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
       ${
         isActive
@@ -47,15 +46,27 @@ const NavItem: React.FC<NavItemProps> = ({ item, isActive, onClick }) => (
   >
     <item.icon className="h-5 w-5 mr-3" />
     {item.name}
-  </button>
+  </NavLink>
 );
 
-interface SidebarProps {
-  activeScreen: Screen;
-  onScreenChange: (screen: Screen) => void;
-}
+export const Sidebar: React.FC = () => {
+  const location = useLocation();
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeScreen, onScreenChange }) => {
+  const isActive = (path: string) => {
+    if (path === '/dashboard') {
+      return location.pathname === '/' || location.pathname === '/dashboard';
+    }
+    // For projects route, match both /projects and /projects/:id
+    if (path === '/projects') {
+      return location.pathname.startsWith('/projects');
+    }
+    // For wizard route, match both /wizard and /wizard/:templateId
+    if (path === '/wizard') {
+      return location.pathname.startsWith('/wizard');
+    }
+    return location.pathname === path;
+  };
+
   return (
     <aside className="w-64 flex-shrink-0 p-4 border-r border-brand-border">
       <div className="flex items-center mb-8">
@@ -66,12 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeScreen, onScreenChange }
       </div>
       <nav className="space-y-1">
         {navigation.map((item) => (
-          <NavItem
-            key={item.id}
-            item={item}
-            isActive={activeScreen === item.id}
-            onClick={() => onScreenChange(item.id as Screen)}
-          />
+          <NavItem key={item.id} item={item} isActive={isActive(item.path)} />
         ))}
       </nav>
     </aside>

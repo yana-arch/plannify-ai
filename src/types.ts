@@ -135,8 +135,6 @@ export interface ReportTemplate {
   icon: React.FC<React.SVGProps<SVGSVGElement>>;
 }
 
-export type Screen = 'wizard' | 'templates' | 'plan' | 'projects' | 'dashboard' | 'settings';
-
 export type APIProviderType =
   | 'openrouter'
   | 'gemini'

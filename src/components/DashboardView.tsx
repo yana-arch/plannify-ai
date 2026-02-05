@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { SavedProject, Screen } from '../types';
+import type { SavedProject } from '../types';
 import { Card, Button } from './ui';
 import { WandSparklesIcon, FolderKanbanIcon, CopyIcon, LightbulbIcon } from './icons';
 import { useProjects } from '../ProjectContext';
@@ -7,7 +7,7 @@ import { useProjects } from '../ProjectContext';
 interface DashboardViewProps {
   onViewProject: (project: SavedProject) => void;
   onNewProject: () => void;
-  onScreenChange: (screen: Screen) => void;
+  onScreenChange: (screen: string) => void;
 }
 
 const ProjectCard: React.FC<{ project: SavedProject; onView: () => void }> = ({
