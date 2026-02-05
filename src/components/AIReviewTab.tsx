@@ -3,13 +3,7 @@ import type { ProjectPlan, CritiqueResult, APIProvider } from '../types';
 import { Card, Button, Badge } from './ui';
 import { generateCritique } from '../services/aiService';
 import { useSettings } from '../SettingsContext';
-import { 
-  AlertTriangleIcon, 
-  CheckCircleIcon, 
-  LightbulbIcon, 
-  PlayIcon,
-  UserIcon
-} from './icons';
+import { AlertTriangleIcon, CheckCircleIcon, LightbulbIcon, PlayIcon, UserIcon } from './icons';
 import ReactMarkdown from 'react-markdown';
 
 interface AIReviewTabProps {
@@ -18,10 +12,30 @@ interface AIReviewTabProps {
 }
 
 const PERSONAS = [
-  { id: 'vc', name: 'VC Investor', description: 'Focuses on business viability, scalability, and ROI.', icon: '💰' },
-  { id: 'cto', name: 'Strict CTO', description: 'Focuses on technical architecture, security, and debt.', icon: '💻' },
-  { id: 'user', name: 'UX Advocate', description: 'Focuses on user journey, accessibility, and friction.', icon: '👥' },
-  { id: 'hacker', name: 'Security Expert', description: 'Focuses on vulnerabilities and data protection.', icon: '🛡️' },
+  {
+    id: 'vc',
+    name: 'VC Investor',
+    description: 'Focuses on business viability, scalability, and ROI.',
+    icon: '💰',
+  },
+  {
+    id: 'cto',
+    name: 'Strict CTO',
+    description: 'Focuses on technical architecture, security, and debt.',
+    icon: '💻',
+  },
+  {
+    id: 'user',
+    name: 'UX Advocate',
+    description: 'Focuses on user journey, accessibility, and friction.',
+    icon: '👥',
+  },
+  {
+    id: 'hacker',
+    name: 'Security Expert',
+    description: 'Focuses on vulnerabilities and data protection.',
+    icon: '🛡️',
+  },
 ];
 
 export const AIReviewTab: React.FC<AIReviewTabProps> = ({ plan, projectName }) => {
@@ -40,7 +54,12 @@ export const AIReviewTab: React.FC<AIReviewTabProps> = ({ plan, projectName }) =
     setIsAnalyzing(true);
     setError(null);
     try {
-      const result = await generateCritique(plan, projectName, selectedPersona.name, activeProvider);
+      const result = await generateCritique(
+        plan,
+        projectName,
+        selectedPersona.name,
+        activeProvider,
+      );
       setCritique(result);
     } catch (err) {
       console.error(err);
@@ -81,9 +100,9 @@ export const AIReviewTab: React.FC<AIReviewTabProps> = ({ plan, projectName }) =
             ))}
           </div>
           <div className="mt-6">
-            <Button 
-              onClick={handleAnalyze} 
-              disabled={isAnalyzing} 
+            <Button
+              onClick={handleAnalyze}
+              disabled={isAnalyzing}
               className="w-full"
               variant={isAnalyzing ? 'secondary' : 'primary'}
             >
@@ -110,7 +129,8 @@ export const AIReviewTab: React.FC<AIReviewTabProps> = ({ plan, projectName }) =
               <span className="text-4xl mb-4">🕵️‍♀️</span>
               <p className="text-lg font-medium">Ready to Review</p>
               <p className="text-sm text-center max-w-sm mt-2">
-                Select a persona and click "Run Analysis" to get a critical evaluation of your project plan.
+                Select a persona and click "Run Analysis" to get a critical evaluation of your
+                project plan.
               </p>
             </div>
           ) : (
@@ -122,14 +142,23 @@ export const AIReviewTab: React.FC<AIReviewTabProps> = ({ plan, projectName }) =
                     <h2 className="text-2xl font-bold text-brand-text-primary flex items-center gap-2">
                       {selectedPersona.icon} {selectedPersona.name}'s Report
                     </h2>
-                    <p className="text-brand-text-secondary">Generated on {new Date().toLocaleDateString()}</p>
+                    <p className="text-brand-text-secondary">
+                      Generated on {new Date().toLocaleDateString()}
+                    </p>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="text-sm text-brand-text-secondary uppercase tracking-wider font-semibold">Overall Score</span>
-                    <div className={`text-4xl font-bold ${
-                      critique.score >= 80 ? 'text-green-500' : 
-                      critique.score >= 60 ? 'text-yellow-500' : 'text-red-500'
-                    }`}>
+                    <span className="text-sm text-brand-text-secondary uppercase tracking-wider font-semibold">
+                      Overall Score
+                    </span>
+                    <div
+                      className={`text-4xl font-bold ${
+                        critique.score >= 80
+                          ? 'text-green-500'
+                          : critique.score >= 60
+                            ? 'text-yellow-500'
+                            : 'text-red-500'
+                      }`}
+                    >
                       {critique.score}/100
                     </div>
                   </div>

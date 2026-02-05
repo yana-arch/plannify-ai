@@ -6,7 +6,6 @@ import type {
   ReportType,
   Milestone,
   Priority,
-  CoreRequirement,
 } from '../types';
 import type { APIProvider } from '../types';
 import { cacheService } from './cacheService';
@@ -592,7 +591,7 @@ const buildPrompt = (data: ProjectInputData): string => {
 
     **Entity Definition Examples:**
     - **INCORRECT (Incorrect constraints):** 'User { id; name }'
-    - **CORRECT:** 'User { int id PK "Primary key for user"; varchar name "User\'s full name" }'
+    - **CORRECT:** 'User { int id PK "Primary key for user"; varchar name "User's full name" }'
 
     - **INCORRECT (Missing quotes in descriptions):** 'User { int id PK; varchar email FK }'
     - **CORRECT:** 'User { int id PK "Primary key"; varchar email FK "References..." }'
@@ -718,7 +717,7 @@ export const generateProjectPlan = async (
         try {
           plan = JSON.parse(jsonMatch[0]);
           console.log('✅ JSON extracted and parsed from text block');
-        } catch (extractError) {
+        } catch {
           throw new Error(
             `Failed to parse JSON response from ${provider.type}: ${parseError.message}. Extracted content: ${jsonMatch[0].substring(0, 200)}...`,
           );

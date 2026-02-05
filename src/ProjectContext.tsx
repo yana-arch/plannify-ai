@@ -182,7 +182,7 @@ export const ProjectsProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     // Check if project already exists to avoid duplicates (optional, or overwrite)
     // For now, let's treat it as a new import or update if ID matches
-    const existingIndex = projects.findIndex(p => p.id === project.id);
+    const existingIndex = projects.findIndex((p) => p.id === project.id);
     let updatedProjects: SavedProject[];
 
     if (existingIndex >= 0) {
@@ -191,7 +191,7 @@ export const ProjectsProvider: React.FC<{ children: ReactNode }> = ({ children }
     } else {
       updatedProjects = [...projects, project];
     }
-    
+
     saveProjectsToStorage(updatedProjects);
     setCurrentProjectId(project.id);
   };

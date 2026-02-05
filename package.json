@@ -13,7 +13,7 @@
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --watchAll=false",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
-    "format": "prettier --write ."
+    "format": "prettier --write ./src"
   },
   "dependencies": {
     "@google/genai": "^1.24.0",

@@ -1,5 +1,5 @@
 // Validation utilities for project data input
-import type { ProjectInputData, CoreRequirement, Priority } from '../types';
+import type { ProjectInputData } from '../types';
 
 export type ValidationError = {
   field: string;
@@ -50,14 +50,14 @@ export const validators = {
     return null;
   },
 
-  budgetFormat: (value: string, fieldName: string): string | null => {
+  budgetFormat: (value: string, _fieldName: string): string | null => {
     if (value && !/\$\d+K?-\$\d+K?|\d+K?-\d+K?/.test(value.replace(/\s/g, ''))) {
       return 'Budget should follow format like "$10K-$25K" or "10000-25000"';
     }
     return null;
   },
 
-  timelineFormat: (value: string, fieldName: string): string | null => {
+  timelineFormat: (value: string, _fieldName: string): string | null => {
     if (
       value &&
       !/\d+-\d+\s*months?|\d+-\d+\s*weeks?|\d+\s*months?|\d+\s*weeks?/.test(value.toLowerCase())

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { SavedProject, Screen } from '../types';
 import { Card, Button } from './ui';
 import { WandSparklesIcon, FolderKanbanIcon, CopyIcon, LightbulbIcon } from './icons';
@@ -41,7 +41,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onScreenChange,
 }) => {
   const { projects, importProject } = useProjects();
-  const [insight, setInsight] = useState('');
+  const [insight] = useState(() => insights[Math.floor(Math.random() * insights.length)]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleImportClick = () => {
@@ -70,10 +70,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
-
-  useEffect(() => {
-    setInsight(insights[Math.floor(Math.random() * insights.length)]);
-  }, []);
 
   const recentProjects = projects
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())

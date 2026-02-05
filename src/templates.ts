@@ -1,10 +1,5 @@
 import type { TemplateData } from './types';
 
-// Helper function to safely handle Vietnamese characters
-const sanitizeVietnameseText = (text: string): string => {
-  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-};
-
 export const projectTemplates: TemplateData[] = [
   {
     projectName: 'Standard Web App',

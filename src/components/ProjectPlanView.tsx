@@ -656,8 +656,7 @@ const EditableArchitectureTab: React.FC<{
     setRenderError(null);
 
     const initializeMermaid = async () => {
-      // @ts-ignore - mermaid is global from CDN
-      const mermaid = window.mermaid;
+      const mermaid = (window as any).mermaid;
       if (mermaidRef.current && plan.systemArchitectureMermaid) {
         try {
           mermaid.initialize({ startOnLoad: false, theme: 'dark' });
@@ -804,8 +803,7 @@ const EditableERDTab: React.FC<{
     setRenderError(null);
 
     const initializeMermaid = async () => {
-      // @ts-ignore - mermaid is global from CDN
-      const mermaid = window.mermaid;
+      const mermaid = (window as any).mermaid;
       if (mermaidRef.current && plan.databaseERDMermaid) {
         try {
           mermaid.initialize({ startOnLoad: false, theme: 'dark' });
@@ -958,8 +956,7 @@ const EditableWorkflowTab: React.FC<{
     setRenderError(null);
 
     const initializeMermaid = async () => {
-      // @ts-ignore - mermaid is global from CDN
-      const mermaid = window.mermaid;
+      const mermaid = (window as any).mermaid;
       if (mermaidRef.current && plan.userFlowMermaid) {
         try {
           mermaid.initialize({ startOnLoad: false, theme: 'dark' });
