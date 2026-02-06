@@ -2,11 +2,7 @@ import React from 'react';
 import type { FormattingOptions } from '@/types/report';
 import { FontStyleEditor } from './FontStyleEditor';
 import { HeadingStyleEditor } from './HeadingStyleEditor';
-import {
-  FORMATTING_PRESETS,
-  twipsToInches,
-  inchesToTwips,
-} from '@/presets/formatting';
+import { FORMATTING_PRESETS, twipsToInches, inchesToTwips } from '@/presets/formatting';
 import { validateMargin } from '@/utils/formattingValidation';
 
 // Export props interface for reusability and testing
@@ -23,7 +19,15 @@ export const FormattingPanel: React.FC<FormattingPanelProps> = ({
   onSelectPreset,
   currentTheme,
 }) => {
+  // Validation error states for live feedback
+  const [marginErrors, setMarginErrors] = React.useState<{
+    top?: string;
+    right?: string;
+    bottom?: string;
+    left?: string;
+  }>({});
   const handleMarginChange = (side: keyof typeof formatting.margins, inches: number) => {
+    // Apply value immediately without showing errors (onChange)
     const validatedInches = validateMargin(inches);
     onUpdate({
       ...formatting,
@@ -34,6 +38,21 @@ export const FormattingPanel: React.FC<FormattingPanelProps> = ({
     });
   };
 
+  const handleMarginBlur = (side: keyof typeof formatting.margins, inches: number) => {
+    // Validate and show errors onBlur per AC#5 specification
+    const newErrors = { ...marginErrors };
+    if (isNaN(inches) || !isFinite(inches)) {
+      newErrors[side] = 'Please enter a valid number';
+    } else if (inches < 0.25) {
+      newErrors[side] = '⚠️ Minimum margin is 0.25 inches';
+    } else if (inches > 3) {
+      newErrors[side] = '⚠️ Maximum margin is 3 inches';
+    } else {
+      delete newErrors[side];
+    }
+    setMarginErrors(newErrors);
+  };
+
   const handlePageSizeChange = (pageSize: 'letter' | 'a4') => {
     onUpdate({ ...formatting, pageSize });
   };
@@ -42,9 +61,7 @@ export const FormattingPanel: React.FC<FormattingPanelProps> = ({
     <div className="h-full overflow-y-auto p-4 space-y-6">
       {/* Theme Presets */}
       <div>
-        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-          Theme Presets
-        </h4>
+        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Theme Presets</h4>
         <div className="grid grid-cols-1 gap-2">
           {Object.keys(FORMATTING_PRESETS).map((theme) => (
             <button
@@ -59,11 +76,7 @@ export const FormattingPanel: React.FC<FormattingPanelProps> = ({
               <div className="flex items-center justify-between">
                 <span className="capitalize">{theme}</span>
                 {currentTheme === theme && (
-                  <svg
-                    className="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path
                       fillRule="evenodd"
                       d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -85,11 +98,7 @@ export const FormattingPanel: React.FC<FormattingPanelProps> = ({
             <div className="flex items-center justify-between">
               <span>Custom</span>
               {currentTheme === 'custom' && (
-                <svg
-                  className="w-4 h-4"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path
                     fillRule="evenodd"
                     d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -173,9 +182,7 @@ export const FormattingPanel: React.FC<FormattingPanelProps> = ({
 
       {/* Page Margins */}
       <div>
-        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-          Page Margins
-        </h4>
+        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Page Margins</h4>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
@@ -188,8 +195,14 @@ export const FormattingPanel: React.FC<FormattingPanelProps> = ({
               step="0.25"
               value={twipsToInches(formatting.margins.top)}
               onChange={(e) => handleMarginChange('top', parseFloat(e.target.value) || 1)}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              onBlur={(e) => handleMarginBlur('top', parseFloat(e.target.value) || 1)}
+              className={`w-full px-2 py-1.5 text-sm border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                marginErrors.top ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+              }`}
             />
+            {marginErrors.top && (
+              <p className="text-xs text-red-600 dark:text-red-400 mt-1">{marginErrors.top}</p>
+            )}
           </div>
 
           <div>
@@ -203,8 +216,14 @@ export const FormattingPanel: React.FC<FormattingPanelProps> = ({
               step="0.25"
               value={twipsToInches(formatting.margins.right)}
               onChange={(e) => handleMarginChange('right', parseFloat(e.target.value) || 1)}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              onBlur={(e) => handleMarginBlur('right', parseFloat(e.target.value) || 1)}
+              className={`w-full px-2 py-1.5 text-sm border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                marginErrors.right ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+              }`}
             />
+            {marginErrors.right && (
+              <p className="text-xs text-red-600 dark:text-red-400 mt-1">{marginErrors.right}</p>
+            )}
           </div>
 
           <div>
@@ -218,8 +237,14 @@ export const FormattingPanel: React.FC<FormattingPanelProps> = ({
               step="0.25"
               value={twipsToInches(formatting.margins.bottom)}
               onChange={(e) => handleMarginChange('bottom', parseFloat(e.target.value) || 1)}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              onBlur={(e) => handleMarginBlur('bottom', parseFloat(e.target.value) || 1)}
+              className={`w-full px-2 py-1.5 text-sm border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                marginErrors.bottom ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+              }`}
             />
+            {marginErrors.bottom && (
+              <p className="text-xs text-red-600 dark:text-red-400 mt-1">{marginErrors.bottom}</p>
+            )}
           </div>
 
           <div>
@@ -233,8 +258,14 @@ export const FormattingPanel: React.FC<FormattingPanelProps> = ({
               step="0.25"
               value={twipsToInches(formatting.margins.left)}
               onChange={(e) => handleMarginChange('left', parseFloat(e.target.value) || 1)}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              onBlur={(e) => handleMarginBlur('left', parseFloat(e.target.value) || 1)}
+              className={`w-full px-2 py-1.5 text-sm border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                marginErrors.left ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+              }`}
             />
+            {marginErrors.left && (
+              <p className="text-xs text-red-600 dark:text-red-400 mt-1">{marginErrors.left}</p>
+            )}
           </div>
         </div>
       </div>
@@ -274,9 +305,7 @@ export const FormattingPanel: React.FC<FormattingPanelProps> = ({
       <div className="h-px bg-gray-200 dark:bg-gray-700" />
 
       <div>
-        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-          Table Headers
-        </h4>
+        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Table Headers</h4>
         <FontStyleEditor
           style={formatting.tableHeaderStyle || formatting.documentFont}
           onChange={(font) => onUpdate({ ...formatting, tableHeaderStyle: font })}

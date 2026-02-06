@@ -289,7 +289,6 @@ export const NewProjectWizard: React.FC<{
             </div>
           )}
 
-
           <div className="flex justify-between items-center">
             <Button
               variant="secondary"

@@ -4,6 +4,7 @@
 
 import type { MarkdownToken, TextFormattingState } from '@/types/docx';
 import type { Paragraph as ParagraphType, TextRun as TextRunType } from 'docx';
+import { calculateCodeFontSize, validateFontSize } from '@/utils/fontSizeContext';
 
 /**
  * Parse markdown tokens to DOCX paragraphs with proper formatting
@@ -11,14 +12,30 @@ import type { Paragraph as ParagraphType, TextRun as TextRunType } from 'docx';
  * @param Paragraph - DOCX Paragraph constructor
  * @param TextRun - DOCX TextRun constructor
  * @param defaultFontSize - Default font size in half-points (e.g., 24 = 12pt)
+ * @param timeoutMs - Maximum parsing time in milliseconds (default: 5000ms)
  * @returns Array of DOCX paragraph elements
+ * @throws Error if parsing exceeds timeout
  */
 export function parseMarkdownTokensToDocx(
   tokens: MarkdownToken[],
   Paragraph: typeof ParagraphType,
   TextRun: typeof TextRunType,
   defaultFontSize: number = 24, // Default to 12pt if not specified
+  timeoutMs: number = 5000, // 5 second timeout
 ): InstanceType<typeof ParagraphType>[] {
+  // Timeout protection against malformed markdown
+  const startTime = Date.now();
+  const checkTimeout = () => {
+    if (Date.now() - startTime > timeoutMs) {
+      throw new Error(
+        'Markdown parsing timeout exceeded. The markdown may be malformed or too complex.',
+      );
+    }
+  };
+
+  // Validate font size to prevent edge cases (division by zero, out of range)
+  const validatedFontSize = validateFontSize(defaultFontSize);
+  const codeFontSize = calculateCodeFontSize(validatedFontSize);
   const paragraphs: InstanceType<typeof ParagraphType>[] = [];
   let currentTextRuns: InstanceType<typeof TextRunType>[] = [];
 
@@ -41,6 +58,9 @@ export function parseMarkdownTokensToDocx(
   };
 
   for (const token of tokens) {
+    // Check timeout periodically to prevent infinite loops
+    checkTimeout();
+
     switch (token.type) {
       case 'paragraph_open':
       case 'heading_open':
@@ -67,7 +87,7 @@ export function parseMarkdownTokensToDocx(
         // Process inline tokens (text with formatting)
         if (token.children) {
           for (const child of token.children) {
-            processInlineToken(child, currentTextRuns, TextRun, defaultFontSize, {
+            processInlineToken(child, currentTextRuns, TextRun, validatedFontSize, codeFontSize, {
               getCurrentState,
               pushState,
               popState,
@@ -91,7 +111,7 @@ export function parseMarkdownTokensToDocx(
                 new TextRun({
                   text: token.content,
                   font: 'Courier New',
-                  size: 20, // 10pt for code
+                  size: codeFontSize, // Dynamic code font size based on body text
                 }),
               ],
             }),
@@ -116,6 +136,7 @@ function processInlineToken(
   textRuns: InstanceType<typeof TextRunType>[],
   TextRun: typeof TextRunType,
   defaultFontSize: number,
+  codeFontSize: number,
   state: {
     getCurrentState: () => TextFormattingState;
     pushState: (changes: Partial<TextFormattingState>) => void;
@@ -164,7 +185,7 @@ function processInlineToken(
           new TextRun({
             text: token.content,
             font: 'Courier New',
-            size: 20, // 10pt for code
+            size: codeFontSize, // Dynamic code font size based on body text
           }),
         );
       }
@@ -180,7 +201,7 @@ function processInlineToken(
       // Process children if present
       if (token.children) {
         for (const child of token.children) {
-          processInlineToken(child, textRuns, TextRun, defaultFontSize, state);
+          processInlineToken(child, textRuns, TextRun, defaultFontSize, codeFontSize, state);
         }
       }
       break;

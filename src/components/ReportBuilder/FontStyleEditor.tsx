@@ -62,7 +62,9 @@ export const FontStyleEditor: React.FC<FontStyleEditorProps> = ({
 
   return (
     <div className="space-y-3">
-      {label && <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>}
+      {label && (
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
+      )}
 
       <div className="grid grid-cols-3 gap-2">
         {/* Font Family */}
